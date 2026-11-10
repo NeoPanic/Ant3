@@ -1,6 +1,6 @@
-# Harness³ 本地平台使用指南
+# Ant³ 本地平台使用指南
 
-Harness³ 在本地管理 Preset、实例、任务和工具执行。默认流程从共享任务板发布工作开始：控制面动态选择 Preset 并启动实例，Agent 自行认领、执行或拆分。已有 Agent 池、单实例 Run、显式 Goal 和固定调研模板继续可用。入口共用同一个 daemon 与持久状态；运行时 crate `harness3` 也可独立使用。
+Ant³ 在本地管理 Preset、实例、任务和工具执行。默认流程从共享任务板发布工作开始：控制面动态选择 Preset 并启动实例，Agent 自行认领、执行或拆分。已有 Agent 池、单实例 Run、显式 Goal 和固定调研模板继续可用。入口共用同一个 daemon 与持久状态；运行时 crate `harness3` 也可独立使用。
 
 ## 启动与登录
 

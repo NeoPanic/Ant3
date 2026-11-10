@@ -1,25 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" width="1200" height="360" role="img" aria-labelledby="title desc">
-<title id="title">Harness³</title>
-<desc id="desc">Composable runtime for agent collectives. Three isometric frames form a cube: one, two, three, all things.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 640" width="1600" height="640" role="img" aria-labelledby="title desc">
+<title id="title">Ant³ — Small agents. Shared work.</title>
+<desc id="desc">Ant-inspired collaboration for AI agents. Three ants follow connected paths between shared tasks: claim, contribute, continue.</desc>
 <defs>
-  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#24293B" stroke-width="1"/></pattern>
-  <radialGradient id="glow"><stop stop-color="#32345F" stop-opacity=".65"/><stop offset="1" stop-color="#101322" stop-opacity="0"/></radialGradient>
-</defs>
-<rect width="1200" height="360" rx="24" fill="#101322"/>
-<rect width="1200" height="360" rx="24" fill="url(#grid)" opacity=".45"/>
-<ellipse cx="210" cy="180" rx="255" ry="180" fill="url(#glow)"/>
-<g transform="translate(66 53) scale(.9)"><path fill="#5BD6C5" d="M128 24 218 76 128 128 38 76Z"/>
-<path fill="#8B8EF7" d="m32 88 90 52v104l-90-52Z"/>
-<path fill="#6265CE" d="m134 140 90-52v104l-90 52Z"/>
-<g fill="none" stroke="#101322" stroke-width="7" stroke-linecap="square">
-<path d="m83 76 45-26 45 26-45 26Z"/>
-<path d="m57 131 40 23v46l-40-23Z"/>
-<path d="m159 154 40-23v46l-40 23Z"/>
-</g></g>
-<g font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
-  <text x="355" y="170" fill="#F3F4FC" font-size="88" font-weight="700" letter-spacing="-4">Harness<tspan dy="-42" fill="#5BD6C5" font-size="44" font-weight="600" letter-spacing="0">3</tspan></text>
-  <text x="360" y="222" fill="#B6BED6" font-size="23" letter-spacing=".3">Composable runtime for agent collectives.</text>
-  <text x="360" y="280" fill="#7F8BA9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="15" letter-spacing="2">ONE · TWO · THREE · ALL THINGS</text>
-  <text x="1118" y="306" text-anchor="end" fill="#5BD6C5" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14" letter-spacing="2">harness3</text>
+  <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#D9D4C8"/></pattern>
+  <g id="ant"><g fill="none" stroke="#22251F" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M105 66 88 42H70m81 24 17-24h18M108 114 76 96 48 108m58 28H70l-22 26m60-6-24 28-28 8m92-78 32-18 28 12m-58 28h36l22 26m-60-6 24 28 28 8"/>
 </g>
+<g fill="#22251F"><ellipse cx="128" cy="85" rx="29" ry="27"/><ellipse cx="128" cy="130" rx="20" ry="21"/><ellipse cx="128" cy="192" rx="34" ry="43"/></g></g>
+</defs>
+<rect width="1600" height="640" rx="28" fill="#F5F1E8"/>
+<rect x="810" y="32" width="758" height="576" rx="18" fill="url(#dots)"/>
+<path d="M80 72h42" stroke="#EF7543" stroke-width="5"/>
+<g font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+  <text x="138" y="79" fill="#62665B" font-size="15" font-weight="600" letter-spacing="3">ANT-INSPIRED AGENT COLLECTIVES</text>
+  <text x="72" y="296" fill="#22251F" font-size="192" font-weight="750" letter-spacing="-12">Ant<tspan dy="-91" fill="#D8572B" font-size="89" letter-spacing="0">3</tspan></text>
+  <text x="82" y="378" fill="#22251F" font-size="43" font-weight="550" letter-spacing="-1">Small agents. Shared work.</text>
+  <text x="84" y="426" fill="#62665B" font-size="23">A shared task board. A colony of peers.</text>
+  <path d="M84 477h620" stroke="#D9D4C8"/>
+  <text x="84" y="527" fill="#62665B" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="16" letter-spacing="2">CLAIM → CONTRIBUTE → CONTINUE</text>
+  <text x="84" y="574" fill="#62665B" font-size="15">RUST RUNTIME / SHARED TASKS / HUMAN REVIEW</text>
+</g>
+<g fill="none" stroke-linecap="round">
+  <path d="M948 194C1050 124 1290 146 1408 286S1308 520 1148 478 890 346 948 194Z" stroke="#DCD7CC" stroke-width="44"/>
+  <path d="M948 194C1050 124 1290 146 1408 286S1308 520 1148 478 890 346 948 194Z" stroke="#EF7543" stroke-width="3" stroke-dasharray="3 12"/>
+  <path d="M975 218 1180 324 1360 304m-180 20-16 132" stroke="#ADAFA1" stroke-width="2" stroke-dasharray="4 10"/>
+</g>
+<g transform="translate(1180 324)">
+  <rect x="-53" y="-53" width="106" height="106" rx="25" fill="#22251F"/>
+  <g fill="none" stroke="#F5F1E8" stroke-width="4" stroke-linecap="round"><path d="M-18-20h36m-36 20h36m-36 20h23"/></g>
+</g>
+<use href="#ant" transform="translate(948 194) rotate(58) scale(.47) translate(-128 -128)"/>
+<use href="#ant" transform="translate(1408 286) rotate(166) scale(.47) translate(-128 -128)"/>
+<use href="#ant" transform="translate(1148 478) rotate(-72) scale(.47) translate(-128 -128)"/>
+<g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" fill="#62665B" font-size="14" letter-spacing="2">
+  <text x="1048" y="111">01 / CLAIM</text><text x="1300" y="432">02 / CONTRIBUTE</text><text x="876" y="494">03 / CONTINUE</text>
+</g>
+<circle cx="1486" cy="554" r="6" fill="#D8572B"/>
 </svg>

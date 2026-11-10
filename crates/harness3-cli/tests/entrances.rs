@@ -488,7 +488,7 @@ async fn inherited_parameterized_presets_use_one_contract_across_cli_mcp_and_htt
     let bad=call(&mut mcp,"fleets_create",json!({"plan":{"preset_name":"derived","preset_version":"1","count":1,"parameters":{"extra":"wrong"}},"key":"parameterized"})).await;
     assert_eq!(bad["result"]["isError"], true);
     assert_eq!(f.store.capacity().unwrap()["reserved"], 0);
-    let plan = json!({"preset_name":"derived","preset_version":"1","count":1,"parameters":{"topic":"Harness³"}});
+    let plan = json!({"preset_name":"derived","preset_version":"1","count":1,"parameters":{"topic":"Ant³"}});
     let accepted = call(
         &mut mcp,
         "fleets_create",
@@ -515,7 +515,7 @@ async fn inherited_parameterized_presets_use_one_contract_across_cli_mcp_and_htt
     );
     f.store.reconcile_fleets().unwrap();
     let instances = f.store.list("instances").unwrap();
-    assert_eq!(instances[0]["snapshot"]["objective"], "Inspect Harness³");
+    assert_eq!(instances[0]["snapshot"]["objective"], "Inspect Ant³");
     let mut typo = definition.clone();
     typo["typo"] = true.into();
     assert!(

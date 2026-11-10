@@ -85,7 +85,7 @@ pub async fn up(options: Options) -> crate::ServerResult<()> {
         serde_json::json!({"version":env!("CARGO_PKG_VERSION")}),
     )?;
     println!(
-        "Harness³ kernel preview: http://{actual}\nData: {}\nLogin / API token file: {}\nWorker slots: 8 · instance quota: 256\nOpen the console and paste the local token to log in. Ctrl-C drains active runs.",
+        "Ant³ kernel preview: http://{actual}\nData: {}\nLogin / API token file: {}\nWorker slots: 8 · instance quota: 256\nOpen the console and paste the local token to log in. Ctrl-C drains active runs.",
         data_dir.display(),
         token_path.display()
     );

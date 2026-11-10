@@ -55,7 +55,7 @@ impl Fixture {
             .invoke(
                 snapshot,
                 "inspect",
-                json!({"text":"Harness³"}),
+                json!({"text":"Ant³"}),
                 &context(),
                 cancel,
             )
@@ -99,7 +99,7 @@ async fn installation_pins_files_schemas_and_sessions_while_versions_coexist() {
     assert_eq!(published["plugin_snapshot"]["digest"], first.digest);
     std::fs::remove_dir_all(source).unwrap();
     let output = f.invoke(&first, CancellationToken::new()).await.unwrap();
-    assert_eq!(output.content["characters"], 8);
+    assert_eq!(output.content["characters"], 4);
     assert_eq!(output.content["version"], "1");
     assert_eq!(output.content["home_inherited"], false);
     assert_eq!(
@@ -374,15 +374,15 @@ async fn runtime_worker_dispatches_an_external_tool_and_preserves_model_and_tool
     let snapshot = f.install("1", "normal", 2000).await;
     let service=Router::new().route("/responses",post(|Json(body):Json<Value>|async move {
         assert!(body["instructions"].as_str().unwrap().contains("prompt companion"));
-        assert!(body["instructions"].as_str().unwrap().contains("Inspect Harness³"));
+        assert!(body["instructions"].as_str().unwrap().contains("Inspect Ant³"));
         if let Some(output)=body["input"].as_array().unwrap().iter().find(|i|i["type"]=="function_call_output") {
             let content:Value=serde_json::from_str(output["output"].as_str().unwrap()).unwrap();
-            assert_eq!(content["characters"],8);
+            assert_eq!(content["characters"],4);
             assert_eq!(content["version"],"1");
             Json(json!({"status":"completed","output":[{"type":"message","content":[{"type":"output_text","text":"verified external receipt"}]}]}))
         }else {
             let tool=body["tools"].as_array().unwrap().iter().find(|t|t["description"]=="inspect text").unwrap();
-            Json(json!({"status":"completed","output":[{"type":"function_call","call_id":"external-call","name":tool["name"],"arguments":"{\"text\":\"Harness³\"}"}]}))
+            Json(json!({"status":"completed","output":[{"type":"function_call","call_id":"external-call","name":tool["name"],"arguments":"{\"text\":\"Ant³\"}"}]}))
         }
     }));
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -413,7 +413,7 @@ async fn runtime_worker_dispatches_an_external_tool_and_preserves_model_and_tool
             instructions: "prompt companion".into(),
         })
         .unwrap();
-    f.store.publish_definition(json!({"name":"composed","version":"1","extends":{"name":"worker","version":"1"},"objective":"Inspect {{topic}}","plugins":[{"id":"test.text","version":"1"},{"id":"local.companion","version":"1"}],"parameters_schema":{"type":"object","properties":{"topic":{"type":"string"}},"required":["topic"],"additionalProperties":false},"parameter_defaults":{"topic":"Harness³"}})).unwrap();
+    f.store.publish_definition(json!({"name":"composed","version":"1","extends":{"name":"worker","version":"1"},"objective":"Inspect {{topic}}","plugins":[{"id":"test.text","version":"1"},{"id":"local.companion","version":"1"}],"parameters_schema":{"type":"object","properties":{"topic":{"type":"string"}},"required":["topic"],"additionalProperties":false},"parameter_defaults":{"topic":"Ant³"}})).unwrap();
     let batch = f
         .store
         .spawn(
@@ -431,7 +431,7 @@ async fn runtime_worker_dispatches_an_external_tool_and_preserves_model_and_tool
         .enqueue(
             agent,
             &RunInput {
-                text: "Harness³".into(),
+                text: "Ant³".into(),
             },
             "external-run",
         )

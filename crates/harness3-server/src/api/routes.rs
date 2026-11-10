@@ -145,7 +145,7 @@ pub fn router(app: App) -> Router {
         .route(
             "/health",
             get(|| async {
-                Json(json!({"status":"ok","product":"Harness³","stage":"kernel-preview"}))
+                Json(json!({"status":"ok","product":"Ant³","stage":"kernel-preview"}))
             }),
         )
         .route("/api/login", post(login))

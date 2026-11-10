@@ -1,16 +1,16 @@
-# Contributing to Harness³
+# Contributing to Ant³
 
 Bug reports, documentation in English or Chinese, integration examples, and focused runtime changes are welcome. The core stays provider-, transport-, and storage-independent; propose a host adapter before adding a mandatory SDK or database dependency.
 
 ## Development setup
 
-Install the latest stable Rust (1.99 or newer), then clone the [repository](https://github.com/NeoPanic/harness3). Run the offline example before making changes:
+Install the latest stable Rust (1.99 or newer), then clone the [repository](https://github.com/NeoPanic/Ant3). Run the offline example before making changes:
 
 ```sh
 cargo run --locked --example quickstart
 ```
 
-The Cargo package and import are `harness3`. The user-facing brand is Harness³. See [brand usage](docs/brand/README.md) when editing public-facing assets.
+The Cargo package and import are `harness3`. The user-facing brand is Ant³. See [brand usage](docs/brand/README.md) when editing public-facing assets.
 
 The root manifest defines the workspace; the independent `harness3` package lives in `crates/harness3-core`. Domain contracts, model providers, plugin hosting, worker execution, HTTP hosting, HTTP clients, and the CLI each have their own crate. The platform retains application services and business transactions; harness3-storage owns SQLite mechanics and sessions. The server owns the MCP server adapter. See the [workspace boundaries](docs/workspace.zh-CN.md) before adding a cross-crate dependency. The console lives in `web/src/app` and `web/src/features`; it uses native JavaScript and is embedded by the HTTP adapter at compile time. Run the quickstart from the repository root as shown above; start the platform with `cargo run --locked -p harness3-cli -- up`.
 
@@ -46,6 +46,6 @@ This repository is pre-1.0. Deterministic workspace tests cover runtime contract
 
 ## Reporting issues
 
-Use the [issue templates](https://github.com/NeoPanic/harness3/issues/new/choose). Include the Git revision, Rust version, minimal reproduction, expected behavior, and observed outcome. Remove credentials, private conversations, and sensitive trace payloads. Follow [SECURITY.md](SECURITY.md) for vulnerabilities.
+Use the [issue templates](https://github.com/NeoPanic/Ant3/issues/new/choose). Include the Git revision, Rust version, minimal reproduction, expected behavior, and observed outcome. Remove credentials, private conversations, and sensitive trace payloads. Follow [SECURITY.md](SECURITY.md) for vulnerabilities.
 
 Contributions are provided under the repository's [MIT license](LICENSE). Participation follows the [code of conduct](CODE_OF_CONDUCT.md).

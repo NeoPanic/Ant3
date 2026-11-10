@@ -4,7 +4,7 @@ title: "[Bug]: "
 body:
   - type: markdown
     attributes:
-      value: "For vulnerabilities, follow [SECURITY.md](https://github.com/NeoPanic/harness3/blob/main/SECURITY.md). Remove secrets and private trace content. English and Chinese reports are welcome."
+      value: "For vulnerabilities, follow [SECURITY.md](https://github.com/NeoPanic/Ant3/blob/main/SECURITY.md). Remove secrets and private trace content. English and Chinese reports are welcome."
   - type: input
     id: revision
     attributes:

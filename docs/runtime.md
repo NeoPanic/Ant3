@@ -1,4 +1,4 @@
-# Harness³ runtime contracts
+# Ant³ runtime contracts
 
 Detailed behavior and integration boundaries for the Rust runtime. Start with the [README](../README.md), [offline example](../examples/quickstart.rs), or [中文导读](runtime-guide.zh-CN.md).
 

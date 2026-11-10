@@ -28,7 +28,7 @@ class FixtureHandler(BaseHTTPRequestHandler):
             time.sleep(0.3)
         status = 404 if self.path == "/missing" else 200
         if self.path == "/html":
-            body = "<html><style>.hidden { color:red }</style><h1>Harness³</h1><script>alert('unsafe')</script><p>证据 &amp; 来源</p></html>".encode()
+            body = "<html><style>.hidden { color:red }</style><h1>Ant³</h1><script>alert('unsafe')</script><p>证据 &amp; 来源</p></html>".encode()
             content_type = "text/html; charset=utf-8"
         elif self.path == "/large":
             body = b"x" * (256 * 1024 + 100)
@@ -89,7 +89,7 @@ class HTTPReaderTest(unittest.TestCase):
         self.assertEqual(content["url"], self.base + "/html")
         self.assertEqual(content["status"], 200)
         self.assertIn("text/html", content["content_type"])
-        self.assertIn("Harness³", content["text"])
+        self.assertIn("Ant³", content["text"])
         self.assertIn("证据 & 来源", content["text"])
         self.assertNotIn("unsafe", content["text"])
         self.assertNotIn("color:red", content["text"])

@@ -116,7 +116,7 @@ function render() {
   names.studio='Agent 工作现场';names.board='共享任务板';names.research='固定调研模板';
   $('#nav-count').textContent=data.instances.filter(a=>a.state!=='terminated').length;
   document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.dataset.page===p);if(a.dataset.page===p)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
-  document.title=`${names[p]} Harness³`;
+  document.title=`${names[p]} Ant³`;
   let html='';
   if(p==='board') html=`<div class="board-page">${boardPage()}</div>`;
   if(p==='studio') html=studioPage();

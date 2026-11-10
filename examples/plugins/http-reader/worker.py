@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Harness³ HTTP reader example; Python standard library, JSON-RPC over stdio."""
+"""Ant³ HTTP reader example; Python standard library, JSON-RPC over stdio."""
 import json
 import queue
 import socket
@@ -69,7 +69,7 @@ def fetch_url(url):
     deadline = time.monotonic() + TIMEOUT_SECONDS
     opener = urllib.request.build_opener(HTTPRedirects())
     request = urllib.request.Request(url, headers={
-        "User-Agent": "Harness3-HTTP-Reader/1.0",
+        "User-Agent": "Ant3-HTTP-Reader/1.0",
         "Accept": "text/html, text/plain, application/json, */*;q=0.1",
         "Accept-Encoding": "identity",
     }, method="GET")

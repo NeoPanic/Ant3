@@ -1,4 +1,4 @@
-//! Harness³ — a composable runtime for agent collectives.
+//! Ant³ — an ant-inspired, composable runtime for peer agents.
 //!
 //! Provider-, transport- and storage-independent execution with durable sessions.
 //! The Rust package and import name are `harness3`; the execution API is [`Harness`].

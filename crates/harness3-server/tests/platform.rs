@@ -180,7 +180,7 @@ async fn real_harness_execution_is_persisted_and_agents_are_independent() {
     let batch = spawn(&store, 2, "batch");
     let agents = batch["instance_ids"].as_array().unwrap();
     let run = store
-        .enqueue(agents[0].as_str().unwrap(), &input("Harness³"), "task")
+        .enqueue(agents[0].as_str().unwrap(), &input("Ant³"), "task")
         .unwrap();
     let stop = CancellationToken::new();
     let cancellations = Arc::new(Mutex::new(HashMap::new()));
@@ -202,12 +202,12 @@ async fn real_harness_execution_is_persisted_and_agents_are_independent() {
     assert_eq!(settled[0]["state"], "completed");
     assert_eq!(
         settled[0]["report"]["observations"][0]["output"]["content"]["characters"],
-        8
+        4
     );
     assert_eq!(
         run,
         store
-            .enqueue(agents[0].as_str().unwrap(), &input("Harness³"), "task")
+            .enqueue(agents[0].as_str().unwrap(), &input("Ant³"), "task")
             .unwrap()
     );
     let session = store.load(agents[0].as_str().unwrap()).await.unwrap();

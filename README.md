@@ -1,28 +1,36 @@
 <p align="center">
-  <img src="docs/brand/banner.svg" alt="Harness³ — Composable runtime for agent collectives" width="960">
+  <img src="docs/brand/banner.svg" alt="Ant³ — Small agents. Shared work." width="960">
 </p>
 
-# Harness³
+# Ant³
 
-**A shared task board for peer Agents, built on a composable Rust runtime.**
+**Small agents. Shared work.**
 
-Publish a task without choosing an Agent. The control plane selects a Preset and starts an independent instance; that Agent claims work, executes it, and can return smaller tasks to the board. The same cycle provisions the next participants. Every Agent uses the same Harness model/tool loop, specialized by its Preset, with no permanent leader.
+An ant-inspired platform for peer AI agents, built in Rust. Publish a task with acceptance criteria; agents claim work from a shared task board, split it into focused tasks, and leave results for the next participant. Human review closes the loop.
+
+Like ants coordinating through changes to their environment, agents coordinate through durable shared work. The control plane selects Presets, provisions instances, and enforces capacity; each agent runs the same model/tool loop with its own specialization. Planning and integration are tasks ordinary peers can take on.
 
 [简体中文](README.zh-CN.md) · [Documentation](docs/README.md) · [Architecture](docs/managed-agents.zh-CN.md) · [Current status](docs/status.zh-CN.md) · [Contributing](CONTRIBUTING.md)
 
-## See your Agents at work
+## How the colony works
 
-![Harness³ demo workstation with animal-eared Agent crew and neon work terminals](docs/images/agent-workstation.png)
+| Colony principle | Ant³ mechanism |
+| --- | --- |
+| Shared traces | A persistent task board holds work, claims, progress, and results. |
+| Local action | Each agent claims a task and executes within its assigned scope. |
+| Division of labor | Versioned Presets supply different models, instructions, and tools. |
+| Collective progress | Subtasks return to the board; a peer integrates completed contributions. |
+| Feedback | Humans accept a root result or request another round with review comments. |
 
-Crew animations follow real execution state: typing, waiting, or sleeping. Select a crew member to inspect its task; switch views to see task dependencies and system structure. Open **Agent 工作现场** in the local console.
+The shared board is inspired by **stigmergy**: coordination through a shared environment. Ant³ uses explicit records and a bounded control plane; it does not implement pheromone simulation or ant-colony optimization.
 
 ## Start locally
 
 Requires **Rust 1.99+ (latest stable recommended)**. The first start opens an empty workspace. Configure a model provider and publish your own Preset before running tasks; Cargo downloads dependencies on the first build.
 
 ```sh
-git clone https://github.com/NeoPanic/harness3.git
-cd harness3
+git clone https://github.com/NeoPanic/Ant3.git
+cd Ant3
 cargo run --locked -p harness3-cli -- up
 ```
 
@@ -36,11 +44,11 @@ Startup does not create sample Presets, instances or tasks. The [task-board guid
 
 For real models, configure one of **OpenAI-compatible Chat Completions**, **OpenAI Responses**, or **Anthropic Messages**. See the [getting-started guide](docs/getting-started.zh-CN.md) for configuration, CLI/API/MCP usage, and trusted local process plugins.
 
-## Console example
+## Local console
 
-The local desktop console, shown with historical sample data. New workspaces start empty.
+The first start opens an empty task board. Configure a model and publish a Preset, then create your first task.
 
-![Harness³ desktop console overview](docs/images/console-overview.png)
+![Ant³ local task board, empty on first start](docs/images/ant3-board.png)
 
 ## What you can use
 
@@ -59,7 +67,15 @@ The local desktop console, shown with historical sample data. New workspaces sta
 Agent pools manage resources from one Preset. Task-board work starts from a published task and provisions its own participants. Completed root results await human review: accept to archive, or request changes to resume work with feedback. Goal channels, file artifacts, and independent verification are not yet integrated into the board.
 
 <details>
-<summary>Historical console examples: team collaboration and workspace artifacts</summary>
+<summary>Historical console examples: workstation, collaboration, and artifacts</summary>
+
+These screenshots predate the Ant³ identity and use historical sample data.
+
+![Historical agent workstation](docs/images/agent-workstation.png)
+
+![Historical console overview](docs/images/console-overview.png)
+
+Crew animations reflect recorded execution states: working, waiting, or sleeping. Open **Agent 工作现场** to inspect participants and task dependencies.
 
 **Team collaboration.** Members, subscriptions, and discussion records remain inspectable after the team retires.
 
@@ -99,7 +115,7 @@ The [offline example](examples/quickstart.rs) runs a model → tool → model cy
 
 ```toml
 [dependencies]
-harness3 = { git = "https://github.com/NeoPanic/harness3.git", branch = "main" }
+harness3 = { git = "https://github.com/NeoPanic/Ant3.git", branch = "main" }
 ```
 
 ```rust
@@ -110,11 +126,11 @@ let harness = Harness::new(Registry::default(), Limits::default());
 
 Register capabilities as shown in the complete example. Pin a Git revision for reproducible builds. API reference: `cargo doc --locked --workspace --no-deps --open`.
 
-## Why the cube?
+## Why Ant³?
 
-> 道生一，一生二，二生三，三生万物。 — *Dao De Jing*, chapter 42
+An ant can do a small piece of work; a colony combines many local actions into a shared outcome. **³** expresses that composition across three connected steps: **claim → contribute → continue**. It describes the collaboration loop, with capacity and permissions enforced by the platform.
 
-The **³** connects the generative meaning of 三 with multiplication: harness × harness × harness, extending to N cooperating harnesses. Use **Harness³** in prose and `harness3` for code and repository identifiers. [Brand assets and usage](docs/brand/README.md).
+The display name is **Ant³**, the repository is **Ant3**, and the existing Cargo packages, CLI command, API identifiers, and `.harness3/` data directory retain `harness3` for compatibility. [Brand assets and usage](docs/brand/README.md).
 
 ## Contribute
 

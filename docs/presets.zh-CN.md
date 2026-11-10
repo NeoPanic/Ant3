@@ -22,7 +22,7 @@
     "required": ["topic"],
     "additionalProperties": false
   },
-  "parameter_defaults": {"topic": "Harness³"}
+  "parameter_defaults": {"topic": "Ant³"}
 }
 ```
 
@@ -59,7 +59,7 @@ parameters_schema 使用与插件协议相同的严格有界 JSON Schema 子集�
   "preset_version": "1.0.0",
   "count": 2,
   "mode": "finite",
-  "parameters": {"topic": "Harness³"}
+  "parameters": {"topic": "Ant³"}
 }
 ```
 

@@ -1,4 +1,4 @@
-//! Local control-plane preview around the independent Harness³ runtime.
+//! Local control-plane preview around the independent Ant³ runtime.
 pub mod collaboration;
 pub mod control;
 pub mod domain;

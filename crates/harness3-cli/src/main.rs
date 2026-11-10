@@ -4,7 +4,7 @@ mod commands;
 use commands as cli;
 
 #[derive(Parser)]
-#[command(name = "harness3", about = "Harness³ local kernel control plane")]
+#[command(name = "harness3", about = "Ant³ local kernel control plane")]
 struct Cli {
     #[command(subcommand)]
     command: Command,

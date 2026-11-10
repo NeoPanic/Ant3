@@ -3,11 +3,11 @@ name = "harness3"
 version = "0.2.7"
 edition = "2024"
 rust-version = "1.99"
-description = "Harness³: a composable Rust runtime for agent collectives, with durable sessions and pluggable capabilities"
+description = "Ant³: an ant-inspired Rust runtime for peer agents, durable sessions, and shared work"
 license = "MIT"
 readme = "../../README.md"
-repository = "https://github.com/NeoPanic/harness3"
-homepage = "https://github.com/NeoPanic/harness3"
+repository = "https://github.com/NeoPanic/Ant3"
+homepage = "https://github.com/NeoPanic/Ant3"
 keywords = ["agent", "harness", "multi-agent", "llm", "runtime"]
 categories = ["asynchronous"]
 

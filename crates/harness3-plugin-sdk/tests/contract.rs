@@ -12,7 +12,7 @@ fn sdk_exposes_exact_capabilities_and_validates_arguments_before_dispatch() {
         json!({"jsonrpc":"2.0","id":"init","method":"initialize"}),
         json!({"jsonrpc":"2.0","method":"cancel","params":{"invocation_id":"old"}}),
         json!({"jsonrpc":"2.0","id":"bad","method":"tools/call","params":{"name":"inspect","arguments":{"text":42}}}),
-        json!({"jsonrpc":"2.0","id":"call","method":"tools/call","params":{"name":"inspect","arguments":{"text":"Harness³"}}}),
+        json!({"jsonrpc":"2.0","id":"call","method":"tools/call","params":{"name":"inspect","arguments":{"text":"Ant³"}}}),
         json!({"jsonrpc":"2.0","id":"stop","method":"shutdown"}),
     ];
     let input = requests
@@ -34,7 +34,7 @@ fn sdk_exposes_exact_capabilities_and_validates_arguments_before_dispatch() {
         serde_json::to_value(manifest().tools).unwrap()
     );
     assert!(replies[1].get("error").is_some());
-    assert_eq!(replies[2]["result"]["content"]["characters"], 8);
+    assert_eq!(replies[2]["result"]["content"]["characters"], 4);
     assert_eq!(replies[3]["result"]["closed"], true);
 }
 #[test]

@@ -94,10 +94,10 @@ body:has(.studio) .body { background:#0a1220; }
 .studio-desk .studio-person { width:190px; height:190px; }
 .studio-crew-name { display:flex; flex-direction:column; align-items:center; max-width:100%; padding:0 6px; margin-top:-3px; color:#d5e1f3; font-size:12px; line-height:1.5; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .studio-crew-name small { font:12px/1.6 var(--font); color:#a2b6d2; }
-.studio-person { flex-shrink:0; overflow:visible; --creature-fur:#e0c7f1; --creature-suit:#a68ec8; --creature-ear:#bd9ed5; --creature-trim:#dfc8f4; }
-.creature-1 { --creature-fur:#f3d3db; --creature-suit:#cf9dbb; --creature-ear:#e6a9bd; --creature-trim:#f4d4e3; }
-.creature-2 { --creature-fur:#a9e2db; --creature-suit:#6faeae; --creature-ear:#71b7b3; --creature-trim:#bcf2e7; }
-.creature-3 { --creature-fur:#f2dfb7; --creature-suit:#c2ad8c; --creature-ear:#dfbd99; --creature-trim:#ffebc9; }
+.studio-person { flex-shrink:0; overflow:visible; --creature-fur:#edaa73; --creature-suit:#b76a45; --creature-trim:#f6cf9e; }
+.creature-1 { --creature-fur:#eac17c; --creature-suit:#a17a45; --creature-trim:#ffe0aa; }
+.creature-2 { --creature-fur:#c89c7d; --creature-suit:#866651; --creature-trim:#eacdb1; }
+.creature-3 { --creature-fur:#e5b291; --creature-suit:#ad775c; --creature-trim:#fbd8bd; }
 .pod-shadow { fill:#070c1c; opacity:.6; }
 .pod-base { fill:#253850; stroke:#53708f; stroke-width:2; }
 .pod-top { fill:#223d50; stroke:#83b9c9; stroke-width:2; }
@@ -107,10 +107,12 @@ body:has(.studio) .body { background:#0a1220; }
 .is-working .pod-top { fill:#234c58; stroke:#a4efdf; }
 .is-working .pod-light { stroke:#99f9e4; }
 .creature-fur { fill:var(--creature-fur); stroke:#473c63; stroke-width:2.5; }
-.creature-ear { fill:var(--creature-ear); stroke:var(--creature-ear); stroke-width:5; }
+.creature-feelers { fill:var(--creature-fur); stroke:var(--creature-suit); stroke-width:5; }
+.creature-feelers path,.creature-legs { fill:none; }
+.creature-legs { stroke:var(--creature-suit); stroke-width:7; }
 .creature-suit { fill:var(--creature-suit); stroke:#493f62; stroke-width:2.5; }
 .creature-foot { fill:var(--creature-fur); stroke:#493f62; stroke-width:2; }
-.creature-backpack { fill:#587689; stroke:#9cc9d5; stroke-width:2; }
+.creature-abdomen { fill:var(--creature-suit); stroke:#493f62; stroke-width:2.5; }
 .creature-face { fill:#fff0e4; stroke:#e4c5d3; stroke-width:1.5; }
 .creature-eye { fill:#38334c; }
 .creature-eye-shine { fill:#fffdf8; }

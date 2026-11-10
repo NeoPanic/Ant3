@@ -1,12 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 272" width="256" height="272" role="img" aria-labelledby="title desc">
-<title id="title">Harness³ brand mark</title>
-<desc id="desc">Three open isometric frames form the faces of a cube, representing composable harnesses.</desc>
-<path fill="#5BD6C5" d="M128 24 218 76 128 128 38 76Z"/>
-<path fill="#8B8EF7" d="m32 88 90 52v104l-90-52Z"/>
-<path fill="#6265CE" d="m134 140 90-52v104l-90 52Z"/>
-<g fill="none" stroke="#101322" stroke-width="7" stroke-linecap="square">
-<path d="m83 76 45-26 45 26-45 26Z"/>
-<path d="m57 131 40 23v46l-40-23Z"/>
-<path d="m159 154 40-23v46l-40 23Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title desc">
+<title id="title">Ant³ brand mark</title>
+<desc id="desc">An ant with three body segments, six legs and two bent antennae. A single participant in a shared colony.</desc>
+<g fill="none" stroke="#EF7543" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M105 66 88 42H70m81 24 17-24h18M108 114 76 96 48 108m58 28H70l-22 26m60-6-24 28-28 8m92-78 32-18 28 12m-58 28h36l22 26m-60-6 24 28 28 8"/>
 </g>
+<g fill="#EF7543"><ellipse cx="128" cy="85" rx="29" ry="27"/><ellipse cx="128" cy="130" rx="20" ry="21"/><ellipse cx="128" cy="192" rx="34" ry="43"/></g>
 </svg>

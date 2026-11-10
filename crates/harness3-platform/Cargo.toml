@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.99"
 license = "MIT"
-description = "Local Harness³ control plane and inspection console"
+description = "Local Ant³ control plane and inspection console"
 
 [features]
 test-support = []

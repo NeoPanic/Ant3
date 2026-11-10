@@ -42,7 +42,7 @@ impl Model for LocalModel {
                     .first()
                     .and_then(|observation| observation.output.content["characters"].as_u64())
                     .ok_or_else(|| Error::new("unexpected_tool_result"))?;
-                (format!("Harness³: {count} characters."), vec![])
+                (format!("Ant³: {count} characters."), vec![])
             }
             _ => (
                 String::new(),
@@ -128,7 +128,7 @@ async fn main() -> Result<()> {
     let event = InboundEvent {
         source: "local".into(),
         id: "message-1".into(),
-        payload: json!({"text": "Harness³"}),
+        payload: json!({"text": "Ant³"}),
     };
     let report = harness
         .run_session(
@@ -143,7 +143,7 @@ async fn main() -> Result<()> {
     if let Some(error) = report.error {
         return Err(error);
     }
-    assert_eq!(report.output.as_deref(), Some("Harness³: 8 characters."));
+    assert_eq!(report.output.as_deref(), Some("Ant³: 4 characters."));
     assert_eq!(report.observations.len(), 1);
     println!("{}", report.output.as_deref().unwrap_or_default());
 

@@ -13,5 +13,5 @@
     "required": ["topic"],
     "additionalProperties": false
   },
-  "parameter_defaults": {"topic": "Harness³"}
+  "parameter_defaults": {"topic": "Ant³"}
 }

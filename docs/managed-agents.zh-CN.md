@@ -1,10 +1,10 @@
-# Harness³ Managed Agents 架构设计
+# Ant³ Managed Agents 架构设计
 
 本文定义平台的目标架构、领域边界、状态约束和模块布局。可用能力与限制见[当前平台状态](status.zh-CN.md)，运行步骤和接口用法见[平台使用指南](getting-started.zh-CN.md)。文中的扩展接口和目标目录用于架构约束，不表示对应能力均已提供。
 
 ## 1. 产品目标与交付边界
 
-Harness³ 的目标是让用户发布任务后，由平台按需组织对等 Agent 工作。用户通过控制面将工作要求和验收标准写入共享任务板，无需预选 Agent 或 Preset。控制面扫描任务、选择适合的已发布 Preset、启动独立实例并管理生命周期；实例启动后认领任务，执行或拆分，再把细分任务投回任务板。新任务进入同一循环。
+Ant³ 的目标是让用户发布任务后，由平台按需组织对等 Agent 工作。用户通过控制面将工作要求和验收标准写入共享任务板，无需预选 Agent 或 Preset。控制面扫描任务、选择适合的已发布 Preset、启动独立实例并管理生命周期；实例启动后认领任务，执行或拆分，再把细分任务投回任务板。新任务进入同一循环。
 
 Harness 是包含模型 / 工具循环、会话和回执的标准运行件；Preset 为它注入指令、模型协议与工具能力，形成不同用途的 Agent。全部 Agent 使用同一协作协议，系统没有固定 leader。规划、研究、评审和整合可以是任务内容，不能成为内核强制的身份等级。
 
@@ -47,7 +47,7 @@ Harness 是包含模型 / 工具循环、会话和回执的标准运行件；Pre
 
 规格覆盖母体/实例对象与状态、插件与三类模型协议、消息与委派、故障与恢复、权限/预算与评估。任务分配算法、复杂规划和长期记忆应作为可替换策略，与平台状态约束分离。
 
-参考入口：[ReAct](https://arxiv.org/abs/2210.03629)、[Actor Model of Computation](https://arxiv.org/abs/1008.1459)、[Lamport：Time, Clocks, and the Ordering of Events](https://lamport.azurewebsites.net/pubs/time-clocks.pdf)。这些是设计背景，不构成对 Harness³ 正确性或性能的证明。
+参考入口：[ReAct](https://arxiv.org/abs/2210.03629)、[Actor Model of Computation](https://arxiv.org/abs/1008.1459)、[Lamport：Time, Clocks, and the Ordering of Events](https://lamport.azurewebsites.net/pubs/time-clocks.pdf)。这些是设计背景，不构成对 Ant³ 正确性或性能的证明。
 
 持久编排与协作领域的边界及 Temporal 概念对照见[多 Agent 协作与 Durable Workflow](durable-workflows.zh-CN.md)。
 

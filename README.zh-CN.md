@@ -1,28 +1,36 @@
 <p align="center">
-  <img src="docs/brand/banner.svg" alt="Harness³ — Composable runtime for agent collectives" width="960">
+  <img src="docs/brand/banner.svg" alt="Ant³ — 个体专注，群体协作" width="960">
 </p>
 
-# Harness³
+# Ant³
 
-**让对等 Agent 围绕共享任务板协作，基于可组合的 Rust 运行内核。**
+**个体专注，群体协作。**
 
-发布任务时无需选择 Agent。控制面根据任务选择 Preset、启动独立实例，Agent 认领后执行，也可以把细分任务投回任务板，触发下一轮按需启动。每个 Agent 使用同一套 Harness 模型 / 工具循环，由 Preset 注入专业能力，没有固定 leader。
+Ant³ 是借鉴蚂蚁协作机制、以 Rust 构建的对等 Agent 平台。发布目标和验收标准后，Agent 从共享任务板认领工作、拆分子任务、留下成果，由后续参与者继续推进，最终交给人类评审。
+
+蚂蚁通过改变周围环境传递协作线索；Ant³ 让 Agent 通过持久化的任务、进展和成果接力。控制面负责 Preset 选型、实例启动与容量约束，每个 Agent 使用同一套模型 / 工具循环，并由母体赋予专长。规划和整合同样由普通参与实例承担。
 
 [English](README.md) · [文档导航](docs/README.md) · [架构设计](docs/managed-agents.zh-CN.md) · [当前状态](docs/status.zh-CN.md) · [参与贡献](CONTRIBUTING.md)
 
-## 看见 Agent 在工作
+## 像蚁群一样协作
 
-![Harness³ 工作站演示场景：猫耳、兔耳小队员操作霓虹工作终端](docs/images/agent-workstation.png)
+| 协作机制 | Ant³ 中的对应 |
+| --- | --- |
+| 共享痕迹 | 持久任务板保存任务、认领、进展和成果。 |
+| 局部行动 | 每个 Agent 认领具体任务，在授权范围内执行。 |
+| 分工协作 | 版本化母体提供不同模型、指令和工具。 |
+| 成果接力 | 子任务回到任务板，后续参与者整合已完成的贡献。 |
+| 反馈闭环 | 人类通过根任务成果，或附意见退回下一轮修改。 |
 
-打字、待命、休眠，队员动作由真实执行状态驱动。点击角色检查任务，切换视图查看任务接力和系统架构。在本地控制台进入 **Agent 工作现场** 即可查看。
+共享任务板借鉴 **stigmergy（间接协作）**：参与者通过共享环境留下的变化协调行动。当前实现使用明确的任务记录和有界控制面，未实现信息素模拟或蚁群优化算法。
 
 ## 本地启动
 
 需要 **Rust 1.99+（建议最新稳定版）**。首次启动为空白工作区；执行任务前需配置模型并发布自己的母体。首次编译由 Cargo 下载依赖。
 
 ```sh
-git clone https://github.com/NeoPanic/harness3.git
-cd harness3
+git clone https://github.com/NeoPanic/Ant3.git
+cd Ant3
 cargo run --locked -p harness3-cli -- up
 ```
 
@@ -36,11 +44,11 @@ cargo run --locked -p harness3-cli -- up
 
 真实模型支持 **OpenAI-compatible Chat Completions、OpenAI Responses、Anthropic Messages** 三种协议。模型配置、CLI / API / MCP 用法与可信本地进程插件设置见[入门指南](docs/getting-started.zh-CN.md)。
 
-## 控制台示例
+## 本地控制台
 
-以下截图使用历史样例数据，新工作区初始为空。
+首次启动进入空白任务板。配置模型、发布母体后，即可发布第一项任务。
 
-![Harness³ 桌面控制台总览](docs/images/console-overview.png)
+![Ant³ 本地任务板，首次启动为空白工作区](docs/images/ant3-board.png)
 
 ## 当前可以做什么
 
@@ -59,7 +67,15 @@ cargo run --locked -p harness3-cli -- up
 Agent 池管理同一母体的实例资源；任务板从发布任务开始，按需创建参与实例。根任务执行成功后由人类评审，通过归档或附意见退回修改。Goal 流程的频道、文件产物和独立验证尚未自动接入任务板。
 
 <details>
-<summary>展开查看历史界面示例：团队协作与文件产物</summary>
+<summary>展开查看历史界面示例：工作现场、团队协作与文件产物</summary>
+
+以下截图早于 Ant³ 品牌调整，使用历史样例数据。
+
+![历史 Agent 工作现场](docs/images/agent-workstation.png)
+
+![历史控制台总览](docs/images/console-overview.png)
+
+队员动画对应已记录的执行状态：工作、待命或休息。进入 **Agent 工作现场** 可检查参与实例与任务依赖。
 
 **团队协作。** 团队回收后仍可检查成员、订阅关系和讨论记录。
 
@@ -99,7 +115,7 @@ cargo run --locked --example quickstart
 
 ```toml
 [dependencies]
-harness3 = { git = "https://github.com/NeoPanic/harness3.git", branch = "main" }
+harness3 = { git = "https://github.com/NeoPanic/Ant3.git", branch = "main" }
 ```
 
 ```rust
@@ -110,11 +126,11 @@ let harness = Harness::new(Registry::default(), Limits::default());
 
 完整能力注册参照示例。下游项目应固定 Git revision，保证构建可复现。API 文档：`cargo doc --locked --workspace --no-deps --open`。
 
-## 为什么是立方？
+## 为什么叫 Ant³？
 
-> 道生一，一生二，二生三，三生万物。——《道德经》第四十二章
+单只蚂蚁承担局部工作，蚁群将许多个体行动组合成共同成果。**³** 表达三个相连的协作环节：**认领 → 贡献 → 接力**，也表达个体能力通过协作组合的含义；执行规模和权限仍由平台明确约束。
 
-**³** 同时表达“三生万物”和组合相乘：harness × harness × harness，延伸到 N 个协作的 harness。正文品牌为 **Harness³**，代码与仓库标识为 `harness3`。[品牌素材与使用规范](docs/brand/README.md)。
+正文品牌为 **Ant³**，仓库名为 **Ant3**。现有 Cargo 包、CLI 命令、API 标识及 `.harness3/` 数据目录继续使用 `harness3`，保证现有集成可用。[品牌素材与使用规范](docs/brand/README.md)。
 
 ## 参与项目
 

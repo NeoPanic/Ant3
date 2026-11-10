@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Reference Harness³ stdio plugin. No network or third-party Python packages."""
+"""Reference Ant³ stdio plugin. No network or third-party Python packages."""
 import json
 import sys
 

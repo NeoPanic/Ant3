@@ -7,7 +7,7 @@ pub fn client() -> Result<reqwest::ClientBuilder> {
         .no_proxy()
         .redirect(reqwest::redirect::Policy::none())
         .timeout(Duration::from_secs(20))
-        .user_agent("Harness3/0.1"))
+        .user_agent("Ant3/0.1"))
 }
 pub fn public_ip(ip: IpAddr) -> bool {
     match ip {

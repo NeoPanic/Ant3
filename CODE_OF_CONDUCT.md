@@ -1,6 +1,6 @@
 # Community conduct
 
-Harness³ welcomes participation across backgrounds and experience levels. These expectations apply to project issues, pull requests, discussions, and other project-managed spaces.
+Ant³ welcomes participation across backgrounds and experience levels. These expectations apply to project issues, pull requests, discussions, and other project-managed spaces.
 
 - Discuss code, evidence, and design decisions respectfully. Give actionable feedback and allow people to correct mistakes.
 - Do not harass, threaten, discriminate, publish personal information, or direct sexual attention at other participants.
