@@ -1,0 +1,11 @@
+[package]
+name = "ant3-plugin-sdk"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT"
+description = "Reference synchronous stdio tool authoring SDK for Ant³ process plugins"
+
+[dependencies]
+ant3-plugin-protocol = { path = "../ant3-plugin-protocol" }
+serde_json = "1"

@@ -1,8 +1,8 @@
 //! Offline model → tool → model execution and duplicate-delivery handling.
 //! Run with `cargo run --locked --example quickstart`.
 use async_trait::async_trait;
-use harness3::{
-    AgentProfile, Call, CancellationToken, Context, Error, Harness, InboundEvent, Limits,
+use ant3::{
+    AgentProfile, Call, CancellationToken, Context, Error, Ant, InboundEvent, Limits,
     LiveOutput, Model, ModelInput, ModelReply, Registry, Request, Result, Source, Tool, ToolOutput,
     ToolSpec, Turn, session::MemorySessionStore,
 };
@@ -115,7 +115,7 @@ async fn main() -> Result<()> {
         required_tool: None,
         skills: vec![],
     })?;
-    let harness = Harness::new(
+    let harness = Ant::new(
         registry,
         Limits {
             rounds: 4,

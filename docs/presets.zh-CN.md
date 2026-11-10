@@ -29,8 +29,8 @@
 安装示例包后发布：
 
 ```sh
-./target/debug/harness3 presets publish --file examples/clients/composed-preset.json
-./target/debug/harness3 fleets create --file examples/clients/parameterized-fleet.json --key topic-inspector-1
+./target/debug/ant3 presets publish --file examples/clients/composed-preset.json
+./target/debug/ant3 fleets create --file examples/clients/parameterized-fleet.json --key topic-inspector-1
 ```
 
 示例依赖已发布 `researcher@1.0.0`、`local.evidence-guide@1.0.0` 和 `local.text@1.0.0`；目录中缺失任一依赖时发布会明确失败。进程包安装与调用需要 daemon `--allow-process-plugins`，详见 [进程插件](process-plugins.zh-CN.md)。无需供应商账号时，可把父级替换成 `demo-inspector@1.0.0` 验证控制面；Demo 固定调用内置工具，不能用其输出证明外部工具执行。

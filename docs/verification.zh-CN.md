@@ -45,7 +45,7 @@ Web 默认选择按失败证据定位任务及下游。每个目标最多自动�
 
 - Web：目标或调研详情 → 独立验证 → 重新验证。
 - HTTP：`POST /api/v1/goals/{id}/verification/retry`，带 `Idempotency-Key`；body 为 `{"expected_round":1,"expected_verification_id":"verification_..."}`。
-- CLI：`harness3 goals verify ID --expected-round 1 --expected-verification-id VERIFICATION_ID --key RETRY_KEY`。
+- CLI：`ant3 goals verify ID --expected-round 1 --expected-verification-id VERIFICATION_ID --key RETRY_KEY`。
 - MCP：`verification_retry`，需要 `--allow-write`；读取完整记录使用 Goal 查询。
 
 验证期限为 180 秒，Agent 池 TTL 为 300 秒；取消会停止排队运行并等待活动 Run 收尾。数据库保存策略、冻结清单、报告和读取区间。执行采用单 daemon 的本地状态协调，不提供分布式 Worker 或确定性历史重放。

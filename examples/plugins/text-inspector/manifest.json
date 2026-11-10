@@ -1,15 +1,15 @@
 {
-  "api_version": "harness3.plugins/v1",
+  "api_version": "ant3.plugins/v1",
   "id": "local.text",
   "version": "1.0.0",
   "description": "External process text inspection reference plugin",
   "instructions": "Use local.text.inspect for Unicode text statistics.",
   "runtime": {
-    "protocol": "harness3-plugin-rpc/v1",
+    "protocol": "ant3-plugin-rpc/v1",
     "entry": "worker.py"
   },
   "files": {
-    "worker.py": "e0244daec1320001c70651b85c3b07d179cfabc49fa0d53aa925eb35a2484ddc"
+    "worker.py": "95534be18a0a0fb3d83a15b25dd35029454e9c5dfaa63e551e220cd1e2a6fd88"
   },
   "tools": [
     {

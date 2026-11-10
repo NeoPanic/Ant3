@@ -6,13 +6,13 @@
 
 Ant³ 的目标是让用户发布任务后，由平台按需组织对等 Agent 工作。用户通过控制面将工作要求和验收标准写入共享任务板，无需预选 Agent 或 Preset。控制面扫描任务、选择适合的已发布 Preset、启动独立实例并管理生命周期；实例启动后认领任务，执行或拆分，再把细分任务投回任务板。新任务进入同一循环。
 
-Harness 是包含模型 / 工具循环、会话和回执的标准运行件；Preset 为它注入指令、模型协议与工具能力，形成不同用途的 Agent。全部 Agent 使用同一协作协议，系统没有固定 leader。规划、研究、评审和整合可以是任务内容，不能成为内核强制的身份等级。
+Ant 是包含模型 / 工具循环、会话和回执的标准运行件；Preset 为它注入指令、模型协议与工具能力，形成不同用途的 Agent。全部 Agent 使用同一协作协议，系统没有固定 leader。规划、研究、评审和整合可以是任务内容，不能成为内核强制的身份等级。
 
 每个 Agent 拥有独立的配置、会话、能力权限和工作区；平台提供共享任务上下文、可靠消息、任务认领、产物验证与整合。首次体验应能解释“哪个 Agent 因为什么在做什么、交付了什么、结果如何验证、发生故障后如何处理”。
 
 平台交付涵盖运行时、控制面、存储、Worker、模型适配器、四类入口和可操作的协作演示。演示必须产生真实调度、工具回执与产物证据。
 
-品牌中的 N 个 harness 相乘表达可组合性。架构不预设三个 Agent 或固定角色数量；实例规模由控制面按配额、预算与 Worker 容量管理。无限衍生表达开放的组合空间，实际实例创建、派生深度、并发和存续时间都受显式资源约束。
+品牌中的 ³ 表达认领、贡献与接力的组合。架构不预设三个 Agent 或固定角色数量；实例规模由控制面按配额、预算与 Worker 容量管理。无限衍生表达开放的组合空间，实际实例创建、派生深度、并发和存续时间都受显式资源约束。
 
 平台采用“一切能力皆插件”的扩展范式：模型、工具、外部工具连接器、技能、提示词、渠道与策略通过统一插件描述、安装、绑定和版本管理。核心保留不可绕过的状态、权限、回执和生命周期契约。官方模型接入范围限定为 OpenAI-compatible Chat Completions、OpenAI Responses、Anthropic Messages 三类协议。
 
@@ -20,7 +20,7 @@ Harness 是包含模型 / 工具循环、会话和回执的标准运行件；Pre
 
 | 层 | 负责 | 不承担 |
 | --- | --- | --- |
-| Harness 内核 | 单次模型/工具循环、会话、观察与回执、取消 | 团队规划、实例数量、跨 Agent 任务所有权 |
+| Ant 内核 | 单次模型/工具循环、会话、观察与回执、取消 | 团队规划、实例数量、跨 Agent 任务所有权 |
 | 控制面 | Preset 发布与动态选型、容量、Agent 池与实例生命周期、能力绑定 | 将选型模型变成指挥其他 Agent 的永久 leader |
 | 组织服务 | 共享任务板、原子认领、任务来源与结果；Goal 流程中的消息/频道、共享事实、产物与验收 | 直接读写模型私有推理、跳过平台状态校验 |
 | 调度与执行 | 持久队列、执行容量、所有权、等待/恢复 | 将进程或 Worker 身份等同于 Agent 身份 |
@@ -61,9 +61,9 @@ flowchart TB
     Catalog[已发布 Preset 与能力目录] --> Router
     Model[可替换的低延迟选型模型] --> Router
     Router --> Lifecycle[容量与实例生命周期管理]
-    Lifecycle --> A[Agent A：Preset + 独立 Harness]
-    Lifecycle --> B[Agent B：Preset + 独立 Harness]
-    Lifecycle --> C[Agent C：Preset + 独立 Harness]
+    Lifecycle --> A[Agent A：Preset + 独立 Ant]
+    Lifecycle --> B[Agent B：Preset + 独立 Ant]
+    Lifecycle --> C[Agent C：Preset + 独立 Ant]
     A -->|认领 / 拆分 / 结果| Board
     B -->|认领 / 拆分 / 结果| Board
     C -->|认领 / 拆分 / 结果| Board
@@ -75,7 +75,7 @@ flowchart TB
 
 入口通过同一控制面服务，共用应用命令、权限检查、对象 ID、幂等和错误语义。新任务板提供 Web、HTTP 与 CLI；已有 MCP 提供其已声明的命令，不应自行创建 Registry、数据库或另一个执行循环。
 
-控制面负责“按当前任务需要启动哪些能力”；组织服务负责“工作如何被认领、拆分、共享和结算”；Harness 负责“一次执行如何与模型和工具交互并留下可信回执”。选型模型输出已发布 Preset 的名称、版本和理由，平台校验后才创建实例。模型决定不能绕过容量、权限与状态检查。
+控制面负责“按当前任务需要启动哪些能力”；组织服务负责“工作如何被认领、拆分、共享和结算”；Ant 负责“一次执行如何与模型和工具交互并留下可信回执”。选型模型输出已发布 Preset 的名称、版本和理由，平台校验后才创建实例。模型决定不能绕过容量、权限与状态检查。
 
 集中式控制面与 SQLite 提供公共基础设施；Agent 的对等地位由统一协作协议保证。任务父子关系只表达拆分来源和结果依赖，不能推出 Agent 的上下级关系。Rust 的并发运行时可降低实例装配和调度开销，模型推理与外部工具延迟仍由对应服务决定。
 
@@ -159,7 +159,7 @@ Preset 可以基于一个已发布版本衍生：发布时解析继承与参数�
 下面的声明式结构表达目标配置关系；具体可执行 JSON 格式见[母体定义](presets.zh-CN.md)：
 
 ```yaml
-api_version: harness3/v1
+api_version: ant3/v1
 kind: AgentPreset
 metadata:
   name: researcher
@@ -254,14 +254,14 @@ Agent 可通过获准的组织插件调用 `agents.spawn`，引用允许的 Pres
 插件 manifest 至少包含 ID、不可变版本、插件协议版本、宿主兼容范围、入口/运行方式、能力与输入输出 schema、配置 schema、权限需求、依赖、内容摘要及健康检查约定。名字以发布者命名空间限定，能力以 `plugin_id/capability` 引用，避免不同作者的工具重名。
 
 ```yaml
-api_version: harness3.plugins/v1
+api_version: ant3.plugins/v1
 id: community.research-tools
 version: 1.2.0
 host_compatibility: ">=0.3,<1.0"
 runtime:
   type: process
   command: ./bin/research-tools
-  protocol: harness3-plugin-rpc/v1
+  protocol: ant3-plugin-rpc/v1
 capabilities:
   - name: tools.read_document
     kind: tool
@@ -361,10 +361,10 @@ Web 面向桌面操作，按 **场景 → 协作 → 运行 → 配置** 分层�
 
 以下目录表达职责与依赖边界；可以先以 crate 内子模块实现，再按规模拆分，无需建立空包。实际代码落点及完整源码树见[模块映射](capabilities.zh-CN.md#当前模块--目标目录)。
 
-当前 workspace 有 13 个包：core、domain、platform、storage、plugin-protocol、plugin-sdk、plugins 宿主、models、worker、server、client、cli，以及根目录 plugins 内的 builtin-plugins。独立内核包名为 `harness3`，命令行二进制为 `harness3`；源码启动使用 `cargo run --locked -p harness3-cli -- up`。domain 保存共享类型与纯校验；storage 保存连接、schema、事务和会话；platform 保留业务 SQL 与应用回填。client 只负责 HTTP 客户端，对外 MCP stdio Server 位于 server/src/mcp.rs。当前内置 text、web.fetch、web.search，插件页暂不提供安装；下文统一安装、热加载等为目标设计。控制台位于根目录 web/src/app 与 web/src/features，无前端打包依赖。依赖约束和导入迁移见 [workspace 边界](workspace.zh-CN.md)。
+当前 workspace 有 13 个包：core、domain、platform、storage、plugin-protocol、plugin-sdk、plugins 宿主、models、worker、server、client、cli，以及根目录 plugins 内的 builtin-plugins。独立内核包名为 `ant3`，命令行二进制为 `ant3`；源码启动使用 `cargo run --locked -p ant3-cli -- up`。domain 保存共享类型与纯校验；storage 保存连接、schema、事务和会话；platform 保留业务 SQL 与应用回填。client 只负责 HTTP 客户端，对外 MCP stdio Server 位于 server/src/mcp.rs。当前内置 text、web.fetch、web.search，插件页暂不提供安装；下文统一安装、热加载等为目标设计。控制台位于根目录 web/src/app 与 web/src/features，无前端打包依赖。依赖约束和导入迁移见 [workspace 边界](workspace.zh-CN.md)。
 
 ```text
-harness3/
+ant3/
 ├── Cargo.toml                         # workspace、统一依赖与 feature 管理
 ├── Cargo.lock
 ├── README.md / README.zh-CN.md
@@ -374,7 +374,7 @@ harness3/
 │   ├── ISSUE_TEMPLATE/
 │   └── pull_request_template.md
 ├── crates/
-│   ├── harness3-core/                 # Cargo 包名保留 harness3，领域中立的单 Agent 内核
+│   ├── ant3-core/                 # Cargo 包名保留 ant3，领域中立的单 Agent 内核
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs                 # 公共 traits 与执行数据类型
@@ -383,7 +383,7 @@ harness3/
 │   │       ├── session.rs / context.rs # 会话、回执、投影、上下文压缩
 │   │       ├── skills.rs / prompt.rs / interaction.md
 │   │       └── policy.rs / trace.rs / transport.rs / work.rs
-│   ├── harness3-domain/               # 平台对象、状态机、不变量；不依赖 HTTP/SQL
+│   ├── ant3-domain/               # 平台对象、状态机、不变量；不依赖 HTTP/SQL
 │   │   └── src/
 │   │       ├── presets/               # 母体、版本、继承、参数与发布规则
 │   │       ├── agents/                # 实例、实例组、谱系与生命周期状态
@@ -397,7 +397,7 @@ harness3/
 │   │       ├── identity/              # Principal、Grant、scope 与凭证引用
 │   │       ├── budgets/               # 额度、预留、用量结算与未知用量
 │   │       └── events/                # 平台事件、审计事实、幂等键与错误分类
-│   ├── harness3-platform/             # 应用服务与控制面协调，不直接实现入口协议
+│   ├── ant3-platform/             # 应用服务与控制面协调，不直接实现入口协议
 │   │   └── src/
 │   │       ├── commands/              # 发布母体、SpawnFleet、ScaleFleet 等用例
 │   │       ├── queries/               # 列表、详情、分页、快照与操作进度
@@ -424,7 +424,7 @@ harness3/
 │   │       ├── authorization/         # 各入口共用的授权与能力收窄
 │   │       ├── accounting/            # 配额预留、预算与费用账本服务
 │   │       └── ports/                 # repository、队列、clock、插件/Worker 管理端口
-│   ├── harness3-storage/              # 平台持久化适配器
+│   ├── ant3-storage/              # 平台持久化适配器
 │   │   ├── migrations/sqlite/         # 初始表、索引、schema 版本与升级迁移
 │   │   └── src/
 │   │       ├── sqlite/                # 连接、事务、仓储、revision/fencing 校验
@@ -433,23 +433,23 @@ harness3/
 │   │       ├── event_log/             # 平台事件、审计、游标与保留期
 │   │       ├── blob_store/            # 本地与对象存储中的产物/插件包
 │   │       └── maintenance/           # 备份、迁移、GC、历史与包版本保留
-│   ├── harness3-worker/               # Agent 运行装配、执行容量与监督
+│   ├── ant3-worker/               # Agent 运行装配、执行容量与监督
 │   │   └── src/
 │   │       ├── supervisor/            # 启停、心跳、失联与子进程监管
-│   │       ├── runner/                # 实例快照 → Registry/Harness → Run 结算
+│   │       ├── runner/                # 实例快照 → Registry/Ant → Run 结算
 │   │       ├── ownership/             # lease/generation、撤销与收尾
 │   │       ├── workspace/             # 私有目录、路径约束、产物访问
 │   │       └── backends/              # embedded / process / container 后端
-│   ├── harness3-plugin-protocol/      # 对外发布的稳定、版本化插件协议类型
+│   ├── ant3-plugin-protocol/      # 对外发布的稳定、版本化插件协议类型
 │   │   └── src/
 │   │       ├── manifest.rs / capabilities.rs / schemas.rs
 │   │       └── rpc.rs / handshake.rs / invocation.rs / errors.rs
-│   ├── harness3-plugin-sdk/           # Rust 插件作者 SDK，依赖协议而非内部存储
+│   ├── ant3-plugin-sdk/           # Rust 插件作者 SDK，依赖协议而非内部存储
 │   │   └── src/
 │   │       ├── authoring/             # 能力声明、配置与工具实现 helper
 │   │       ├── runtime/               # stdio RPC 服务、进度、取消与健康检查
 │   │       └── testing/               # 插件契约测试夹具与测试宿主
-│   ├── harness3-plugins/              # 宿主侧插件管理器
+│   ├── ant3-plugins/              # 宿主侧插件管理器
 │   │   └── src/
 │   │       ├── catalog/               # 已安装版本、来源、digest、依赖锁
 │   │       ├── installation/          # 包校验、暂存、依赖解析、发布
@@ -457,13 +457,13 @@ harness3/
 │   │       ├── bindings/              # 配置、授权、Registry 快照、会话兼容检查
 │   │       ├── reload/                # watch、候选验证、原子激活、排空、回滚
 │   │       └── supervision/           # 插件健康、进程池、关闭、对账与引用回收
-│   ├── harness3-models/               # 官方模型 Provider；只实现三类协议
+│   ├── ant3-models/               # 官方模型 Provider；只实现三类协议
 │   │   └── src/
 │   │       ├── openai_compatible/     # Chat Completions 请求/响应与 SSE 映射
 │   │       ├── openai_responses/      # Responses items、工具回传与 continuation
 │   │       ├── anthropic/             # Messages blocks、tool_use/result 与流式事件
 │   │       └── common/                # HTTP、密钥引用、能力配置、用量/错误映射
-│   ├── harness3-server/               # HTTP + SSE + Web 静态资源宿主
+│   ├── ant3-server/               # HTTP + SSE + Web 静态资源宿主
 │   │   └── src/
 │   │       ├── mcp.rs                 # 对外 MCP Server，复用 HTTP client
 │   │       ├── bootstrap/             # 配置、存储、插件、Worker 与服务装配
@@ -472,11 +472,11 @@ harness3/
 │   │       ├── auth/                  # token/会话校验与 Principal 映射
 │   │       ├── events/                # SSE、游标、断线补读与快照接口
 │   │       └── web/                   # 嵌入资源、路由回退、首启登录引导
-│   ├── harness3-client/               # CLI/MCP 共用的类型化 HTTP 客户端
+│   ├── ant3-client/               # CLI/MCP 共用的类型化 HTTP 客户端
 │   │   └── src/
 │   │       ├── commands.rs / queries.rs / auth.rs
 │   │       └── events.rs / pagination.rs / errors.rs
-│   ├── harness3-cli/                  # 发布二进制 harness3
+│   ├── ant3-cli/                  # 发布二进制 ant3
 │   │   └── src/
 │   │       ├── main.rs / config.rs
 │   │       ├── local/                 # up/down、doctor、数据目录、服务发现
@@ -559,7 +559,7 @@ harness3/
 
 models 是官方三类协议的实现，plugins 是统一发现、授权、版本绑定与热加载的宿主机制，两者职责不同。对外 MCP Server 属于入口，远程 MCP 工具属于插件 loader，两者不共用一套未经区分的权限。
 
-拆分时先建立最小 workspace 和版本化协议，再按实现规模拆出 crate；以上目录不要求一次性建立空壳。迁移核心路径时保留 Cargo 包 `harness3`、现有公开 API 和独立示例，避免平台演进迫使只用运行时的用户引入数据库、HTTP、插件进程或 Web 构建依赖。
+拆分时先建立最小 workspace 和版本化协议，再按实现规模拆出 crate；以上目录不要求一次性建立空壳。迁移核心路径时保留 Cargo 包 `ant3`、现有公开 API 和独立示例，避免平台演进迫使只用运行时的用户引入数据库、HTTP、插件进程或 Web 构建依赖。
 
 ## 13. 验证策略与质量约束
 

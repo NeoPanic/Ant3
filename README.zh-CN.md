@@ -31,10 +31,10 @@ Ant³ 是借鉴蚂蚁协作机制、以 Rust 构建的对等 Agent 平台。发�
 ```sh
 git clone https://github.com/NeoPanic/Ant3.git
 cd Ant3
-cargo run --locked -p harness3-cli -- up
+cargo run --locked -p ant3-cli -- up
 ```
 
-打开 [localhost:7333](http://127.0.0.1:7333)，使用 `.harness3/token` 的内容登录。本地状态保存在 `.harness3/`。
+打开 [localhost:7333](http://127.0.0.1:7333)，使用 `.ant3/token` 的内容登录。本地状态保存在 `.ant3/`。
 
 1. 配置模型并在 **母体 Presets** 发布母体，再进入 **任务板** 发布工作要求与验收标准。
 2. 查看 Preset 选型、实例启动、Agent 认领与执行状态。
@@ -96,14 +96,14 @@ flowchart LR
     Entry[发布任务] --> Board[共享任务板]
     Board --> Control[控制面：选择 Preset]
     Preset[版本化母体] --> Control
-    Control -->|启动与生命周期管理| A[Agent A：独立 Harness]
-    Control -->|启动与生命周期管理| B[Agent B：独立 Harness]
+    Control -->|启动与生命周期管理| A[Agent A：独立 Ant]
+    Control -->|启动与生命周期管理| B[Agent B：独立 Ant]
     A -->|认领 / 结果 / 子任务| Board
     B -->|认领 / 结果 / 子任务| Board
     Board <--> State[SQLite：任务 / 认领 / Run]
 ```
 
-控制面负责容量、Preset 选型与生命周期。Agent 共用认领和拆分协议，规划与整合由普通实例承担；任务父子关系记录依赖和来源，不赋予 Agent 管理同伴的权限。独立 Harness 负责模型 / 工具循环、策略、会话检查点、取消和执行回执。检查点不能独自保证外部副作用恰好执行一次，工具需提供自己的幂等或事务契约。详见[运行契约](docs/runtime.md)与[目标架构](docs/managed-agents.zh-CN.md)。
+控制面负责容量、Preset 选型与生命周期。Agent 共用认领和拆分协议，规划与整合由普通实例承担；任务父子关系记录依赖和来源，不赋予 Agent 管理同伴的权限。独立 Ant 负责模型 / 工具循环、策略、会话检查点、取消和执行回执。检查点不能独自保证外部副作用恰好执行一次，工具需提供自己的幂等或事务契约。详见[运行契约](docs/runtime.md)与[目标架构](docs/managed-agents.zh-CN.md)。
 
 ## 单独使用 Rust 内核
 
@@ -115,13 +115,13 @@ cargo run --locked --example quickstart
 
 ```toml
 [dependencies]
-harness3 = { git = "https://github.com/NeoPanic/Ant3.git", branch = "main" }
+ant3 = { git = "https://github.com/NeoPanic/Ant3.git", branch = "main" }
 ```
 
 ```rust
-use harness3::{Harness, Limits, Registry};
+use ant3::{Ant, Limits, Registry};
 
-let harness = Harness::new(Registry::default(), Limits::default());
+let agent = Ant::new(Registry::default(), Limits::default());
 ```
 
 完整能力注册参照示例。下游项目应固定 Git revision，保证构建可复现。API 文档：`cargo doc --locked --workspace --no-deps --open`。
@@ -130,7 +130,7 @@ let harness = Harness::new(Registry::default(), Limits::default());
 
 单只蚂蚁承担局部工作，蚁群将许多个体行动组合成共同成果。**³** 表达三个相连的协作环节：**认领 → 贡献 → 接力**，也表达个体能力通过协作组合的含义；执行规模和权限仍由平台明确约束。
 
-正文品牌为 **Ant³**，仓库名为 **Ant3**。现有 Cargo 包、CLI 命令、API 标识及 `.harness3/` 数据目录继续使用 `harness3`，保证现有集成可用。[品牌素材与使用规范](docs/brand/README.md)。
+正文品牌为 **Ant³**，仓库名为 **Ant3**。Cargo 包、CLI 命令、协议标识统一使用 `ant3`，默认数据目录为 `.ant3/`，环境变量前缀为 `ANT3_`。已有工作区按[升级说明](docs/upgrade-ant3.zh-CN.md)迁移。[品牌素材与使用规范](docs/brand/README.md)。
 
 ## 参与项目
 

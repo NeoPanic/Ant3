@@ -28,15 +28,15 @@ for name, package in packages.items():
 
 for name in graph:
     closure(name)
-for name in ['harness3-domain', 'harness3-client', 'harness3-models', 'harness3-plugins']:
+for name in ['ant3-domain', 'ant3-client', 'ant3-models', 'ant3-plugins']:
     dependencies = closure(name)
-    assert not dependencies & {'rusqlite', 'axum', 'harness3-platform', 'harness3-worker', 'harness3-server'}, (name, dependencies)
-assert not closure('harness3-client') & {'harness3', 'harness3-plugins', 'harness3-models'}
-assert not closure('harness3-domain') & {'harness3', 'reqwest', 'tokio'}
-assert not closure('harness3-platform') & {'harness3-client', 'harness3-worker', 'harness3-server', 'harness3-cli'}
-assert not closure('harness3-server') & {'harness3-cli'}
-assert not closure('harness3-storage') & {'harness3-platform', 'harness3-server', 'harness3-client', 'harness3-worker', 'harness3-plugins'}
-assert not closure('harness3-builtin-plugins') & {'harness3-platform', 'harness3-server', 'harness3-storage', 'rusqlite'}
-assert any(t['name'] == 'harness3' and 'bin' in t['kind']
-           for t in packages['harness3-cli']['targets'])
+    assert not dependencies & {'rusqlite', 'axum', 'ant3-platform', 'ant3-worker', 'ant3-server'}, (name, dependencies)
+assert not closure('ant3-client') & {'ant3', 'ant3-plugins', 'ant3-models'}
+assert not closure('ant3-domain') & {'ant3', 'reqwest', 'tokio'}
+assert not closure('ant3-platform') & {'ant3-client', 'ant3-worker', 'ant3-server', 'ant3-cli'}
+assert not closure('ant3-server') & {'ant3-cli'}
+assert not closure('ant3-storage') & {'ant3-platform', 'ant3-server', 'ant3-client', 'ant3-worker', 'ant3-plugins'}
+assert not closure('ant3-builtin-plugins') & {'ant3-platform', 'ant3-server', 'ant3-storage', 'rusqlite'}
+assert any(t['name'] == 'ant3' and 'bin' in t['kind']
+           for t in packages['ant3-cli']['targets'])
 print('Workspace dependency boundaries PASS')

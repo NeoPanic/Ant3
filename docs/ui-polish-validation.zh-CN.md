@@ -41,17 +41,17 @@
 
 ## 验证证据
 
-- 新版服务运行于 `http://127.0.0.1:7333`，启动方式为 `target/debug/harness3 up --demo`。重启前确认没有 queued/running Run 或活动任务板任务。
+- 新版服务运行于 `http://127.0.0.1:7333`，启动方式为 `target/debug/ant3 up --demo`。重启前确认没有 queued/running Run 或活动任务板任务。
 - 重启后对 13 个修改过的嵌入资源执行 HTTP 字节对比，均与工作区一致。
 - 浏览器使用本机 Chrome，布局覆盖 16 页 × 390/768/1024/1440/1920 CSS px，共 80 组；检查一级标题、页面横向溢出和 JavaScript 错误。
 - 43 项主要交互检查：9 类创建表单、原生必填校验、搜索筛选、详情、标签、刷新、返回、工作现场控制，以及快照 503 后保留内容、恢复后清除错误。
 - 19 项状态检查：触摸导航和表单、常用控件至少 44 px、减少动态效果、720 CSS px 缩放等效布局，以及全部 16 页空数据渲染。
 - 对 16 页桌面首屏可见 HTML 文字计算合成背景后的对比度，未发现低于 AA 阈值的文字；未纳入 SVG、隐藏及禁用文本。辅助文字 `#626262` / `#f7f7f7` 为 5.69:1，`#555555` / `#ffffff` 为 7.46:1。
 - `node --test scripts/test-board.cjs scripts/test-studio.cjs scripts/test-console.cjs`：24 项通过。
-- 原生 Cargo：`check --locked --workspace --all-targets`、`clippy --locked --workspace --all-targets -- -D warnings`、`test --locked --workspace`、quickstart 示例、带 `-D warnings` 的工作区文档构建、`build --locked -p harness3-platform` 均通过。
+- 原生 Cargo：`check --locked --workspace --all-targets`、`clippy --locked --workspace --all-targets -- -D warnings`、`test --locked --workspace`、quickstart 示例、带 `-D warnings` 的工作区文档构建、`build --locked -p ant3-platform` 均通过。
 - `python3 scripts/render-progress.py --check`、JavaScript 语法检查与 `git diff --check` 通过。
 
-浏览器脚本与截图位于本机 `/tmp/harness3-ui-polish/`；最终运行未启用 LOCAL_ASSETS，页面资源来自新版服务。空数据和 503 仅在浏览器拦截层注入，未写入数据库。可重复的业务逻辑回归保留在 `scripts/test-console.cjs` 与既有前端测试中。
+浏览器脚本与截图位于本机 `/tmp/ant3-ui-polish/`；最终运行未启用 LOCAL_ASSETS，页面资源来自新版服务。空数据和 503 仅在浏览器拦截层注入，未写入数据库。可重复的业务逻辑回归保留在 `scripts/test-console.cjs` 与既有前端测试中。
 
 ## Delivery Gate
 
@@ -130,7 +130,7 @@
 - 运行取消增加明确确认表单，说明协作收尾与外部效果无法撤销。取消确认框不发送业务请求。
 - 插件详情服从全局执行开关，与列表保持一致；健康检查明确为历史记录。
 
-新增浏览器专项 12 项通过，脚本为 `/tmp/harness3-ui-polish/dialogs.cjs`，记录为同目录 `all-after/dialogs.json`：
+新增浏览器专项 12 项通过，脚本为 `/tmp/ant3-ui-polish/dialogs.cjs`，记录为同目录 `all-after/dialogs.json`：
 
 1. 登录 Escape 不会关闭认证框。
 2. 1440 px 弹窗底部滚轮不移动背景。
@@ -155,7 +155,7 @@
 
 长表单底部操作区使用不透明白底、细分隔线和 sticky 定位，使取消与提交保持可见。滚动内边距为顶部标题及底部操作留出空间；末尾字段和错误仍可滚入两者之间。可选设置的原生 details 增加分隔与展开间距。标题允许长文本换行，关闭按钮由 28 px 增至 36 px，触摸环境继续沿用至少 44 px 的尺寸；窄屏底部按钮等分可用宽度。
 
-验证脚本 `/tmp/harness3-ui-polish/modal-layout.cjs` 覆盖 8 类表单 × 1440×800、390×650、768×480 三种视口，共 24 组，检查标题和底部操作可见、末尾可见字段不被遮挡、弹窗内部无横向溢出；另外检查紧凑确认弹窗。已检查母体桌面、自主调研窄屏及确认弹窗截图。12 项弹窗交互专项增加错误说明不被操作区遮挡的几何断言；43 项交互回归与 26 项前端测试继续通过。原生 Cargo check 与嵌入资源构建通过，重启后核对 app.js/app.css 的实际 HTTP 内容。最终浏览器脚本访问重启后的服务，无本地资源替换。
+验证脚本 `/tmp/ant3-ui-polish/modal-layout.cjs` 覆盖 8 类表单 × 1440×800、390×650、768×480 三种视口，共 24 组，检查标题和底部操作可见、末尾可见字段不被遮挡、弹窗内部无横向溢出；另外检查紧凑确认弹窗。已检查母体桌面、自主调研窄屏及确认弹窗截图。12 项弹窗交互专项增加错误说明不被操作区遮挡的几何断言；43 项交互回归与 26 项前端测试继续通过。原生 Cargo check 与嵌入资源构建通过，重启后核对 app.js/app.css 的实际 HTTP 内容。最终浏览器脚本访问重启后的服务，无本地资源替换。
 
 Delivery Gate 增量：R-03 PASS（24 组弹窗布局）；R-12 PASS（沿用弹窗阴影，无新增浮层）；R-14 PASS（按内容复杂度定宽）；R-26/R-27 PASS（43 项交互及失败反馈回归）；R-32 PASS（12 项弹窗交互及错误焦点可见）；R-35 PASS（构建、新版服务与截图验证）；R-31 PASS（尺寸、分组、固定操作及滚动留白的用途均已记录）。其余检查及未测范围沿用前文。
 
@@ -179,7 +179,7 @@ Delivery Gate 增量：R-03 PASS（24 组弹窗布局）；R-12 PASS（沿用弹
 
 验证包括：80 组全页面布局、24 组表单布局、43 项主要交互、19 项状态、12 项弹窗交互、13 项控件专项与 52 状态样式扫描。控件专项验证文字输入、密码、文本域和下拉聚焦无 outline/shadow，Tab 可到达下拉，原生选择可更新筛选，高对比度模式不叠加双箭头，深色下拉保持可读。前端回归共 28 项通过，新增测试验证标签减量后信息不丢失，以及工具名称插入 HTML 前仍正确转义。原生 Cargo check、Clippy、工作区测试与最终服务构建通过。
 
-浏览器记录：`/tmp/harness3-ui-polish/slop-after/audit.json`（52 状态）、`/tmp/harness3-ui-polish/all-after/controls.json`（控件专项）及前文回归 JSON。截图对比位于 `slop-audit/`（改动前）与 `slop-after/`（改动后）。最后复查直接读取重启后的服务资源。
+浏览器记录：`/tmp/ant3-ui-polish/slop-after/audit.json`（52 状态）、`/tmp/ant3-ui-polish/all-after/controls.json`（控件专项）及前文回归 JSON。截图对比位于 `slop-audit/`（改动前）与 `slop-after/`（改动后）。最后复查直接读取重启后的服务资源。
 
 Delivery Gate 增量：R-03 PASS（全页面和表单布局）；R-06 PASS（系统字体与技术标识用途明确）；R-09 PASS（能力每项一个实际状态）；R-25 PASS（共享文字配色沿用并重新扫描）；R-26/R-27 PASS（交互及失败恢复回归）；R-32 PASS（控件原边框反馈、Tab 和错误焦点验证）；R-35 PASS（原生构建、HTTP 资源比对、浏览器记录）；R-15/R-16/R-31 PASS（操作文案及四档文字、箭头、分隔策略均有用途）。其余逐项 Gate 与未测范围沿用前文，不将修复表述为所有审美特征均禁止。
 

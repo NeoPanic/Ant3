@@ -1,4 +1,7 @@
 /target/
 .DS_Store
 
+/.ant3/
+
+# Legacy workspace retained until its owner migrates it.
 /.harness3/

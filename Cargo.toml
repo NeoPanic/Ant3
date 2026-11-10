@@ -1,18 +1,18 @@
 [workspace]
 members = [
     "plugins",
-    "crates/harness3-core",
-    "crates/harness3-domain",
-    "crates/harness3-platform",
-    "crates/harness3-storage",
-    "crates/harness3-plugin-protocol",
-    "crates/harness3-plugin-sdk",
-    "crates/harness3-plugins",
-    "crates/harness3-models",
-    "crates/harness3-worker",
-    "crates/harness3-server",
-    "crates/harness3-client",
-    "crates/harness3-cli",
+    "crates/ant3-core",
+    "crates/ant3-domain",
+    "crates/ant3-platform",
+    "crates/ant3-storage",
+    "crates/ant3-plugin-protocol",
+    "crates/ant3-plugin-sdk",
+    "crates/ant3-plugins",
+    "crates/ant3-models",
+    "crates/ant3-worker",
+    "crates/ant3-server",
+    "crates/ant3-client",
+    "crates/ant3-cli",
 ]
-default-members = ["crates/harness3-core"]
+default-members = ["crates/ant3-core"]
 resolver = "2"

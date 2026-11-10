@@ -40,10 +40,10 @@
 
 ## 证据位置与限制
 
-- 计算样式与抽样记录：`/tmp/harness3-ui-polish/slop-audit/audit.json`。
-- 浏览器脚本：`/tmp/harness3-ui-polish/slop-audit.cjs`。
-- 实例创建弹窗截图：`/tmp/harness3-ui-polish/slop-audit/agents-dialog.png`。
-- 母体弹窗截图：`/tmp/harness3-ui-polish/slop-audit/presets-dialog.png`。
-- 实现进度截图：`/tmp/harness3-ui-polish/slop-audit/capabilities.png`。
+- 计算样式与抽样记录：`/tmp/ant3-ui-polish/slop-audit/audit.json`。
+- 浏览器脚本：`/tmp/ant3-ui-polish/slop-audit.cjs`。
+- 实例创建弹窗截图：`/tmp/ant3-ui-polish/slop-audit/agents-dialog.png`。
+- 母体弹窗截图：`/tmp/ant3-ui-polish/slop-audit/presets-dialog.png`。
+- 实现进度截图：`/tmp/ant3-ui-polish/slop-audit/capabilities.png`。
 
 原生 select 箭头通过 CSS 计算值和 Chrome 截图确认，浏览器不将该图形暴露为普通 DOM；不能据此推断 Safari、Windows 或手机系统选项菜单的像素样式。圆角候选算法仅用于定位，报告没有将自动候选直接当成缺陷。文案冗余和图表复杂度包含编辑判断，不能由搜索计数独立证明。未修改业务原文，也没有执行业务写操作。

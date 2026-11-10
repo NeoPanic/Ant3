@@ -1,16 +1,16 @@
 [
   {
     "id": "core",
-    "name": "Harness 执行循环",
+    "name": "Ant 执行循环",
     "phase": "P1",
     "status": "implemented",
     "detail": "模型→工具→模型循环、独立会话、观察与持久回执；运行内核可脱离平台使用。",
     "source": [
-      "crates/harness3-core/src/engine.rs",
-      "crates/harness3-core/src/session.rs"
+      "crates/ant3-core/src/engine.rs",
+      "crates/ant3-core/src/session.rs"
     ],
     "target": [
-      "crates/harness3-core/src/"
+      "crates/ant3-core/src/"
     ],
     "verification": "existing-tests",
     "scope": "current"
@@ -22,12 +22,12 @@
     "status": "implemented",
     "detail": "用途、目标、指令、模型协议与插件按版本锁定；保存原始发布定义、单继承来源和能力摘要。",
     "source": [
-      "crates/harness3-domain/src/lib.rs",
-      "crates/harness3-platform/src/storage/sqlite.rs",
-      "crates/harness3-platform/src/control/presets/mod.rs"
+      "crates/ant3-domain/src/lib.rs",
+      "crates/ant3-platform/src/storage/sqlite.rs",
+      "crates/ant3-platform/src/control/presets/mod.rs"
     ],
     "target": [
-      "crates/harness3-domain/src/presets/"
+      "crates/ant3-domain/src/presets/"
     ],
     "verification": "existing-tests",
     "scope": "current"
@@ -39,12 +39,12 @@
     "status": "partial",
     "detail": "固定版本单继承最多 16 层，参数 schema/默认值与创建时模板展开，最多 16 个插件的能力锁及冲突校验。没有主体权限收窄、预算/资源锁或在线升级。",
     "source": [
-      "crates/harness3-platform/src/control/presets/mod.rs",
+      "crates/ant3-platform/src/control/presets/mod.rs",
       "web/src/features/presets/presets.js",
-      "crates/harness3-server/tests/presets.rs"
+      "crates/ant3-server/tests/presets.rs"
     ],
     "target": [
-      "crates/harness3-domain/src/presets/"
+      "crates/ant3-domain/src/presets/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "extension"
@@ -56,11 +56,11 @@
     "status": "implemented",
     "detail": "HTTP 以 202 接纳创建 Operation，协调器分批创建，每批最多 8 个实例；256 容量含待创建预留，幂等重试复用原回执。",
     "source": [
-      "crates/harness3-platform/src/control/fleets.rs",
-      "crates/harness3-platform/src/storage/sqlite.rs"
+      "crates/ant3-platform/src/control/fleets.rs",
+      "crates/ant3-platform/src/storage/sqlite.rs"
     ],
     "target": [
-      "crates/harness3-platform/src/control/"
+      "crates/ant3-platform/src/control/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "current"
@@ -72,12 +72,12 @@
     "status": "partial",
     "detail": "支持暂停、恢复、终止、排空和 TTL，Agent 池支持 finite/maintain 扩缩容。没有空闲策略、stop/start、配置升级或单实例 Operation。",
     "source": [
-      "crates/harness3-platform/src/control/lifecycle.rs",
-      "crates/harness3-platform/src/storage/sqlite.rs"
+      "crates/ant3-platform/src/control/lifecycle.rs",
+      "crates/ant3-platform/src/storage/sqlite.rs"
     ],
     "target": [
-      "crates/harness3-platform/src/control/",
-      "crates/harness3-domain/src/agents/"
+      "crates/ant3-platform/src/control/",
+      "crates/ant3-domain/src/agents/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "extension"
@@ -89,13 +89,13 @@
     "status": "partial",
     "detail": "Agent 池提供异步创建/扩缩容/终止、持久槽位与代际、容量预留和重启协调；没有排空期限、Operation 单独取消或远程执行配置。",
     "source": [
-      "crates/harness3-platform/src/control/fleets.rs",
+      "crates/ant3-platform/src/control/fleets.rs",
       "web/src/features/agents/fleets.js",
-      "crates/harness3-server/tests/fleets.rs"
+      "crates/ant3-server/tests/fleets.rs"
     ],
     "target": [
-      "crates/harness3-domain/src/operations/",
-      "crates/harness3-platform/src/control/"
+      "crates/ant3-domain/src/operations/",
+      "crates/ant3-platform/src/control/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "extension"
@@ -107,12 +107,12 @@
     "status": "partial",
     "detail": "Agent 按批准母体/参数派生子任务，宿主绑定父任务、Run 和实例；最多 6 层、单次 8 项、每根 48 个后代，Goal 共 64 项。没有任意子树授权、迁移或分布式租约。",
     "source": [
-      "crates/harness3-platform/src/collaboration/research/mod.rs",
+      "crates/ant3-platform/src/collaboration/research/mod.rs",
       "web/src/features/research/research.js",
-      "crates/harness3-platform/src/collaboration/delegation/mod.rs"
+      "crates/ant3-platform/src/collaboration/delegation/mod.rs"
     ],
     "target": [
-      "crates/harness3-domain/src/agents/"
+      "crates/ant3-domain/src/agents/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "current"
@@ -124,11 +124,11 @@
     "status": "implemented",
     "detail": "持久 Run 队列提供 8 个本地并发槽、单实例串行、幂等提交与协作取消。",
     "source": [
-      "crates/harness3-platform/src/storage/sqlite.rs",
-      "crates/harness3-worker/src/runner.rs"
+      "crates/ant3-platform/src/storage/sqlite.rs",
+      "crates/ant3-worker/src/runner.rs"
     ],
     "target": [
-      "crates/harness3-platform/src/scheduling/"
+      "crates/ant3-platform/src/scheduling/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "current"
@@ -140,13 +140,13 @@
     "status": "partial",
     "detail": "SQLite 事务、检查点、事件和 daemon 独占锁；恢复时保留已知回执，未知结果进入中断。没有完整备份运维、外部对账或事件分页。",
     "source": [
-      "crates/harness3-platform/src/storage/sqlite.rs",
-      "crates/harness3-storage/migrations/sqlite/schema.sql",
-      "crates/harness3-storage/src/lib.rs",
-      "crates/harness3-storage/tests/database.rs"
+      "crates/ant3-platform/src/storage/sqlite.rs",
+      "crates/ant3-storage/migrations/sqlite/schema.sql",
+      "crates/ant3-storage/src/lib.rs",
+      "crates/ant3-storage/tests/database.rs"
     ],
     "target": [
-      "crates/harness3-storage/src/"
+      "crates/ant3-storage/src/"
     ],
     "verification": "existing-tests",
     "scope": "extension"
@@ -158,10 +158,10 @@
     "status": "partial",
     "detail": "提供 Chat Completions、Responses、Anthropic 三类非流式工具循环；Responses 经过真实服务验证。没有流式输出或分片中断契约。",
     "source": [
-      "crates/harness3-models/src/lib.rs"
+      "crates/ant3-models/src/lib.rs"
     ],
     "target": [
-      "crates/harness3-models/src/"
+      "crates/ant3-models/src/"
     ],
     "verification": "existing-tests",
     "scope": "extension"
@@ -177,7 +177,7 @@
       "plugins/text/mod.rs",
       "plugins/web-fetch/mod.rs",
       "plugins/web-search/mod.rs",
-      "crates/harness3-server/tests/builtin_plugins.rs"
+      "crates/ant3-server/tests/builtin_plugins.rs"
     ],
     "target": [
       "plugins/"
@@ -192,17 +192,17 @@
     "status": "partial",
     "detail": "版本化 manifest/RPC、严格 schema 子集、握手、健康、进度、取消、错误分类、Rust SDK 与 Python 示例；示例覆盖统计、HTTP 读取和文件交接。没有配置/权限/依赖锁、多能力包或完整对账协议。",
     "source": [
-      "crates/harness3-plugin-protocol/src/lib.rs",
-      "crates/harness3-plugin-sdk/src/lib.rs",
-      "crates/harness3-plugin-sdk/tests/contract.rs",
+      "crates/ant3-plugin-protocol/src/lib.rs",
+      "crates/ant3-plugin-sdk/src/lib.rs",
+      "crates/ant3-plugin-sdk/tests/contract.rs",
       "examples/plugins/text-inspector/manifest.json",
       "examples/plugins/http-reader/manifest.json",
       "examples/plugins/http-reader/test_worker.py",
       "examples/plugins/workspace-preset/preset.json"
     ],
     "target": [
-      "crates/harness3-plugin-protocol/src/",
-      "crates/harness3-plugin-sdk/src/"
+      "crates/ant3-plugin-protocol/src/",
+      "crates/ant3-plugin-sdk/src/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "extension"
@@ -214,15 +214,15 @@
     "status": "partial",
     "detail": "底层兼容接口支持本地进程包安装、内容寻址、调用前摘要检查、版本并存、母体快照、健康检查及禁用/取消。需显式启用，以系统用户运行；没有 MCP loader、watch、进程池、rollout、沙箱或作用域授权。",
     "source": [
-      "crates/harness3-plugins/src/lib.rs",
-      "crates/harness3-plugins/src/package.rs",
-      "crates/harness3-plugins/src/process.rs",
+      "crates/ant3-plugins/src/lib.rs",
+      "crates/ant3-plugins/src/package.rs",
+      "crates/ant3-plugins/src/process.rs",
       "web/src/features/plugins/plugins.js",
-      "crates/harness3-server/tests/process_plugins.rs"
+      "crates/ant3-server/tests/process_plugins.rs"
     ],
     "target": [
-      "crates/harness3-plugins/src/loaders/",
-      "crates/harness3-plugins/src/reload/"
+      "crates/ant3-plugins/src/loaders/",
+      "crates/ant3-plugins/src/reload/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "extension"
@@ -234,19 +234,19 @@
     "status": "partial",
     "detail": "任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。尚未接入 Goal 频道、文件产物与自动独立验证，没有分布式租约或费用硬预算。",
     "source": [
-      "crates/harness3-platform/src/scheduling/board/mod.rs",
-      "crates/harness3-platform/src/scheduling/board/tools.rs",
-      "crates/harness3-storage/migrations/sqlite/board.sql",
-      "crates/harness3-platform/src/scheduling/routing.rs",
-      "crates/harness3-platform/src/scheduling/decision.rs",
+      "crates/ant3-platform/src/scheduling/board/mod.rs",
+      "crates/ant3-platform/src/scheduling/board/tools.rs",
+      "crates/ant3-storage/migrations/sqlite/board.sql",
+      "crates/ant3-platform/src/scheduling/routing.rs",
+      "crates/ant3-platform/src/scheduling/decision.rs",
       "web/src/features/board/board.js",
-      "crates/harness3-server/tests/board.rs",
-      "crates/harness3-server/tests/routing.rs",
-      "crates/harness3-server/tests/decision.rs"
+      "crates/ant3-server/tests/board.rs",
+      "crates/ant3-server/tests/routing.rs",
+      "crates/ant3-server/tests/decision.rs"
     ],
     "target": [
-      "crates/harness3-platform/src/collaboration/",
-      "crates/harness3-platform/src/scheduling/"
+      "crates/ant3-platform/src/collaboration/",
+      "crates/ant3-platform/src/scheduling/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "current"
@@ -258,10 +258,10 @@
     "status": "implemented",
     "detail": "持久依赖图最多 64 项任务，传递上游输出与 Run ID，支持取消、候选池及人工验收；可自动选择就绪候选或等待人工认领。",
     "source": [
-      "crates/harness3-platform/src/collaboration/coordination.rs"
+      "crates/ant3-platform/src/collaboration/coordination.rs"
     ],
     "target": [
-      "crates/harness3-platform/src/collaboration/"
+      "crates/ant3-platform/src/collaboration/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "current"
@@ -273,21 +273,21 @@
     "status": "partial",
     "detail": "兼容调研模板固定规划、研究和汇总分工，支持递归委派、原实例续作与独立验证；Goal 内 Agent 可读取任务、来源成功后追加或请求接续，验证器按证据选择局部返工。该模板与对等任务板独立。没有已运行节点重写、任意子树迁移或通用自主修复。",
     "source": [
-      "crates/harness3-platform/src/collaboration/research/mod.rs",
-      "crates/harness3-platform/src/collaboration/research/tools.rs",
+      "crates/ant3-platform/src/collaboration/research/mod.rs",
+      "crates/ant3-platform/src/collaboration/research/tools.rs",
       "web/src/features/research/research.js",
-      "crates/harness3-server/tests/research.rs",
-      "crates/harness3-platform/src/collaboration/delegation/mod.rs",
-      "crates/harness3-platform/src/collaboration/delegation/tools.rs",
-      "crates/harness3-server/tests/delegation.rs",
-      "crates/harness3-platform/src/collaboration/autonomy/mod.rs",
-      "crates/harness3-platform/src/collaboration/autonomy/tools.rs",
+      "crates/ant3-server/tests/research.rs",
+      "crates/ant3-platform/src/collaboration/delegation/mod.rs",
+      "crates/ant3-platform/src/collaboration/delegation/tools.rs",
+      "crates/ant3-server/tests/delegation.rs",
+      "crates/ant3-platform/src/collaboration/autonomy/mod.rs",
+      "crates/ant3-platform/src/collaboration/autonomy/tools.rs",
       "web/src/features/autonomy/autonomy.js",
-      "crates/harness3-server/tests/autonomy.rs"
+      "crates/ant3-server/tests/autonomy.rs"
     ],
     "target": [
       "plugins/organization/",
-      "crates/harness3-platform/src/collaboration/"
+      "crates/ant3-platform/src/collaboration/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "current"
@@ -299,15 +299,15 @@
     "status": "partial",
     "detail": "任务最多 16 位候选；认领、Run 和 Attempt 同事务，记录 generation 与幂等回执，每轮最多 8 次尝试，仅未开始可释放。platform.tasks.board/claim 提供任务板及下一任务请求；没有分布式租约、执行后对账或预算预留。",
     "source": [
-      "crates/harness3-platform/src/collaboration/claims.rs",
-      "crates/harness3-platform/src/collaboration/coordination.rs",
+      "crates/ant3-platform/src/collaboration/claims.rs",
+      "crates/ant3-platform/src/collaboration/coordination.rs",
       "web/src/features/goals/tasks.js",
-      "crates/harness3-server/tests/claims.rs",
-      "crates/harness3-platform/src/collaboration/autonomy/mod.rs"
+      "crates/ant3-server/tests/claims.rs",
+      "crates/ant3-platform/src/collaboration/autonomy/mod.rs"
     ],
     "target": [
-      "crates/harness3-domain/src/goals/",
-      "crates/harness3-platform/src/collaboration/"
+      "crates/ant3-domain/src/goals/",
+      "crates/ant3-platform/src/collaboration/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "current"
@@ -319,14 +319,14 @@
     "status": "partial",
     "detail": "持久 Outbox/Inbox、稳定消息 ID、幂等去重、投递与消费分离、暂停积压和未知结果人工处置；Agent 使用 platform.messaging 交接，四入口共用。没有远程投递或 Grant 授权。",
     "source": [
-      "crates/harness3-platform/src/collaboration/messaging/mod.rs",
-      "crates/harness3-platform/src/collaboration/messaging/tools.rs",
+      "crates/ant3-platform/src/collaboration/messaging/mod.rs",
+      "crates/ant3-platform/src/collaboration/messaging/tools.rs",
       "web/src/features/messages/messages.js",
-      "crates/harness3-server/tests/messaging.rs"
+      "crates/ant3-server/tests/messaging.rs"
     ],
     "target": [
-      "crates/harness3-storage/src/inbox_outbox/",
-      "crates/harness3-domain/src/collaboration/"
+      "crates/ant3-storage/src/inbox_outbox/",
+      "crates/ant3-domain/src/collaboration/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "current"
@@ -339,14 +339,14 @@
     "scope": "current",
     "detail": "同 Goal 成员分组、持久发言、显式订阅与消息唤醒；参与者自动进入团队讨论，订阅默认关，显式移除不补回，通知回复不再广播。没有跨机器投递、全文分页或自动冲突裁决。",
     "source": [
-      "crates/harness3-platform/src/collaboration/channels/mod.rs",
-      "crates/harness3-platform/src/collaboration/channels/tools.rs",
+      "crates/ant3-platform/src/collaboration/channels/mod.rs",
+      "crates/ant3-platform/src/collaboration/channels/tools.rs",
       "web/src/features/channels/channels.js",
-      "crates/harness3-server/tests/channels.rs"
+      "crates/ant3-server/tests/channels.rs"
     ],
     "target": [
-      "crates/harness3-platform/src/collaboration/channels/",
-      "crates/harness3-storage/src/inbox_outbox/"
+      "crates/ant3-platform/src/collaboration/channels/",
+      "crates/ant3-storage/src/inbox_outbox/"
     ],
     "verification": "native-tests-and-browser"
   },
@@ -357,15 +357,15 @@
     "status": "partial",
     "detail": "Goal 内发现、决策和疑问支持宿主身份、CAS 修订/撤回、来源及产物引用、派发快照与验收版本绑定；四入口可读写。没有黑板自动冲突裁决。",
     "source": [
-      "crates/harness3-platform/src/collaboration/context/mod.rs",
-      "crates/harness3-platform/src/collaboration/context/tools.rs",
-      "crates/harness3-platform/src/control/organization.rs",
+      "crates/ant3-platform/src/collaboration/context/mod.rs",
+      "crates/ant3-platform/src/collaboration/context/tools.rs",
+      "crates/ant3-platform/src/control/organization.rs",
       "web/src/features/collaboration/context.js",
-      "crates/harness3-server/tests/collaboration.rs"
+      "crates/ant3-server/tests/collaboration.rs"
     ],
     "target": [
-      "crates/harness3-domain/src/collaboration/",
-      "crates/harness3-platform/src/collaboration/"
+      "crates/ant3-domain/src/collaboration/",
+      "crates/ant3-platform/src/collaboration/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "current"
@@ -378,14 +378,14 @@
     "scope": "current",
     "detail": "实例独立目录、UTF-8 文件读写、文件/JSON 不可变快照、同 Goal 共享读取与 Web 预览/下载；保留来源状态和摘要，成功来源可进入独立验证。没有 OS 沙箱或通用代码执行环境。",
     "source": [
-      "crates/harness3-platform/src/workspaces/mod.rs",
-      "crates/harness3-platform/src/workspaces/tools.rs",
+      "crates/ant3-platform/src/workspaces/mod.rs",
+      "crates/ant3-platform/src/workspaces/tools.rs",
       "web/src/features/workspaces/workspaces.js",
-      "crates/harness3-server/tests/workspaces.rs"
+      "crates/ant3-server/tests/workspaces.rs"
     ],
     "target": [
-      "crates/harness3-platform/src/workspaces/",
-      "crates/harness3-domain/src/artifacts/"
+      "crates/ant3-platform/src/workspaces/",
+      "crates/ant3-domain/src/artifacts/"
     ],
     "verification": "native-tests-and-browser"
   },
@@ -396,21 +396,21 @@
     "status": "partial",
     "detail": "文本贡献、文件/JSON 快照保存版本、摘要与来源；当前成功任务证据进入冻结验证清单，支持有界自动返工、人工局部返工及按失败产物定位任务和下游。给定证据与抓取回执不构成外部事实认证。",
     "source": [
-      "crates/harness3-platform/src/workspaces/artifacts.rs",
-      "crates/harness3-platform/src/collaboration/coordination.rs",
+      "crates/ant3-platform/src/workspaces/artifacts.rs",
+      "crates/ant3-platform/src/collaboration/coordination.rs",
       "web/src/features/artifacts/artifacts.js",
-      "crates/harness3-server/tests/artifacts.rs",
-      "crates/harness3-platform/src/collaboration/verification/mod.rs",
-      "crates/harness3-platform/src/collaboration/verification/tools.rs",
+      "crates/ant3-server/tests/artifacts.rs",
+      "crates/ant3-platform/src/collaboration/verification/mod.rs",
+      "crates/ant3-platform/src/collaboration/verification/tools.rs",
       "web/src/features/goals/verification.js",
-      "crates/harness3-server/tests/verification.rs",
-      "crates/harness3-platform/src/workspaces/mod.rs",
-      "crates/harness3-platform/src/workspaces/tools.rs",
+      "crates/ant3-server/tests/verification.rs",
+      "crates/ant3-platform/src/workspaces/mod.rs",
+      "crates/ant3-platform/src/workspaces/tools.rs",
       "web/src/features/workspaces/workspaces.js",
-      "crates/harness3-server/tests/workspaces.rs"
+      "crates/ant3-server/tests/workspaces.rs"
     ],
     "target": [
-      "crates/harness3-domain/src/artifacts/",
+      "crates/ant3-domain/src/artifacts/",
       "plugins/verification/"
     ],
     "verification": "native-tests-and-browser",
@@ -449,18 +449,18 @@
     "status": "partial",
     "detail": "HTTP/Web、共享本地客户端、CLI 与 MCP stdio 共用状态；44 个 MCP 工具，默认开放 22 个查询工具。没有 MCP resources、Streamable HTTP、细粒度授权、并发取消或 CLI --wait。",
     "source": [
-      "crates/harness3-server/src/api/mod.rs",
-      "crates/harness3-client/src/lib.rs",
-      "crates/harness3-cli/src/main.rs",
-      "crates/harness3-cli/src/commands.rs",
-      "crates/harness3-server/src/mcp.rs",
-      "crates/harness3-cli/tests/entrances.rs",
+      "crates/ant3-server/src/api/mod.rs",
+      "crates/ant3-client/src/lib.rs",
+      "crates/ant3-cli/src/main.rs",
+      "crates/ant3-cli/src/commands.rs",
+      "crates/ant3-server/src/mcp.rs",
+      "crates/ant3-cli/tests/entrances.rs",
       "examples/clients/mcp.json"
     ],
     "target": [
-      "crates/harness3-client/src/",
-      "crates/harness3-cli/src/",
-      "crates/harness3-server/src/mcp.rs"
+      "crates/ant3-client/src/",
+      "crates/ant3-cli/src/",
+      "crates/ant3-server/src/mcp.rs"
     ],
     "verification": "native-tests-and-browser",
     "scope": "extension"
@@ -472,10 +472,10 @@
     "status": "partial",
     "detail": "持久事件游标与 Web 轮询；没有 SSE、通用列表游标或统一事件订阅契约。",
     "source": [
-      "crates/harness3-server/src/api/mod.rs"
+      "crates/ant3-server/src/api/mod.rs"
     ],
     "target": [
-      "crates/harness3-server/src/events/"
+      "crates/ant3-server/src/events/"
     ],
     "verification": "existing-tests",
     "scope": "deferred"
@@ -488,8 +488,8 @@
     "detail": "提供单 Run 轮次、工具次数及超时限制；没有团队费用硬上限、原子预算预留、结算账本或费用归属。",
     "source": [],
     "target": [
-      "crates/harness3-platform/src/accounting/",
-      "crates/harness3-domain/src/budgets/"
+      "crates/ant3-platform/src/accounting/",
+      "crates/ant3-domain/src/budgets/"
     ],
     "verification": "not-implemented",
     "scope": "deferred"
@@ -501,11 +501,11 @@
     "status": "partial",
     "detail": "loopback、本地 token 与浏览器会话认证；没有 Principal/Grant、持久审批、租户隔离或插件作用域授权。",
     "source": [
-      "crates/harness3-server/src/api/mod.rs"
+      "crates/ant3-server/src/api/mod.rs"
     ],
     "target": [
-      "crates/harness3-platform/src/authorization/",
-      "crates/harness3-domain/src/identity/"
+      "crates/ant3-platform/src/authorization/",
+      "crates/ant3-domain/src/identity/"
     ],
     "verification": "existing-tests",
     "scope": "deferred"
@@ -518,7 +518,7 @@
     "detail": "使用嵌入式本地 Worker；没有独立进程、所有权 fencing、跨进程租约或执行沙箱。",
     "source": [],
     "target": [
-      "crates/harness3-worker/src/"
+      "crates/ant3-worker/src/"
     ],
     "verification": "not-implemented",
     "scope": "deferred"
@@ -531,8 +531,8 @@
     "detail": "没有多机器 Worker、网络分区对账、分布式背压或滚动升级兼容契约。",
     "source": [],
     "target": [
-      "crates/harness3-storage/src/",
-      "crates/harness3-worker/src/backends/"
+      "crates/ant3-storage/src/",
+      "crates/ant3-worker/src/backends/"
     ],
     "verification": "not-implemented",
     "scope": "deferred"

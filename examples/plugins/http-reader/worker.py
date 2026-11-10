@@ -140,7 +140,7 @@ def main():
         method = request["method"]
         try:
             if method == "initialize":
-                result = {"protocol": "harness3-plugin-rpc/v1", "id": manifest["id"],
+                result = {"protocol": "ant3-plugin-rpc/v1", "id": manifest["id"],
                           "version": manifest["version"], "tools": manifest["tools"]}
             elif method == "health":
                 result = {"healthy": True}

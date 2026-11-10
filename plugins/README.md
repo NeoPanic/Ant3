@@ -1,12 +1,12 @@
 # 官方内置插件
 
-此目录是 `harness3-builtin-plugins` Rust 包，随服务编译发布。控制台插件页仅展示内置能力及配置状态，暂不提供安装操作。
+此目录是 `ant3-builtin-plugins` Rust 包，随服务编译发布。控制台插件页仅展示内置能力及配置状态，暂不提供安装操作。
 
 | 插件 ID | 工具 | 用途与配置 |
 | --- | --- | --- |
 | `text` | `text.inspect` | Unicode 字符、行数和 UTF-8 字节统计，无需配置 |
 | `web.fetch` | `web.fetch` | 读取公开 HTTP/HTTPS 文本，无需密钥 |
-| `web.search` | `web.search` | Brave Search 网页搜索，服务启动前设置 `HARNESS3_WEB_SEARCH_API_KEY` |
+| `web.search` | `web.search` | Brave Search 网页搜索，服务启动前设置 `ANT3_WEB_SEARCH_API_KEY` |
 
 网页工具通过母体的插件绑定显式启用，使用版本 `1.0.0`；锁定描述摘要，安装或配置不会自动给现有实例增加权限。文本统计保留在普通 Run 的基础工具集中。
 
@@ -23,4 +23,4 @@ plugins/
 └── web-search/mod.rs
 ```
 
-内置工具不依赖平台 SQL、Worker 或 HTTP Server。组织协作工具仍在平台应用模块中，避免复制事务逻辑。`crates/harness3-plugins` 保留进程插件宿主与底层兼容接口；其协议/SDK 位于各自 crate，教学示例在 `examples/plugins`。进程包能力见[进程插件文档](../docs/process-plugins.zh-CN.md)。
+内置工具不依赖平台 SQL、Worker 或 HTTP Server。组织协作工具仍在平台应用模块中，避免复制事务逻辑。`crates/ant3-plugins` 保留进程插件宿主与底层兼容接口；其协议/SDK 位于各自 crate，教学示例在 `examples/plugins`。进程包能力见[进程插件文档](../docs/process-plugins.zh-CN.md)。

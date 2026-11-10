@@ -53,6 +53,197 @@ dependencies = [
 ]
 
 [[package]]
+name = "ant3"
+version = "0.2.7"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "serde_yaml_ng",
+ "sha2",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "uuid",
+]
+
+[[package]]
+name = "ant3-builtin-plugins"
+version = "0.1.0"
+dependencies = [
+ "ant3",
+ "async-trait",
+ "axum",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+]
+
+[[package]]
+name = "ant3-cli"
+version = "0.1.0"
+dependencies = [
+ "ant3-client",
+ "ant3-domain",
+ "ant3-models",
+ "ant3-platform",
+ "ant3-plugins",
+ "ant3-server",
+ "ant3-worker",
+ "axum",
+ "clap",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower",
+ "uuid",
+]
+
+[[package]]
+name = "ant3-client"
+version = "0.1.0"
+dependencies = [
+ "ant3-domain",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "ant3-domain"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
+name = "ant3-models"
+version = "0.1.0"
+dependencies = [
+ "ant3",
+ "ant3-domain",
+ "async-trait",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "toml",
+]
+
+[[package]]
+name = "ant3-platform"
+version = "0.1.0"
+dependencies = [
+ "ant3",
+ "ant3-builtin-plugins",
+ "ant3-domain",
+ "ant3-models",
+ "ant3-plugin-protocol",
+ "ant3-plugins",
+ "ant3-storage",
+ "async-trait",
+ "reqwest",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "ant3-plugin-protocol"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "ant3-plugin-sdk"
+version = "0.1.0"
+dependencies = [
+ "ant3-plugin-protocol",
+ "serde_json",
+]
+
+[[package]]
+name = "ant3-plugins"
+version = "0.1.0"
+dependencies = [
+ "ant3",
+ "ant3-domain",
+ "ant3-plugin-protocol",
+ "async-trait",
+ "libc",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "ant3-server"
+version = "0.1.0"
+dependencies = [
+ "ant3",
+ "ant3-builtin-plugins",
+ "ant3-client",
+ "ant3-domain",
+ "ant3-models",
+ "ant3-platform",
+ "ant3-plugin-protocol",
+ "ant3-plugins",
+ "ant3-worker",
+ "async-trait",
+ "axum",
+ "fs2",
+ "reqwest",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "tower",
+ "uuid",
+]
+
+[[package]]
+name = "ant3-storage"
+version = "0.1.0"
+dependencies = [
+ "ant3",
+ "ant3-domain",
+ "async-trait",
+ "rusqlite",
+ "serde_json",
+]
+
+[[package]]
+name = "ant3-worker"
+version = "0.1.0"
+dependencies = [
+ "ant3",
+ "ant3-builtin-plugins",
+ "ant3-models",
+ "ant3-platform",
+ "ant3-plugins",
+ "async-trait",
+ "serde",
+ "serde_json",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -486,197 +677,6 @@ dependencies = [
  "r-efi",
  "rand_core",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "harness3"
-version = "0.2.7"
-dependencies = [
- "async-trait",
- "serde",
- "serde_json",
- "serde_yaml_ng",
- "sha2",
- "thiserror",
- "tokio",
- "tokio-util",
- "uuid",
-]
-
-[[package]]
-name = "harness3-builtin-plugins"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "axum",
- "harness3",
- "reqwest",
- "serde",
- "serde_json",
- "sha2",
- "tokio",
-]
-
-[[package]]
-name = "harness3-cli"
-version = "0.1.0"
-dependencies = [
- "axum",
- "clap",
- "harness3-client",
- "harness3-domain",
- "harness3-models",
- "harness3-platform",
- "harness3-plugins",
- "harness3-server",
- "harness3-worker",
- "reqwest",
- "serde",
- "serde_json",
- "tokio",
- "tower",
- "uuid",
-]
-
-[[package]]
-name = "harness3-client"
-version = "0.1.0"
-dependencies = [
- "harness3-domain",
- "reqwest",
- "serde",
- "serde_json",
- "tokio",
-]
-
-[[package]]
-name = "harness3-domain"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "uuid",
-]
-
-[[package]]
-name = "harness3-models"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "harness3",
- "harness3-domain",
- "reqwest",
- "serde",
- "serde_json",
- "sha2",
- "tokio",
- "toml",
-]
-
-[[package]]
-name = "harness3-platform"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "harness3",
- "harness3-builtin-plugins",
- "harness3-domain",
- "harness3-models",
- "harness3-plugin-protocol",
- "harness3-plugins",
- "harness3-storage",
- "reqwest",
- "rusqlite",
- "serde",
- "serde_json",
- "sha2",
- "tokio",
- "uuid",
-]
-
-[[package]]
-name = "harness3-plugin-protocol"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "harness3-plugin-sdk"
-version = "0.1.0"
-dependencies = [
- "harness3-plugin-protocol",
- "serde_json",
-]
-
-[[package]]
-name = "harness3-plugins"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "harness3",
- "harness3-domain",
- "harness3-plugin-protocol",
- "libc",
- "serde",
- "serde_json",
- "sha2",
- "tokio",
- "uuid",
-]
-
-[[package]]
-name = "harness3-server"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "axum",
- "fs2",
- "harness3",
- "harness3-builtin-plugins",
- "harness3-client",
- "harness3-domain",
- "harness3-models",
- "harness3-platform",
- "harness3-plugin-protocol",
- "harness3-plugins",
- "harness3-worker",
- "reqwest",
- "rusqlite",
- "serde",
- "serde_json",
- "sha2",
- "tokio",
- "tower",
- "uuid",
-]
-
-[[package]]
-name = "harness3-storage"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "harness3",
- "harness3-domain",
- "rusqlite",
- "serde_json",
-]
-
-[[package]]
-name = "harness3-worker"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "harness3",
- "harness3-builtin-plugins",
- "harness3-models",
- "harness3-platform",
- "harness3-plugins",
- "serde",
- "serde_json",
- "tokio",
- "uuid",
 ]
 
 [[package]]

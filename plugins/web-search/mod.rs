@@ -1,5 +1,5 @@
 use crate::network;
-use harness3::{CancellationToken, Context, Error, Result, Tool, ToolOutput, ToolSpec};
+use ant3::{CancellationToken, Context, Error, Result, Tool, ToolOutput, ToolSpec};
 use serde::Deserialize;
 use serde_json::{Value, json};
 pub struct Search;
@@ -28,7 +28,7 @@ fn results(value: Value, count: usize) -> Result<Value> {
 #[async_trait::async_trait]
 impl Tool for Search {
     fn spec(&self) -> ToolSpec {
-        ToolSpec{name:"web.search".into(),description:"Search the web using Brave Search. Sends the query to an external provider and may incur charges. Returns titles, URLs and snippets, not verified facts. Requires HARNESS3_WEB_SEARCH_API_KEY.".into(),parameters:json!({"type":"object","properties":{"query":{"type":"string","minLength":1,"maxLength":2000},"count":{"type":"integer","minimum":1,"maximum":10}},"required":["query"],"additionalProperties":false}),mutates:false}
+        ToolSpec{name:"web.search".into(),description:"Search the web using Brave Search. Sends the query to an external provider and may incur charges. Returns titles, URLs and snippets, not verified facts. Requires ANT3_WEB_SEARCH_API_KEY.".into(),parameters:json!({"type":"object","properties":{"query":{"type":"string","minLength":1,"maxLength":2000},"count":{"type":"integer","minimum":1,"maximum":10}},"required":["query"],"additionalProperties":false}),mutates:false}
     }
     fn parallel_safe(&self) -> bool {
         true
@@ -47,7 +47,7 @@ impl Tool for Search {
         {
             return Err(Error::new("invalid_arguments"));
         }
-        let key = std::env::var("HARNESS3_WEB_SEARCH_API_KEY")
+        let key = std::env::var("ANT3_WEB_SEARCH_API_KEY")
             .ok()
             .filter(|v| !v.trim().is_empty())
             .ok_or_else(|| Error::new("web_search_not_configured"))?;

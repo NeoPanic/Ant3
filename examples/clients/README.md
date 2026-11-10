@@ -1,13 +1,13 @@
 # Local platform clients
 
-Start `harness3 up` from the repository root. CLI and MCP connect to that daemon; neither starts a second daemon or accesses SQLite directly.
+Start `ant3 up` from the repository root. CLI and MCP connect to that daemon; neither starts a second daemon or accesses SQLite directly.
 
 ```sh
-./target/debug/harness3 fleets create --file examples/clients/fleet.json --key local-demo-1
-./target/debug/harness3 fleets list
-./target/debug/harness3 fleets show fleet_REPLACE
-./target/debug/harness3 operations show operation_REPLACE
-./target/debug/harness3 instances list
+./target/debug/ant3 fleets create --file examples/clients/fleet.json --key local-demo-1
+./target/debug/ant3 fleets list
+./target/debug/ant3 fleets show fleet_REPLACE
+./target/debug/ant3 operations show operation_REPLACE
+./target/debug/ant3 instances list
 ```
 
 Inspect the same IDs in Web at `http://127.0.0.1:7333/#fleets`. Creation returns an acceptance receipt; the operation must complete before all requested instances exist. Retry the same key and content after a timeout. Use a new key for a new command.
@@ -20,4 +20,4 @@ Local process Tool packages have a separate daemon opt-in. See [the plugin guide
 
 母体继承、多插件与参数示例：`composed-preset.json` / `parameterized-fleet.json`，依赖与操作顺序见 [母体组合指南](../../docs/presets.zh-CN.md)。
 
-`delegated-research.json` 可通过 `harness3 research create --file examples/clients/delegated-research.json --key demo-delegated-research` 发起离线动态委派；查询方式与普通调研一致。角色参数和策略契约见[动态委派](../../docs/dynamic-delegation.zh-CN.md)。
+`delegated-research.json` 可通过 `ant3 research create --file examples/clients/delegated-research.json --key demo-delegated-research` 发起离线动态委派；查询方式与普通调研一致。角色参数和策略契约见[动态委派](../../docs/dynamic-delegation.zh-CN.md)。

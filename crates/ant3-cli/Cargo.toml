@@ -1,0 +1,30 @@
+[package]
+name = "ant3-cli"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT"
+
+[dependencies]
+ant3-server = { path = "../ant3-server" }
+ant3-client = { path = "../ant3-client" }
+ant3-domain = { path = "../ant3-domain" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "io-std", "io-util"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
+clap = { version = "4.5", features = ["derive"] }
+
+[[bin]]
+name = "ant3"
+path = "src/main.rs"
+doc = false
+
+[dev-dependencies]
+ant3-platform = { path = "../ant3-platform" }
+ant3-worker = { path = "../ant3-worker", features = ["test-support"] }
+ant3-models = { path = "../ant3-models" }
+ant3-plugins = { path = "../ant3-plugins" }
+tower = { version = "0.5", features = ["util"] }
+axum = "0.8"
+uuid = { version = "1", features = ["v4"] }

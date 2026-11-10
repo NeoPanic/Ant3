@@ -45,3 +45,5 @@
 官方内置插件（文本统计、网页读取、网页搜索）统一放在根目录 [`plugins/`](../plugins/README.md)，与协议、SDK、宿主实现及教学示例分开维护。
 
 开发流程见[参与贡献](../CONTRIBUTING.md)。公共 API 文档通过 `cargo doc --locked --workspace --no-deps --open` 生成。
+
+- [Ant³ 标识升级与数据迁移](upgrade-ant3.zh-CN.md)

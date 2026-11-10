@@ -6,7 +6,7 @@
 
 1. 用户发布 `title`、`instructions`、`acceptance`。接纳事务保存任务与幂等回执，任务尚无执行者。
 2. 控制面扫描可执行任务，根据内容和 Preset 能力选型，并在容量允许时创建独立实例。选型结果记录名称、版本和理由；启动本身不取得任务所有权。
-3. 实例使用自己的 Harness 模型 / 工具循环，调用 `platform.board.read` 获取任务上下文，再调用 `platform.board.claim` 原子认领。宿主从正在执行的 Run 绑定实例身份。
+3. 实例使用自己的 Ant 模型 / 工具循环，调用 `platform.board.read` 获取任务上下文，再调用 `platform.board.claim` 原子认领。宿主从正在执行的 Run 绑定实例身份。
 4. Agent 可以直接完成，也可以调用 `platform.board.split` 提交更细的工作要求。子任务输入同样不含 Preset 或实例选择，控制面负责后续选型。
 5. 拆分请求的来源 Run 成功后，子任务才进入可执行状态；来源失败、取消或结果未知时不继续激活子任务。等待子任务期间释放执行容量。
 6. 执行中通过 `platform.board.progress` 上报具体进展、发现或阻塞；记录绑定当前认领和 Run，最多 2,000 个 UTF-8 字节。
@@ -30,11 +30,11 @@ Web 的“任务板”和 CLI 提供发布、列表、详情和取消。HTTP 使
 CLI 共用 `--port`、`--data-dir` 配置，输出 JSON：
 
 ```sh
-./target/debug/harness3 board publish --file examples/clients/board-task.json --key study-1
-./target/debug/harness3 board list
-./target/debug/harness3 board show TASK_ID
-./target/debug/harness3 board cancel TASK_ID
-./target/debug/harness3 board review TASK_ID --file review.json --key review-1
+./target/debug/ant3 board publish --file examples/clients/board-task.json --key study-1
+./target/debug/ant3 board list
+./target/debug/ant3 board show TASK_ID
+./target/debug/ant3 board cancel TASK_ID
+./target/debug/ant3 board review TASK_ID --file review.json --key review-1
 ```
 
 任务板尚未添加 MCP 工具；已有 MCP 入口继续使用其已声明的 Goal 和调研操作。
@@ -59,19 +59,19 @@ CLI 共用 `--port`、`--data-dir` 配置，输出 JSON：
 
 | 环境变量 | 用途 |
 | --- | --- |
-| `HARNESS3_ROUTER_PROTOCOL` | 显式配置时必需；`openai-compatible`、`openai-responses`、`anthropic` 或 `bailian-decision` |
-| `HARNESS3_ROUTER_MODEL` | 通用协议显式配置时必需；百炼决策模型默认 `decision-model-preview` |
-| `HARNESS3_ROUTER_BASE_URL` | 显式配置时必需；对应协议的服务根路径 |
-| `HARNESS3_ROUTER_API_KEY` | 选型服务凭证；通用协议可省，百炼可回退到 `DASHSCOPE_API_KEY` |
-| `HARNESS3_ROUTER_MIN_CONFIDENCE` | 仅百炼决策模型；0–1，默认 0，可显式调高 |
+| `ANT3_ROUTER_PROTOCOL` | 显式配置时必需；`openai-compatible`、`openai-responses`、`anthropic` 或 `bailian-decision` |
+| `ANT3_ROUTER_MODEL` | 通用协议显式配置时必需；百炼决策模型默认 `decision-model-preview` |
+| `ANT3_ROUTER_BASE_URL` | 显式配置时必需；对应协议的服务根路径 |
+| `ANT3_ROUTER_API_KEY` | 选型服务凭证；通用协议可省，百炼可回退到 `DASHSCOPE_API_KEY` |
+| `ANT3_ROUTER_MIN_CONFIDENCE` | 仅百炼决策模型；0–1，默认 0，可显式调高 |
 
 示例配置接入兼容 Chat Completions 的服务，模型名与地址按实际服务填写；凭证通过自己的密钥加载方式提供：
 
 ```sh
-export HARNESS3_ROUTER_PROTOCOL=openai-compatible
-export HARNESS3_ROUTER_MODEL=your-routing-model
-export HARNESS3_ROUTER_BASE_URL=http://127.0.0.1:8000/v1
-cargo run --locked -p harness3-cli -- up
+export ANT3_ROUTER_PROTOCOL=openai-compatible
+export ANT3_ROUTER_MODEL=your-routing-model
+export ANT3_ROUTER_BASE_URL=http://127.0.0.1:8000/v1
+cargo run --locked -p ant3-cli -- up
 ```
 
 未单独配置时，优先复用已配置的 Responses、OpenAI-compatible 或 Anthropic 服务。没有可用模型时显示未配置，不会回退到演示路由。启动不自动发布 Preset，需先在母体页发布适合任务的母体。
@@ -86,14 +86,14 @@ cargo run --locked -p harness3-cli -- up
 
 百炼决策模型使用 TypeSafe System One 的 `POST /compatible-mode/v1/systemone` 接口，返回结构化选择。适配器将可用 Preset 映射为一个 `choice` 问题的选项，另加 `no_suitable_preset`，每次选出一项适合当前任务的 Preset。不同待处理任务可以选中不同 Preset。
 
-用实际业务空间 ID 替换下面的 `{WorkspaceId}`，并在本机凭证环境中提供 `HARNESS3_ROUTER_API_KEY` 或 `DASHSCOPE_API_KEY`：
+用实际业务空间 ID 替换下面的 `{WorkspaceId}`，并在本机凭证环境中提供 `ANT3_ROUTER_API_KEY` 或 `DASHSCOPE_API_KEY`：
 
 ```sh
-export HARNESS3_ROUTER_PROTOCOL=bailian-decision
-export HARNESS3_ROUTER_BASE_URL='https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1'
-export HARNESS3_ROUTER_MODEL=decision-model-preview
-export HARNESS3_ROUTER_MIN_CONFIDENCE=0
-cargo run --locked -p harness3-cli -- up
+export ANT3_ROUTER_PROTOCOL=bailian-decision
+export ANT3_ROUTER_BASE_URL='https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1'
+export ANT3_ROUTER_MODEL=decision-model-preview
+export ANT3_ROUTER_MIN_CONFIDENCE=0
+cargo run --locked -p ant3-cli -- up
 ```
 
 `BASE_URL` 也接受以 `/systemone` 结尾的完整地址。该配置只负责选型，执行 Agent 仍需自己的模型服务配置和对应 Preset；配置选型密钥不会自动提供业务工具。

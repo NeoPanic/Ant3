@@ -1,0 +1,17 @@
+[package]
+name = "ant3-models"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT"
+
+[dependencies]
+ant3-domain = { path = "../ant3-domain" }
+ant3 = { path = "../ant3-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["time"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
+async-trait = "0.1"
+sha2 = "0.11"
+toml = "1.2"

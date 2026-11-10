@@ -21,12 +21,12 @@ The shared board draws on **stigmergy**, coordination through changes to a share
 | English description | An ant-inspired Rust platform for peer AI agents to claim tasks, share results, and build together. |
 | Chinese description | 借鉴蚂蚁协作机制的 Rust Agent 平台，通过共享任务板认领工作、分工与成果接力。 |
 | Canonical URL | https://github.com/NeoPanic/Ant3 |
-| Cargo package / Rust import / CLI | `harness3` |
-| Rust execution type | `Harness` |
-| Default data directory / environment prefix | `.harness3/` / `HARNESS3_` |
-| Plugin and MCP protocol identifiers | Existing `harness3` identifiers |
+| Cargo package / Rust import / CLI | `ant3` |
+| Rust execution type | `Ant` |
+| Default data directory / environment prefix | `.ant3/` / `ANT3_` |
+| Plugin and MCP protocol identifiers | `ant3` identifiers |
 
-Use **³** (U+00B3) in display text; use `Ant3` where ASCII is required. Existing package, protocol, command, and storage identifiers are retained so users can open their workspaces and run existing integrations. Repository links use the current `Ant3` URL. This branding change does not rename published packages.
+Use **³** (U+00B3) in display text; use `Ant3` where ASCII is required. Technical identifiers use `ant3`, the Rust execution type is `Ant`, and environment variables use `ANT3_`. Repository links use `Ant3`. This is a breaking identifier change; migrate existing integrations and data directories using the [upgrade guide](../upgrade-ant3.zh-CN.md). Historical records remain unchanged.
 
 ## Assets
 

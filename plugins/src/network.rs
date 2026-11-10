@@ -1,4 +1,4 @@
-use harness3::{CancellationToken, Error, Result};
+use ant3::{CancellationToken, Error, Result};
 use reqwest::{Client, Response, Url};
 use std::{net::IpAddr, time::Duration};
 pub const MAX_BODY: usize = 1024 * 1024;

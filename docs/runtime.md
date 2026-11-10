@@ -15,14 +15,14 @@ Detailed behavior and integration boundaries for the Rust runtime. Start with th
 | Services | `Registry::provide/service`: named, type-checked capabilities |
 | Capability installation | `Registry::register`: transactional registration into a registry snapshot |
 | Scheduled work | `work::WorkStore`: generic lease seam, implemented by the host |
-| Execution | `AgentDriver`: replaceable loop; `Harness` implements it |
+| Execution | `AgentDriver`: replaceable loop; `Ant` implements it |
 | Conversations | `SessionStore`: revision-fenced checkpoints, messages, request snapshots and receipts |
-| Developer Trace | `Harness::trace_events` collects in process; `TraceSink` receives the events |
+| Developer Trace | `Ant::trace_events` collects in process; `TraceSink` receives the events |
 | Observability | `Observer`: ordered run events, including tool arguments and outcomes |
 | Interception | `Policy`: ordered request/call rewrite or denial; post-commit checks |
 | Delivery | `Transport`: explicit host-authorized outbound message and external receipt |
 
-The simplest host registers a source, model, optional tools/skills/prompts and a task, then calls `Harness::run_session`. `Harness::run` intentionally creates an isolated ephemeral conversation. A host that needs its own loop implements `AgentDriver`; channel identity and session-key policy belong to the host.
+The simplest host registers a source, model, optional tools/skills/prompts and a task, then calls `Ant::run_session`. `Ant::run` intentionally creates an isolated ephemeral conversation. A host that needs its own loop implements `AgentDriver`; channel identity and session-key policy belong to the host.
 
 Consecutive authorized read calls in one model reply execute in batches of at most four when their implementations opt in with `Tool::parallel_safe()`. The default is sequential: `mutates=false` alone is not sufficient because reads can share browser state or extraction caches. Mutating tools, non-opted-in tools and skill/tool loading are ordering barriers; a registry with execution policies remains sequential to preserve rewrite and post-receipt semantics. Each batch's dispatches are checkpointed before execution, then receipts are checkpointed individually in completion order and correlated by call ID. Cancellation, deadlines, checkpoint errors and observer errors drain started calls before stopping; no new batch starts after a run-level failure. Concurrent futures stay in the caller's task so host task-local context is preserved. No persistent format change is required.
 
@@ -57,9 +57,9 @@ Native Rust plugin composition, instruction/resource bundles and automatic seman
 
 Every model round checks `used_tokens / window_tokens`. The latest matching model reply's `usage.input + usage.output` is the baseline; cached input is already included, and earlier calls are not accumulated. New content and growing instructions/schemas are estimated at serialized UTF-8 bytes / 3. Without matching usage (first request, changed model, or freshly compacted history), the full input uses that estimate. This is an occupancy heuristic, not exact tokenization or billing. `context_usage` traces record the count, percentage and effective configuration.
 
-`Model::context_budget()` provides model defaults, with `Harness::with_context_budget` as an explicit host override. Defaults trigger at 80%, target 60%, allow an 8192-token summary, reserve 8192 output tokens and retain the two most recent complete exchanges. Unknown models default to a 128,000-token window. Host model adapters supply their actual context limits without changing the runtime.
+`Model::context_budget()` provides model defaults, with `Ant::with_context_budget` as an explicit host override. Defaults trigger at 80%, target 60%, allow an 8192-token summary, reserve 8192 output tokens and retain the two most recent complete exchanges. Unknown models default to a 128,000-token window. Host model adapters supply their actual context limits without changing the runtime.
 
-Hosts configure `ContextBudget` through the model or `Harness::with_context_budget`. The trigger and target must satisfy `0 < target_percent < trigger_percent < 100`; output reservation must cover normal replies and compaction. Retention may prevent reaching the target. If the remaining input still fits, execution continues; truncated summaries are rejected. Environment variables and settings UI are host concerns.
+Hosts configure `ContextBudget` through the model or `Ant::with_context_budget`. The trigger and target must satisfy `0 < target_percent < trigger_percent < 100`; output reservation must cover normal replies and compaction. Retention may prevent reaching the target. If the remaining input still fits, execution continues; truncated summaries are rejected. Environment variables and settings UI are host concerns.
 
 
 The same registered model summarizes older complete exchanges, including during a long tool loop. Parallel calls and their receipts stay together. The current user request is retained verbatim; retained native continuations are untouched. Summaries merge prior summaries, preserve known outcomes and uncertainty, and are labeled untrusted historical context rather than fresh instructions or authorization.
@@ -70,7 +70,7 @@ Failed, cancelled, empty, oversized or tool-calling summaries are rejected witho
 
 ## Developer Trace
 
-Trace is owned by the harness: every run records its ordered events in a bounded in-process buffer, so no plugin, sink or host setup is needed to read recent events with `Harness::trace_events`. Older events are evicted when the buffer fills. Attach a `TraceSink` (`Registry::trace`) when the host must persist or forward them; recording stays best-effort with a bounded sink deadline, and diagnostic failures never invalidate business receipts. Conversation checkpoints remain authoritative regardless of trace persistence.
+Trace is owned by the harness: every run records its ordered events in a bounded in-process buffer, so no plugin, sink or host setup is needed to read recent events with `Ant::trace_events`. Older events are evicted when the buffer fills. Attach a `TraceSink` (`Registry::trace`) when the host must persist or forward them; recording stays best-effort with a bounded sink deadline, and diagnostic failures never invalidate business receipts. Conversation checkpoints remain authoritative regardless of trace persistence.
 
 Events are handed over verbatim — model input, tool arguments and tool output. The harness ships no viewer and no storage: a host renders, stores or ships them however it likes, and owns escaping untrusted payloads in whatever medium it chooses, plus retention and locality. Model adapters must keep credentials out of `Model::metadata` and their returned continuations; hosts must filter sensitive content before emitting it.
 

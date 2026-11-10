@@ -6,7 +6,7 @@ mod text;
 mod web_fetch;
 #[path = "../web-search/mod.rs"]
 mod web_search;
-use harness3::Tool;
+use ant3::Tool;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
@@ -59,5 +59,5 @@ pub fn tools(id: &str) -> Option<Vec<Arc<dyn Tool>>> {
     })
 }
 pub fn status() -> Value {
-    json!({"text":{"configured":true},"web.fetch":{"configured":true},"web.search":{"configured":std::env::var("HARNESS3_WEB_SEARCH_API_KEY").is_ok_and(|v|!v.trim().is_empty())}})
+    json!({"text":{"configured":true},"web.fetch":{"configured":true},"web.search":{"configured":std::env::var("ANT3_WEB_SEARCH_API_KEY").is_ok_and(|v|!v.trim().is_empty())}})
 }

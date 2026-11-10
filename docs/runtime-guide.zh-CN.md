@@ -2,13 +2,13 @@
 
 [项目首页](../README.zh-CN.md) · [运行契约](runtime.md) · [可运行示例](../examples/quickstart.rs)
 
-Ant³ 面向 Agent 集群提供可组合的执行内核；本文中的 `Harness` 指 Rust 执行器类型。
+Ant³ 面向 Agent 集群提供可组合的执行内核；本文中的 `Ant` 指 Rust 执行器类型。
 
 这份导读对应本目录的实际 Rust 源码。示例中的“查找联系人”“保存资料”用于解释协作关系，具体业务工具由外部应用提供。
 
-**Harness 是 Agent 的执行内核：把用户输入交给模型，检查并执行模型要求的工具，把工具结果交回模型，同时记录每一步，直到得到答复或停止。**
+**Ant 是 Agent 的执行内核：把用户输入交给模型，检查并执行模型要求的工具，把工具结果交回模型，同时记录每一步，直到得到答复或停止。**
 
-模型负责选择下一步；工具负责真正读写数据；Harness 负责执行顺序、权限边界、会话记录和中断收尾。它不内置领域规则、通信渠道或数据库实现，这些能力由使用它的应用接进来。下文把这个应用叫作“宿主”。
+模型负责选择下一步；工具负责真正读写数据；Ant 负责执行顺序、权限边界、会话记录和中断收尾。它不内置领域规则、通信渠道或数据库实现，这些能力由使用它的应用接进来。下文把这个应用叫作“宿主”。
 
 ## 1. 先认识这些名字
 
@@ -18,7 +18,7 @@ Ant³ 面向 Agent 集群提供可组合的执行内核；本文中的 `Harness`
 | `Source` | 拆信的人，把渠道消息翻译成统一请求 | 从 JSON 取文字，选择任务配置 |
 | `AgentProfile` | 当前助手的工作说明和权限清单 | 指令、可用工具、可用技能、可选的必做工具 |
 | `Registry` | 启动时准备好的能力名册 | 登记模型、工具、技能、策略等 |
-| `Harness` | 执行协调者 | 组织模型和工具来回工作 |
+| `Ant` | 执行协调者 | 组织模型和工具来回工作 |
 | `Model` | 对模型供应商的统一接口 | 返回文字或工具调用请求 |
 | `ToolSpec` / `Tool` | 工具说明书 / 真正干活的代码 | “保存资料”的参数格式 / 实际数据库操作 |
 | `Skill` | 工作方法说明书 | 先查重、再保存、如何处理不确定信息 |
@@ -40,7 +40,7 @@ flowchart TD
     Host[宿主应用：界面、渠道、身份、业务数据]
     Registry[Registry：登记能力和配置]
     Driver[AgentDriver：统一执行入口]
-    Engine[Harness / engine.rs：模型与工具循环]
+    Engine[Ant / engine.rs：模型与工具循环]
     Model[Model：供应商适配器]
     Tool[Tool：业务操作]
     Session[SessionStore：会话记录]
@@ -60,7 +60,7 @@ flowchart TD
     Tool --> Host
 ```
 
-可以把它比作一个工作小组：模型提出行动建议，工具实施行动，Harness 安排顺序并保存回执。技能给模型工作方法，策略给执行过程施加规则。
+可以把它比作一个工作小组：模型提出行动建议，工具实施行动，Ant 安排顺序并保存回执。技能给模型工作方法，策略给执行过程施加规则。
 
 ## 3. 时序图一：一次正常请求如何完成
 
@@ -70,7 +70,7 @@ flowchart TD
 sequenceDiagram
     autonumber
     participant H as 宿主应用
-    participant E as Harness
+    participant E as Ant
     participant S as Source
     participant D as SessionStore
     participant P as Policy
@@ -112,17 +112,17 @@ sequenceDiagram
     E-->>H: Report
 ```
 
-对应入口：[engine.rs 的 `run_session`](../crates/harness3-core/src/engine.rs)。上图展示放行的正常路径；权限拒绝会生成错误回执，不会进入实际工具执行。
+对应入口：[engine.rs 的 `run_session`](../crates/ant3-core/src/engine.rs)。上图展示放行的正常路径；权限拒绝会生成错误回执，不会进入实际工具执行。
 
 用一个具体例子理解：
 
 1. 用户说：“帮我记住小王在 A 公司。”
-2. 模型可能先请求查找小王，Harness 执行查询工具并记录查询结果。
+2. 模型可能先请求查找小王，Ant 执行查询工具并记录查询结果。
 3. 下一轮模型读到结果，确定人物 ID，再请求保存资料。
-4. 保存工具完成数据库操作，返回结果，Harness 保存回执。
+4. 保存工具完成数据库操作，返回结果，Ant 保存回执。
 5. 下一轮模型根据回执生成答复，这次没有工具调用，运行进入收尾。
 
-第 2～4 步由模型和工具结果推动，不是在 Harness 中写死的业务流程。若重名导致无法判断，模型也可以直接问用户“你指的是哪位小王？”，本次 Run 正常结束；用户下一条消息用同一 Session 开始新的 Run，历史仍然可见。
+第 2～4 步由模型和工具结果推动，不是在 Ant 中写死的业务流程。若重名导致无法判断，模型也可以直接问用户“你指的是哪位小王？”，本次 Run 正常结束；用户下一条消息用同一 Session 开始新的 Run，历史仍然可见。
 
 **重要细节：**
 
@@ -136,7 +136,7 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant E as Harness
+    participant E as Ant
     participant D as SessionStore
     participant A as 安全读取 A
     participant B as 安全读取 B
@@ -173,7 +173,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    participant E as Harness
+    participant E as Ant
     participant M as Model
     participant K as Skill
     participant D as SessionStore
@@ -198,7 +198,7 @@ sequenceDiagram
     E->>D: 保存工具回执
 ```
 
-对应代码：[engine.rs](../crates/harness3-core/src/engine.rs) 的 `progressive-tools`、`skill_load`、`tool_load` 分支，以及 [skills.rs](../crates/harness3-core/src/skills.rs)。
+对应代码：[engine.rs](../crates/ant3-core/src/engine.rs) 的 `progressive-tools`、`skill_load`、`tool_load` 分支，以及 [skills.rs](../crates/ant3-core/src/skills.rs)。
 
 这里有三层不同的含义：
 
@@ -222,7 +222,7 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     participant H as 宿主应用
-    participant E as Harness
+    participant E as Ant
     participant D as SessionStore
     H->>E: 输入事件(source, event_id, payload)
     E->>D: load(session_id)
@@ -245,7 +245,7 @@ sequenceDiagram
     end
 ```
 
-对应代码：[engine.rs](../crates/harness3-core/src/engine.rs) 的输入准入，以及 [session.rs](../crates/harness3-core/src/session.rs) 的 `SessionStore`、`checkpoint`、`seal`、`validate_append`。
+对应代码：[engine.rs](../crates/ant3-core/src/engine.rs) 的输入准入，以及 [session.rs](../crates/ant3-core/src/session.rs) 的 `SessionStore`、`checkpoint`、`seal`、`validate_append`。
 
 **防重复和防并发解决的是两个问题。**
 
@@ -257,7 +257,7 @@ sequenceDiagram
 | 字段 | 记录什么 | 为什么需要 |
 | --- | --- | --- |
 | `turns` | 用户、上下文、助手、工具结果 | 下一轮能够继续对话 |
-| `requests` | 模型名、提示词、工具定义、历史范围、压缩状态等 | 重建当时实际提交的 Harness 层请求 |
+| `requests` | 模型名、提示词、工具定义、历史范围、压缩状态等 | 重建当时实际提交的 Ant 层请求 |
 | `dispatches` | 模型原始调用、策略修改后的调用、拒绝原因 | 区分“模型想做什么”和“程序实际准备做什么” |
 | `events` | 不可改写的检查点增量 | 回看某个历史边界、验证旧历史没有被修改 |
 | `inputs` / `completed` | 输入指纹、已经结束的报告 | 防止同一输入被重复执行或偷偷换内容 |
@@ -277,7 +277,7 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     participant H as 宿主应用
-    participant E as Harness
+    participant E as Ant
     participant T as 写入工具
     participant B as 业务存储或远端服务
     participant D as SessionStore
@@ -300,7 +300,7 @@ sequenceDiagram
     end
 ```
 
-对应代码：[engine.rs](../crates/harness3-core/src/engine.rs) 的工具取消与收尾，以及 [session.rs](../crates/harness3-core/src/session.rs) 的 `settle_pending`、`recover_interrupted`。
+对应代码：[engine.rs](../crates/ant3-core/src/engine.rs) 的工具取消与收尾，以及 [session.rs](../crates/ant3-core/src/session.rs) 的 `settle_pending`、`recover_interrupted`。
 
 为什么不简单“失败就重试”？因为请求失败可能只是响应丢失，实际操作已经成功。如果是发消息或写资料，盲目重试就可能重复发送或重复创建。
 
@@ -310,7 +310,7 @@ sequenceDiagram
 - 有失败回执：把实际错误记录给下一轮。
 - 没有持久回执：标记结果未知，不凭空宣称成功，也不把 `changed = false` 误当成“外部绝对没变”。
 
-Harness 无法让任意远程服务写入和本地检查点成为同一个事务。严格防止重复副作用还需要工具或远端提供幂等键、事务等能力。这里的“幂等”就是同一操作重复提交，最终不会多做一份。
+Ant 无法让任意远程服务写入和本地检查点成为同一个事务。严格防止重复副作用还需要工具或远端提供幂等键、事务等能力。这里的“幂等”就是同一操作重复提交，最终不会多做一份。
 
 取消机制也有明确限制：
 
@@ -325,7 +325,7 @@ Harness 无法让任意远程服务写入和本地检查点成为同一个事务
 ```mermaid
 sequenceDiagram
     autonumber
-    participant E as Harness
+    participant E as Ant
     participant C as ContextBudget
     participant P as Policy
     participant D as SessionStore
@@ -347,7 +347,7 @@ sequenceDiagram
     E->>M: 正常请求：历史摘要 + 保留内容
 ```
 
-对应代码：[context.rs](../crates/harness3-core/src/context.rs) 与 [session.rs](../crates/harness3-core/src/session.rs) 的 `project`。
+对应代码：[context.rs](../crates/ant3-core/src/context.rs) 与 [session.rs](../crates/ant3-core/src/session.rs) 的 `project`。
 
 默认配置是 128,000 Token 窗口，80% 触发，尝试压到 60%，为输出预留 8,192 Token，摘要最多 8,192 Token，保留最近两个完整交换单元。模型适配器或宿主可以覆盖这些值。
 
@@ -367,7 +367,7 @@ sequenceDiagram
 
 ### `lib.rs`：公共词汇和接口
 
-[打开源码](../crates/harness3-core/src/lib.rs)。先看它，可以知道其他文件传来传去的是什么。
+[打开源码](../crates/ant3-core/src/lib.rs)。先看它，可以知道其他文件传来传去的是什么。
 
 - 输入类：`InboundEvent`、`Request`、`Context`。`Context` 带运行 ID、来源、事件 ID、原始文字和宿主元数据，交给工具判断本次操作的上下文。
 - 模型类：`ModelInput`、`ModelReply`、`Model`、`LiveOutput`。`ModelReply.calls` 是模型希望执行的工具列表；`continuation` 留给供应商适配器保存专有续接状态。
@@ -381,9 +381,9 @@ sequenceDiagram
 
 ### `engine.rs`：主流程
 
-[打开源码](../crates/harness3-core/src/engine.rs)。这是整套代码最重要的阅读入口。
+[打开源码](../crates/ant3-core/src/engine.rs)。这是整套代码最重要的阅读入口。
 
-`Harness` 持有注册表、运行限制、诊断缓冲和可选上下文预算。`run_session` 依次处理准入、提示词、模型循环、工具执行、收尾。`parallel_allowed` 判断并行资格；`execute_call` 统一执行工具并处理期限与取消；`run` 是一次性会话的便捷包装；`remaining` 计算剩余时间；`loaded_tool_names` 从回执恢复已加载工具。
+`Ant` 持有注册表、运行限制、诊断缓冲和可选上下文预算。`run_session` 依次处理准入、提示词、模型循环、工具执行、收尾。`parallel_allowed` 判断并行资格；`execute_call` 统一执行工具并处理期限与取消；`run` 是一次性会话的便捷包装；`remaining` 计算剩余时间；`loaded_tool_names` 从回执恢复已加载工具。
 
 默认限制是 256 个普通模型轮次、1,024 次工具调用、3,600 秒运行时间。它们是限制，不是建议每次都用完；已开始的工具仍遵守前述协作取消边界。
 
@@ -393,7 +393,7 @@ sequenceDiagram
 
 ### `registry.rs`：组装能力
 
-[打开源码](../crates/harness3-core/src/registry.rs)。保存名称到实现的映射，比如模型名到 `Model`、工具名到 `Tool`。名称重复时拒绝注册，避免无意替换原能力。
+[打开源码](../crates/ant3-core/src/registry.rs)。保存名称到实现的映射，比如模型名到 `Model`、工具名到 `Tool`。名称重复时拒绝注册，避免无意替换原能力。
 
 `provide<T>` / `service<T>` 提供带类型检查的共享能力；例如 `progressive-tools` 服务的值是入口工具名列表。
 
@@ -403,7 +403,7 @@ sequenceDiagram
 
 ### `session.rs`：会话档案与恢复
 
-[打开源码](../crates/harness3-core/src/session.rs)。实现会话结构、内存存储、历史重建、分支、压缩投影和故障收尾。
+[打开源码](../crates/ant3-core/src/session.rs)。实现会话结构、内存存储、历史重建、分支、压缩投影和故障收尾。
 
 `checkpoint` 将新事实封成增量事件，再按期望版本保存。`seal` / `validate_append` 阻止改写已有历史；`request_input` 重建当时模型请求；`recover_interrupted` 处理已经失去执行者的运行。
 
@@ -411,25 +411,25 @@ sequenceDiagram
 
 ### `context.rs`：上下文预算与摘要方案
 
-[打开源码](../crates/harness3-core/src/context.rs)。`ContextBudget` 存预算；`used_tokens` 算占用；`plan` 找可以摘要的完整历史前缀；`proposed` 验证摘要。它负责计算和规划，真正模型调用仍在 `engine.rs`。
+[打开源码](../crates/ant3-core/src/context.rs)。`ContextBudget` 存预算；`used_tokens` 算占用；`plan` 找可以摘要的完整历史前缀；`proposed` 验证摘要。它负责计算和规划，真正模型调用仍在 `engine.rs`。
 
 ### `skills.rs`：说明书与参考资源
 
-[打开源码](../crates/harness3-core/src/skills.rs)。`Manifest` 是能力包清单，`SkillInfo` 是目录信息，`LoadedSkill` 是实际说明及内容哈希。`FileBundle` 支持磁盘文件和编译进程序的文本。
+[打开源码](../crates/ant3-core/src/skills.rs)。`Manifest` 是能力包清单，`SkillInfo` 是目录信息，`LoadedSkill` 是实际说明及内容哈希。`FileBundle` 支持磁盘文件和编译进程序的文本。
 
 磁盘技能实际加载时重新读取正文，计算 SHA-256 作为内容版本；这不是签名校验，也不表示文件可信。这里只读取说明和声明的资源，不运行脚本、不动态加载本地二进制插件。
 
 ### `prompt.rs` 与 `interaction.md`：组合模型工作要求
 
-[prompt.rs](../crates/harness3-core/src/prompt.rs) 定义 `PromptSection`。引擎按 `(order, name)` 排序，将各段 `render` 的结果追加到任务指令里。
+[prompt.rs](../crates/ant3-core/src/prompt.rs) 定义 `PromptSection`。引擎按 `(order, name)` 排序，将各段 `render` 的结果追加到任务指令里。
 
-[interaction.md](../crates/harness3-core/src/interaction.md) 是 `InteractionPrinciples` 引入的通用指导：跟随用户当前目标、按证据选择工具、错误后调整方法、保留已完成结果、区分成功和不确定性。宿主需显式注册这段提示词，它不是自动生效的全局规则。
+[interaction.md](../crates/ant3-core/src/interaction.md) 是 `InteractionPrinciples` 引入的通用指导：跟随用户当前目标、按证据选择工具、错误后调整方法、保留已完成结果、区分成功和不确定性。宿主需显式注册这段提示词，它不是自动生效的全局规则。
 
 提示词主要影响模型行为，不能替代工具端校验或执行权限检查。
 
 ### `policy.rs`：三个执行检查点
 
-[打开源码](../crates/harness3-core/src/policy.rs)。按注册顺序调用。
+[打开源码](../crates/ant3-core/src/policy.rs)。按注册顺序调用。
 
 | 接口 | 发生时机 | 可以做什么 | 关键边界 |
 | --- | --- | --- | --- |
@@ -441,7 +441,7 @@ sequenceDiagram
 
 ### `trace.rs`：诊断记录
 
-[打开源码](../crates/harness3-core/src/trace.rs)。`Trace` 在内存保留最近 10,000 条诊断事件；`Harness::trace_events()` 可以取出。宿主可注册 `TraceSink` 转存或转发，每次记录最多等待 2 秒，失败不使业务回执失效。
+[打开源码](../crates/ant3-core/src/trace.rs)。`Trace` 在内存保留最近 10,000 条诊断事件；`Ant::trace_events()` 可以取出。宿主可注册 `TraceSink` 转存或转发，每次记录最多等待 2 秒，失败不使业务回执失效。
 
 不要混淆三个“记录”机制：
 
@@ -455,17 +455,17 @@ sequenceDiagram
 
 ### `driver.rs`：给宿主的统一执行入口
 
-[打开源码](../crates/harness3-core/src/driver.rs)。定义 `AgentDriver::run_turn`，`Harness` 的实现直接委托给 `run_session`。宿主可面向这个接口调用，未来更换执行循环时仍使用同一组入参和报告。
+[打开源码](../crates/ant3-core/src/driver.rs)。定义 `AgentDriver::run_turn`，`Ant` 的实现直接委托给 `run_session`。宿主可面向这个接口调用，未来更换执行循环时仍使用同一组入参和报告。
 
 ### `transport.rs`：显式发送消息
 
-[打开源码](../crates/harness3-core/src/transport.rs)。`Outbound` 是待发消息，`Receipt` 是外部发送回执，`Transport::send` 是发送接口。`Registry::deliver` 验证基本字段并调用已登记适配器。
+[打开源码](../crates/ant3-core/src/transport.rs)。`Outbound` 是待发消息，`Receipt` 是外部发送回执，`Transport::send` 是发送接口。`Registry::deliver` 验证基本字段并调用已登记适配器。
 
 模型回复完成不会自动触发发送。宿主决定是否发送、给谁发送，并管理发送台账、凭据与不确定结果。生成答复和对外投递是两项独立操作。
 
 ### `work.rs`：后台工作领取接口
 
-[打开源码](../crates/harness3-core/src/work.rs)。只有 `WorkLease`、`WorkStore::claim`、`settle`：领取任务租约，处理后结算。
+[打开源码](../crates/ant3-core/src/work.rs)。只有 `WorkLease`、`WorkStore::claim`、`settle`：领取任务租约，处理后结算。
 
 租约类似临时领取凭证，包含工作 ID、代次、令牌和载荷。这里没有定时器、后台轮询循环或实际存储实现；调度和执行由宿主负责，`engine.rs` 也不会自动调用它。
 
@@ -489,7 +489,7 @@ cargo doc --locked --workspace --no-deps
 
 ## 10. 宿主应用怎样接入
 
-宿主实现自己的模型适配、存储和工具，通过公开接口组装运行时；Harness 不依赖宿主目录或源码。
+宿主实现自己的模型适配、存储和工具，通过公开接口组装运行时；Ant 不依赖宿主目录或源码。
 
 | 接口或步骤 | 宿主职责 |
 | --- | --- |

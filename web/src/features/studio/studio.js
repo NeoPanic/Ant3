@@ -189,8 +189,8 @@ function studioModule(kind){
 }
 
 function studioArchitecture(){
-  const modules=[['target','任务板','board',130,270],['scheduler','控制面 选型 / 生命周期','presets',530,190],['agents','对等 Agent','agents',930,270],['messages','消息','messages',130,565],['storage','存储','artifacts',530,580],['tools','Harness 模型 / 工具','plugins',930,565]];
-  return `<section class="studio-stage studio-architecture" aria-label="系统结构示意"><span class="studio-structure-label">系统剖面</span><svg class="studio-map" viewBox="0 0 1280 870" role="group" aria-label="任务板、控制面选型、对等 Agent 与标准 Harness 的结构关系">${studioBackdrop()}<g class="module-rails"><path d="M240 445 640 365 1040 445M240 445v295l400 15 400-15V445M640 365v390M240 740l800-295"/></g>${modules.map(([kind,title,href,x,y])=>`<foreignObject x="${x}" y="${y}" width="220" height="235"><div xmlns="http://www.w3.org/1999/xhtml" class="studio-machine-wrap"><a class="studio-machine" href="#${href}" title="查看${esc(title)}">${studioModule(kind)}<span>${title}</span></a></div></foreignObject>`).join('')}</svg></section>`;
+  const modules=[['target','任务板','board',130,270],['scheduler','控制面 选型 / 生命周期','presets',530,190],['agents','对等 Agent','agents',930,270],['messages','消息','messages',130,565],['storage','存储','artifacts',530,580],['tools','Ant 模型 / 工具','plugins',930,565]];
+  return `<section class="studio-stage studio-architecture" aria-label="系统结构示意"><span class="studio-structure-label">系统剖面</span><svg class="studio-map" viewBox="0 0 1280 870" role="group" aria-label="任务板、控制面选型、对等 Agent 与标准 Ant 的结构关系">${studioBackdrop()}<g class="module-rails"><path d="M240 445 640 365 1040 445M240 445v295l400 15 400-15V445M640 365v390M240 740l800-295"/></g>${modules.map(([kind,title,href,x,y])=>`<foreignObject x="${x}" y="${y}" width="220" height="235"><div xmlns="http://www.w3.org/1999/xhtml" class="studio-machine-wrap"><a class="studio-machine" href="#${href}" title="查看${esc(title)}">${studioModule(kind)}<span>${title}</span></a></div></foreignObject>`).join('')}</svg></section>`;
 }
 
 async function studioAction(action,element){

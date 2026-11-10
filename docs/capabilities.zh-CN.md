@@ -4,7 +4,7 @@
 
 | 能力 | 状态 | 验证范围 | 当前行为与限制 |
 | --- | --- | --- | --- |
-| Harness 执行循环 | 已实现 | 原生测试 | 模型→工具→模型循环、独立会话、观察与持久回执；运行内核可脱离平台使用。 |
+| Ant 执行循环 | 已实现 | 原生测试 | 模型→工具→模型循环、独立会话、观察与持久回执；运行内核可脱离平台使用。 |
 | 不可变母体发布 | 已实现 | 原生测试 | 用途、目标、指令、模型协议与插件按版本锁定；保存原始发布定义、单继承来源和能力摘要。 |
 | 母体继承与参数化 | 部分实现 | 原生测试 + Web 联调 | 固定版本单继承最多 16 层，参数 schema/默认值与创建时模板展开，最多 16 个插件的能力锁及冲突校验。没有主体权限收窄、预算/资源锁或在线升级。 |
 | 有限批量实例化 | 已实现 | 原生测试 + Web 联调 | HTTP 以 202 接纳创建 Operation，协调器分批创建，每批最多 8 个实例；256 容量含待创建预留，幂等重试复用原回执。 |
@@ -39,35 +39,35 @@
 
 | 能力 | 当前落点 | 目标目录 |
 | --- | --- | --- |
-| Harness 执行循环 | `crates/harness3-core/src/engine.rs`<br>`crates/harness3-core/src/session.rs` | `crates/harness3-core/src/` |
-| 不可变母体发布 | `crates/harness3-domain/src/lib.rs`<br>`crates/harness3-platform/src/storage/sqlite.rs`<br>`crates/harness3-platform/src/control/presets/mod.rs` | `crates/harness3-domain/src/presets/` |
-| 母体继承与参数化 | `crates/harness3-platform/src/control/presets/mod.rs`<br>`web/src/features/presets/presets.js`<br>`crates/harness3-server/tests/presets.rs` | `crates/harness3-domain/src/presets/` |
-| 有限批量实例化 | `crates/harness3-platform/src/control/fleets.rs`<br>`crates/harness3-platform/src/storage/sqlite.rs` | `crates/harness3-platform/src/control/` |
-| 实例生命周期与 TTL | `crates/harness3-platform/src/control/lifecycle.rs`<br>`crates/harness3-platform/src/storage/sqlite.rs` | `crates/harness3-platform/src/control/`<br>`crates/harness3-domain/src/agents/` |
-| Agent 池与异步 Operation | `crates/harness3-platform/src/control/fleets.rs`<br>`web/src/features/agents/fleets.js`<br>`crates/harness3-server/tests/fleets.rs` | `crates/harness3-domain/src/operations/`<br>`crates/harness3-platform/src/control/` |
-| 受限 Agent 派生 | `crates/harness3-platform/src/collaboration/research/mod.rs`<br>`web/src/features/research/research.js`<br>`crates/harness3-platform/src/collaboration/delegation/mod.rs` | `crates/harness3-domain/src/agents/` |
-| 持久队列与取消 | `crates/harness3-platform/src/storage/sqlite.rs`<br>`crates/harness3-worker/src/runner.rs` | `crates/harness3-platform/src/scheduling/` |
-| SQLite 与恢复 | `crates/harness3-platform/src/storage/sqlite.rs`<br>`crates/harness3-storage/migrations/sqlite/schema.sql`<br>`crates/harness3-storage/src/lib.rs`<br>`crates/harness3-storage/tests/database.rs` | `crates/harness3-storage/src/` |
-| 三类模型协议 | `crates/harness3-models/src/lib.rs` | `crates/harness3-models/src/` |
-| 内置工具与提示词包 | `plugins/src/lib.rs`<br>`plugins/text/mod.rs`<br>`plugins/web-fetch/mod.rs`<br>`plugins/web-search/mod.rs`<br>`crates/harness3-server/tests/builtin_plugins.rs` | `plugins/` |
-| 可执行插件契约与 SDK | `crates/harness3-plugin-protocol/src/lib.rs`<br>`crates/harness3-plugin-sdk/src/lib.rs`<br>`crates/harness3-plugin-sdk/tests/contract.rs`<br>`examples/plugins/text-inspector/manifest.json`<br>`examples/plugins/http-reader/manifest.json`<br>`examples/plugins/http-reader/test_worker.py`<br>`examples/plugins/workspace-preset/preset.json` | `crates/harness3-plugin-protocol/src/`<br>`crates/harness3-plugin-sdk/src/` |
-| 外部插件与热加载 | `crates/harness3-plugins/src/lib.rs`<br>`crates/harness3-plugins/src/package.rs`<br>`crates/harness3-plugins/src/process.rs`<br>`web/src/features/plugins/plugins.js`<br>`crates/harness3-server/tests/process_plugins.rs` | `crates/harness3-plugins/src/loaders/`<br>`crates/harness3-plugins/src/reload/` |
-| 对等 Agent 共享任务板 | `crates/harness3-platform/src/scheduling/board/mod.rs`<br>`crates/harness3-platform/src/scheduling/board/tools.rs`<br>`crates/harness3-storage/migrations/sqlite/board.sql`<br>`crates/harness3-platform/src/scheduling/routing.rs`<br>`crates/harness3-platform/src/scheduling/decision.rs`<br>`web/src/features/board/board.js`<br>`crates/harness3-server/tests/board.rs`<br>`crates/harness3-server/tests/routing.rs`<br>`crates/harness3-server/tests/decision.rs` | `crates/harness3-platform/src/collaboration/`<br>`crates/harness3-platform/src/scheduling/` |
-| 显式目标与任务依赖 | `crates/harness3-platform/src/collaboration/coordination.rs` | `crates/harness3-platform/src/collaboration/` |
-| 固定调研模板与动态委派 | `crates/harness3-platform/src/collaboration/research/mod.rs`<br>`crates/harness3-platform/src/collaboration/research/tools.rs`<br>`web/src/features/research/research.js`<br>`crates/harness3-server/tests/research.rs`<br>`crates/harness3-platform/src/collaboration/delegation/mod.rs`<br>`crates/harness3-platform/src/collaboration/delegation/tools.rs`<br>`crates/harness3-server/tests/delegation.rs`<br>`crates/harness3-platform/src/collaboration/autonomy/mod.rs`<br>`crates/harness3-platform/src/collaboration/autonomy/tools.rs`<br>`web/src/features/autonomy/autonomy.js`<br>`crates/harness3-server/tests/autonomy.rs` | `plugins/organization/`<br>`crates/harness3-platform/src/collaboration/` |
-| 候选池认领与执行尝试 | `crates/harness3-platform/src/collaboration/claims.rs`<br>`crates/harness3-platform/src/collaboration/coordination.rs`<br>`web/src/features/goals/tasks.js`<br>`crates/harness3-server/tests/claims.rs`<br>`crates/harness3-platform/src/collaboration/autonomy/mod.rs` | `crates/harness3-domain/src/goals/`<br>`crates/harness3-platform/src/collaboration/` |
-| 可靠协作消息 | `crates/harness3-platform/src/collaboration/messaging/mod.rs`<br>`crates/harness3-platform/src/collaboration/messaging/tools.rs`<br>`web/src/features/messages/messages.js`<br>`crates/harness3-server/tests/messaging.rs` | `crates/harness3-storage/src/inbox_outbox/`<br>`crates/harness3-domain/src/collaboration/` |
-| 协作频道与订阅唤醒 | `crates/harness3-platform/src/collaboration/channels/mod.rs`<br>`crates/harness3-platform/src/collaboration/channels/tools.rs`<br>`web/src/features/channels/channels.js`<br>`crates/harness3-server/tests/channels.rs` | `crates/harness3-platform/src/collaboration/channels/`<br>`crates/harness3-storage/src/inbox_outbox/` |
-| 共享上下文与版本化黑板 | `crates/harness3-platform/src/collaboration/context/mod.rs`<br>`crates/harness3-platform/src/collaboration/context/tools.rs`<br>`crates/harness3-platform/src/control/organization.rs`<br>`web/src/features/collaboration/context.js`<br>`crates/harness3-server/tests/collaboration.rs` | `crates/harness3-domain/src/collaboration/`<br>`crates/harness3-platform/src/collaboration/` |
-| 实例工作区与文件/JSON交接 | `crates/harness3-platform/src/workspaces/mod.rs`<br>`crates/harness3-platform/src/workspaces/tools.rs`<br>`web/src/features/workspaces/workspaces.js`<br>`crates/harness3-server/tests/workspaces.rs` | `crates/harness3-platform/src/workspaces/`<br>`crates/harness3-domain/src/artifacts/` |
-| 产物、验证与返工 | `crates/harness3-platform/src/workspaces/artifacts.rs`<br>`crates/harness3-platform/src/collaboration/coordination.rs`<br>`web/src/features/artifacts/artifacts.js`<br>`crates/harness3-server/tests/artifacts.rs`<br>`crates/harness3-platform/src/collaboration/verification/mod.rs`<br>`crates/harness3-platform/src/collaboration/verification/tools.rs`<br>`web/src/features/goals/verification.js`<br>`crates/harness3-server/tests/verification.rs`<br>`crates/harness3-platform/src/workspaces/mod.rs`<br>`crates/harness3-platform/src/workspaces/tools.rs`<br>`web/src/features/workspaces/workspaces.js`<br>`crates/harness3-server/tests/workspaces.rs` | `crates/harness3-domain/src/artifacts/`<br>`plugins/verification/` |
+| Ant 执行循环 | `crates/ant3-core/src/engine.rs`<br>`crates/ant3-core/src/session.rs` | `crates/ant3-core/src/` |
+| 不可变母体发布 | `crates/ant3-domain/src/lib.rs`<br>`crates/ant3-platform/src/storage/sqlite.rs`<br>`crates/ant3-platform/src/control/presets/mod.rs` | `crates/ant3-domain/src/presets/` |
+| 母体继承与参数化 | `crates/ant3-platform/src/control/presets/mod.rs`<br>`web/src/features/presets/presets.js`<br>`crates/ant3-server/tests/presets.rs` | `crates/ant3-domain/src/presets/` |
+| 有限批量实例化 | `crates/ant3-platform/src/control/fleets.rs`<br>`crates/ant3-platform/src/storage/sqlite.rs` | `crates/ant3-platform/src/control/` |
+| 实例生命周期与 TTL | `crates/ant3-platform/src/control/lifecycle.rs`<br>`crates/ant3-platform/src/storage/sqlite.rs` | `crates/ant3-platform/src/control/`<br>`crates/ant3-domain/src/agents/` |
+| Agent 池与异步 Operation | `crates/ant3-platform/src/control/fleets.rs`<br>`web/src/features/agents/fleets.js`<br>`crates/ant3-server/tests/fleets.rs` | `crates/ant3-domain/src/operations/`<br>`crates/ant3-platform/src/control/` |
+| 受限 Agent 派生 | `crates/ant3-platform/src/collaboration/research/mod.rs`<br>`web/src/features/research/research.js`<br>`crates/ant3-platform/src/collaboration/delegation/mod.rs` | `crates/ant3-domain/src/agents/` |
+| 持久队列与取消 | `crates/ant3-platform/src/storage/sqlite.rs`<br>`crates/ant3-worker/src/runner.rs` | `crates/ant3-platform/src/scheduling/` |
+| SQLite 与恢复 | `crates/ant3-platform/src/storage/sqlite.rs`<br>`crates/ant3-storage/migrations/sqlite/schema.sql`<br>`crates/ant3-storage/src/lib.rs`<br>`crates/ant3-storage/tests/database.rs` | `crates/ant3-storage/src/` |
+| 三类模型协议 | `crates/ant3-models/src/lib.rs` | `crates/ant3-models/src/` |
+| 内置工具与提示词包 | `plugins/src/lib.rs`<br>`plugins/text/mod.rs`<br>`plugins/web-fetch/mod.rs`<br>`plugins/web-search/mod.rs`<br>`crates/ant3-server/tests/builtin_plugins.rs` | `plugins/` |
+| 可执行插件契约与 SDK | `crates/ant3-plugin-protocol/src/lib.rs`<br>`crates/ant3-plugin-sdk/src/lib.rs`<br>`crates/ant3-plugin-sdk/tests/contract.rs`<br>`examples/plugins/text-inspector/manifest.json`<br>`examples/plugins/http-reader/manifest.json`<br>`examples/plugins/http-reader/test_worker.py`<br>`examples/plugins/workspace-preset/preset.json` | `crates/ant3-plugin-protocol/src/`<br>`crates/ant3-plugin-sdk/src/` |
+| 外部插件与热加载 | `crates/ant3-plugins/src/lib.rs`<br>`crates/ant3-plugins/src/package.rs`<br>`crates/ant3-plugins/src/process.rs`<br>`web/src/features/plugins/plugins.js`<br>`crates/ant3-server/tests/process_plugins.rs` | `crates/ant3-plugins/src/loaders/`<br>`crates/ant3-plugins/src/reload/` |
+| 对等 Agent 共享任务板 | `crates/ant3-platform/src/scheduling/board/mod.rs`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-storage/migrations/sqlite/board.sql`<br>`crates/ant3-platform/src/scheduling/routing.rs`<br>`crates/ant3-platform/src/scheduling/decision.rs`<br>`web/src/features/board/board.js`<br>`crates/ant3-server/tests/board.rs`<br>`crates/ant3-server/tests/routing.rs`<br>`crates/ant3-server/tests/decision.rs` | `crates/ant3-platform/src/collaboration/`<br>`crates/ant3-platform/src/scheduling/` |
+| 显式目标与任务依赖 | `crates/ant3-platform/src/collaboration/coordination.rs` | `crates/ant3-platform/src/collaboration/` |
+| 固定调研模板与动态委派 | `crates/ant3-platform/src/collaboration/research/mod.rs`<br>`crates/ant3-platform/src/collaboration/research/tools.rs`<br>`web/src/features/research/research.js`<br>`crates/ant3-server/tests/research.rs`<br>`crates/ant3-platform/src/collaboration/delegation/mod.rs`<br>`crates/ant3-platform/src/collaboration/delegation/tools.rs`<br>`crates/ant3-server/tests/delegation.rs`<br>`crates/ant3-platform/src/collaboration/autonomy/mod.rs`<br>`crates/ant3-platform/src/collaboration/autonomy/tools.rs`<br>`web/src/features/autonomy/autonomy.js`<br>`crates/ant3-server/tests/autonomy.rs` | `plugins/organization/`<br>`crates/ant3-platform/src/collaboration/` |
+| 候选池认领与执行尝试 | `crates/ant3-platform/src/collaboration/claims.rs`<br>`crates/ant3-platform/src/collaboration/coordination.rs`<br>`web/src/features/goals/tasks.js`<br>`crates/ant3-server/tests/claims.rs`<br>`crates/ant3-platform/src/collaboration/autonomy/mod.rs` | `crates/ant3-domain/src/goals/`<br>`crates/ant3-platform/src/collaboration/` |
+| 可靠协作消息 | `crates/ant3-platform/src/collaboration/messaging/mod.rs`<br>`crates/ant3-platform/src/collaboration/messaging/tools.rs`<br>`web/src/features/messages/messages.js`<br>`crates/ant3-server/tests/messaging.rs` | `crates/ant3-storage/src/inbox_outbox/`<br>`crates/ant3-domain/src/collaboration/` |
+| 协作频道与订阅唤醒 | `crates/ant3-platform/src/collaboration/channels/mod.rs`<br>`crates/ant3-platform/src/collaboration/channels/tools.rs`<br>`web/src/features/channels/channels.js`<br>`crates/ant3-server/tests/channels.rs` | `crates/ant3-platform/src/collaboration/channels/`<br>`crates/ant3-storage/src/inbox_outbox/` |
+| 共享上下文与版本化黑板 | `crates/ant3-platform/src/collaboration/context/mod.rs`<br>`crates/ant3-platform/src/collaboration/context/tools.rs`<br>`crates/ant3-platform/src/control/organization.rs`<br>`web/src/features/collaboration/context.js`<br>`crates/ant3-server/tests/collaboration.rs` | `crates/ant3-domain/src/collaboration/`<br>`crates/ant3-platform/src/collaboration/` |
+| 实例工作区与文件/JSON交接 | `crates/ant3-platform/src/workspaces/mod.rs`<br>`crates/ant3-platform/src/workspaces/tools.rs`<br>`web/src/features/workspaces/workspaces.js`<br>`crates/ant3-server/tests/workspaces.rs` | `crates/ant3-platform/src/workspaces/`<br>`crates/ant3-domain/src/artifacts/` |
+| 产物、验证与返工 | `crates/ant3-platform/src/workspaces/artifacts.rs`<br>`crates/ant3-platform/src/collaboration/coordination.rs`<br>`web/src/features/artifacts/artifacts.js`<br>`crates/ant3-server/tests/artifacts.rs`<br>`crates/ant3-platform/src/collaboration/verification/mod.rs`<br>`crates/ant3-platform/src/collaboration/verification/tools.rs`<br>`web/src/features/goals/verification.js`<br>`crates/ant3-server/tests/verification.rs`<br>`crates/ant3-platform/src/workspaces/mod.rs`<br>`crates/ant3-platform/src/workspaces/tools.rs`<br>`web/src/features/workspaces/workspaces.js`<br>`crates/ant3-server/tests/workspaces.rs` | `crates/ant3-domain/src/artifacts/`<br>`plugins/verification/` |
 | Web 执行证据检查 | `web/src/app/app.js`<br>`web/src/features/studio/studio.js`<br>`web/src/features/studio/studio.css`<br>`web/src/features/goals/goals.js`<br>`web/src/features/agents/fleets.js`<br>`web/src/features/messages/messages.js`<br>`web/src/features/artifacts/artifacts.js`<br>`web/src/features/collaboration/context.js`<br>`web/src/features/goals/tasks.js`<br>`web/src/features/channels/channels.js`<br>`web/src/features/workspaces/workspaces.js`<br>`web/src/features/autonomy/autonomy.js` | `web/src/features/` |
-| API / CLI / MCP 入口 | `crates/harness3-server/src/api/mod.rs`<br>`crates/harness3-client/src/lib.rs`<br>`crates/harness3-cli/src/main.rs`<br>`crates/harness3-cli/src/commands.rs`<br>`crates/harness3-server/src/mcp.rs`<br>`crates/harness3-cli/tests/entrances.rs`<br>`examples/clients/mcp.json` | `crates/harness3-client/src/`<br>`crates/harness3-cli/src/`<br>`crates/harness3-server/src/mcp.rs` |
-| 实时事件与查询 | `crates/harness3-server/src/api/mod.rs` | `crates/harness3-server/src/events/` |
-| 预算预留与账本 | 尚无实现模块 | `crates/harness3-platform/src/accounting/`<br>`crates/harness3-domain/src/budgets/` |
-| 身份、授权与审批 | `crates/harness3-server/src/api/mod.rs` | `crates/harness3-platform/src/authorization/`<br>`crates/harness3-domain/src/identity/` |
-| 监督 Worker 与执行隔离 | 尚无实现模块 | `crates/harness3-worker/src/` |
-| 远程控制面与 PostgreSQL | 尚无实现模块 | `crates/harness3-storage/src/`<br>`crates/harness3-worker/src/backends/` |
+| API / CLI / MCP 入口 | `crates/ant3-server/src/api/mod.rs`<br>`crates/ant3-client/src/lib.rs`<br>`crates/ant3-cli/src/main.rs`<br>`crates/ant3-cli/src/commands.rs`<br>`crates/ant3-server/src/mcp.rs`<br>`crates/ant3-cli/tests/entrances.rs`<br>`examples/clients/mcp.json` | `crates/ant3-client/src/`<br>`crates/ant3-cli/src/`<br>`crates/ant3-server/src/mcp.rs` |
+| 实时事件与查询 | `crates/ant3-server/src/api/mod.rs` | `crates/ant3-server/src/events/` |
+| 预算预留与账本 | 尚无实现模块 | `crates/ant3-platform/src/accounting/`<br>`crates/ant3-domain/src/budgets/` |
+| 身份、授权与审批 | `crates/ant3-server/src/api/mod.rs` | `crates/ant3-platform/src/authorization/`<br>`crates/ant3-domain/src/identity/` |
+| 监督 Worker 与执行隔离 | 尚无实现模块 | `crates/ant3-worker/src/` |
+| 远程控制面与 PostgreSQL | 尚无实现模块 | `crates/ant3-storage/src/`<br>`crates/ant3-worker/src/backends/` |
 | 发行、生态与验收套件 | `.github/workflows/check.yml`<br>`docs/getting-started.zh-CN.md` | `deploy/`<br>`examples/`<br>`tests/`<br>`docs/` |
 
 ## 当前源码目录
@@ -76,7 +76,7 @@
 
 ```text
 crates/
-├── harness3-cli/
+├── ant3-cli/
 │   ├── src/
 │   │   ├── commands.rs
 │   │   └── main.rs
@@ -84,11 +84,11 @@ crates/
 │   │   ├── entrances.rs
 │   │   └── startup.rs
 │   └── Cargo.toml
-├── harness3-client/
+├── ant3-client/
 │   ├── src/
 │   │   └── lib.rs
 │   └── Cargo.toml
-├── harness3-core/
+├── ant3-core/
 │   ├── src/
 │   │   ├── context.rs
 │   │   ├── driver.rs
@@ -104,7 +104,7 @@ crates/
 │   │   ├── transport.rs
 │   │   └── work.rs
 │   └── Cargo.toml
-├── harness3-domain/
+├── ant3-domain/
 │   ├── src/
 │   │   ├── artifacts.rs
 │   │   ├── board.rs
@@ -118,11 +118,11 @@ crates/
 │   │   ├── research.rs
 │   │   └── verification.rs
 │   └── Cargo.toml
-├── harness3-models/
+├── ant3-models/
 │   ├── src/
 │   │   └── lib.rs
 │   └── Cargo.toml
-├── harness3-platform/
+├── ant3-platform/
 │   ├── src/
 │   │   ├── collaboration/
 │   │   │   ├── autonomy/
@@ -178,11 +178,11 @@ crates/
 │   │   └── support/
 │   │       └── routing.rs
 │   └── Cargo.toml
-├── harness3-plugin-protocol/
+├── ant3-plugin-protocol/
 │   ├── src/
 │   │   └── lib.rs
 │   └── Cargo.toml
-├── harness3-plugin-sdk/
+├── ant3-plugin-sdk/
 │   ├── examples/
 │   │   └── text.rs
 │   ├── src/
@@ -190,13 +190,13 @@ crates/
 │   ├── tests/
 │   │   └── contract.rs
 │   └── Cargo.toml
-├── harness3-plugins/
+├── ant3-plugins/
 │   ├── src/
 │   │   ├── lib.rs
 │   │   ├── package.rs
 │   │   └── process.rs
 │   └── Cargo.toml
-├── harness3-server/
+├── ant3-server/
 │   ├── src/
 │   │   ├── api/
 │   │   │   ├── auth.rs
@@ -230,7 +230,7 @@ crates/
 │   │   ├── verification.rs
 │   │   └── workspaces.rs
 │   └── Cargo.toml
-├── harness3-storage/
+├── ant3-storage/
 │   ├── migrations/
 │   │   └── sqlite/
 │   │       ├── autonomy.sql
@@ -244,7 +244,7 @@ crates/
 │   ├── tests/
 │   │   └── database.rs
 │   └── Cargo.toml
-└── harness3-worker/
+└── ant3-worker/
     ├── src/
     │   ├── lib.rs
     │   ├── recovery.rs

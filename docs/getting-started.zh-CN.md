@@ -1,43 +1,43 @@
 # Ant³ 本地平台使用指南
 
-Ant³ 在本地管理 Preset、实例、任务和工具执行。默认流程从共享任务板发布工作开始：控制面动态选择 Preset 并启动实例，Agent 自行认领、执行或拆分。已有 Agent 池、单实例 Run、显式 Goal 和固定调研模板继续可用。入口共用同一个 daemon 与持久状态；运行时 crate `harness3` 也可独立使用。
+Ant³ 在本地管理 Preset、实例、任务和工具执行。默认流程从共享任务板发布工作开始：控制面动态选择 Preset 并启动实例，Agent 自行认领、执行或拆分。已有 Agent 池、单实例 Run、显式 Goal 和固定调研模板继续可用。入口共用同一个 daemon 与持久状态；运行时 crate `ant3` 也可独立使用。
 
 ## 启动与登录
 
 要求 Rust 1.99+，建议使用最新稳定版。在仓库根目录执行，无需 Node、外部数据库或前端开发服务器：
 
 ```sh
-cargo run --locked -p harness3-cli -- up
+cargo run --locked -p ant3-cli -- up
 ```
 
-打开 [http://127.0.0.1:7333](http://127.0.0.1:7333)，将 `.harness3/token` 的内容粘贴到登录框。平台 token 用于本地认证，与模型 API Key 分开。Web 使用 HttpOnly / SameSite=Strict 会话 cookie；API 支持 Bearer token。
+打开 [http://127.0.0.1:7333](http://127.0.0.1:7333)，将 `.ant3/token` 的内容粘贴到登录框。平台 token 用于本地认证，与模型 API Key 分开。Web 使用 HttpOnly / SameSite=Strict 会话 cookie；API 支持 Bearer token。
 
-SQLite、token、插件缓存、实例文件和 daemon 独占锁保存在数据目录，默认 `.harness3/`。使用 `--data-dir` 和 `--port` 可调整目录和端口；同一数据目录只能运行一个 daemon。默认监听 loopback。首次启动不创建母体、实例、任务或演示数据；未配置模型也可查看空白控制台，但不能执行模型任务。
+SQLite、token、插件缓存、实例文件和 daemon 独占锁保存在数据目录，默认 `.ant3/`。使用 `--data-dir` 和 `--port` 可调整目录和端口；同一数据目录只能运行一个 daemon。默认监听 loopback。首次启动不创建母体、实例、任务或演示数据；未配置模型也可查看空白控制台，但不能执行模型任务。
 
 Ctrl-C 停止派发新工作，并等待已开始运行协作取消、收尾。重启保留已提交状态和已知回执，排队工作可以继续处理；中断且结果未知的运行不会自动重放或续跑。备份时应包含数据库和工作区文件，不能只复制 SQLite。
 
 ## 配置模型
 
-平台支持 OpenAI-compatible、OpenAI Responses 和 Anthropic。以 Responses 为例，通过环境变量设置服务根路径和模型，并用自己的凭证加载方式设置 `HARNESS3_OPENAI_RESPONSES_API_KEY`：
+平台支持 OpenAI-compatible、OpenAI Responses 和 Anthropic。以 Responses 为例，通过环境变量设置服务根路径和模型，并用自己的凭证加载方式设置 `ANT3_OPENAI_RESPONSES_API_KEY`：
 
 ```sh
-export HARNESS3_OPENAI_RESPONSES_BASE_URL=https://api.openai.com/v1
-export HARNESS3_OPENAI_RESPONSES_MODEL=gpt-6-luna
-cargo run --locked -p harness3-cli -- up
+export ANT3_OPENAI_RESPONSES_BASE_URL=https://api.openai.com/v1
+export ANT3_OPENAI_RESPONSES_MODEL=gpt-6-luna
+cargo run --locked -p ant3-cli -- up
 ```
 
 | 协议 | 环境变量前缀 | 追加 Endpoint | 默认 BASE_URL |
 | --- | --- | --- | --- |
-| OpenAI-compatible | `HARNESS3_OPENAI_COMPATIBLE_` | `/chat/completions` | `https://api.openai.com/v1` |
-| OpenAI Responses | `HARNESS3_OPENAI_RESPONSES_` | `/responses` | `https://api.openai.com/v1` |
-| Anthropic | `HARNESS3_ANTHROPIC_` | `/messages` | `https://api.anthropic.com/v1` |
+| OpenAI-compatible | `ANT3_OPENAI_COMPATIBLE_` | `/chat/completions` | `https://api.openai.com/v1` |
+| OpenAI Responses | `ANT3_OPENAI_RESPONSES_` | `/responses` | `https://api.openai.com/v1` |
+| Anthropic | `ANT3_ANTHROPIC_` | `/messages` | `https://api.anthropic.com/v1` |
 
 每个前缀读取 `MODEL`、`BASE_URL`、`API_KEY`。`MODEL` 必需；不要求认证的本地服务可以省略 API Key。`BASE_URL` 包含 `/v1` 等服务根路径。密钥不应放入 Preset、插件指令或 Git。
 
 也可引用已有的 Responses 配置目录：
 
 ```sh
-cargo run --locked -p harness3-cli -- up \
+cargo run --locked -p ant3-cli -- up \
   --codex-config-dir /path/to/codex-config \
   --model gpt-6-luna
 ```
@@ -98,12 +98,12 @@ cargo run --locked -p harness3-cli -- up \
 实例详情可暂停、恢复、终止或“排空并终止”。排空拒绝新任务、等待已接纳工作结算，不能撤回；终止后保留历史会话和回执。
 
 ```sh
-./target/debug/harness3 fleets create --file examples/clients/fleet.json --key pool-create-1
-./target/debug/harness3 fleets show FLEET_ID
-./target/debug/harness3 operations show OPERATION_ID
-./target/debug/harness3 fleets scale FLEET_ID --count 3 --expected-revision 1 --key pool-scale-1
-./target/debug/harness3 runs submit AGENT_ID --file input.txt --key run-submit-1
-./target/debug/harness3 runs show RUN_ID
+./target/debug/ant3 fleets create --file examples/clients/fleet.json --key pool-create-1
+./target/debug/ant3 fleets show FLEET_ID
+./target/debug/ant3 operations show OPERATION_ID
+./target/debug/ant3 fleets scale FLEET_ID --count 3 --expected-revision 1 --key pool-scale-1
+./target/debug/ant3 runs submit AGENT_ID --file input.txt --key run-submit-1
+./target/debug/ant3 runs show RUN_ID
 ```
 
 ## 显式任务图
@@ -123,22 +123,22 @@ cargo run --locked -p harness3-cli -- up \
 CLI 从 `--data-dir` 读取平台 token，只调用 loopback HTTP，不直接写数据库。各命令支持 `--port` 和 `--data-dir`，输出 JSON：
 
 ```sh
-./target/debug/harness3 snapshot
-./target/debug/harness3 board publish --file examples/clients/board-task.json --key study-1
-./target/debug/harness3 board list
-./target/debug/harness3 board show TASK_ID
-./target/debug/harness3 presets list
-./target/debug/harness3 research create --file examples/clients/research.json --key research-1
-./target/debug/harness3 research show RESEARCH_ID
-./target/debug/harness3 goals create --file goal.json --key goal-create-1
-./target/debug/harness3 goals show GOAL_ID
-./target/debug/harness3 events --after 0
+./target/debug/ant3 snapshot
+./target/debug/ant3 board publish --file examples/clients/board-task.json --key study-1
+./target/debug/ant3 board list
+./target/debug/ant3 board show TASK_ID
+./target/debug/ant3 presets list
+./target/debug/ant3 research create --file examples/clients/research.json --key research-1
+./target/debug/ant3 research show RESEARCH_ID
+./target/debug/ant3 goals create --file goal.json --key goal-create-1
+./target/debug/ant3 goals show GOAL_ID
+./target/debug/ant3 events --after 0
 ```
 
 MCP stdio 连接已启动的 daemon：
 
 ```sh
-./target/debug/harness3 mcp serve --transport stdio --data-dir /path/to/.harness3
+./target/debug/ant3 mcp serve --transport stdio --data-dir /path/to/.ant3
 # 需要写入时追加 --allow-write
 ```
 

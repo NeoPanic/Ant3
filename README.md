@@ -31,10 +31,10 @@ Requires **Rust 1.99+ (latest stable recommended)**. The first start opens an em
 ```sh
 git clone https://github.com/NeoPanic/Ant3.git
 cd Ant3
-cargo run --locked -p harness3-cli -- up
+cargo run --locked -p ant3-cli -- up
 ```
 
-Open [localhost:7333](http://127.0.0.1:7333) and sign in with the contents of `.harness3/token`. Local state is stored in `.harness3/`.
+Open [localhost:7333](http://127.0.0.1:7333) and sign in with the contents of `.ant3/token`. Local state is stored in `.ant3/`.
 
 1. Configure a model provider and publish a Preset in **母体 Presets**, then publish work and acceptance criteria in **任务板** (Task Board).
 2. Follow Preset selection, instance startup, and the Agent's claim and execution.
@@ -96,14 +96,14 @@ flowchart LR
     Entry[Publish task] --> Board[Shared task board]
     Board --> Control[Control plane: select Preset]
     Preset[Versioned Presets] --> Control
-    Control -->|start and manage| A[Agent A: independent Harness]
-    Control -->|start and manage| B[Agent B: independent Harness]
+    Control -->|start and manage| A[Agent A: independent Ant]
+    Control -->|start and manage| B[Agent B: independent Ant]
     A -->|claim / results / subtasks| Board
     B -->|claim / results / subtasks| Board
     Board <--> State[SQLite: tasks / claims / Runs]
 ```
 
-The control plane manages capacity, Preset selection, and lifecycle. Agents share the claim and split protocol; planning and integration are work that ordinary instances can perform. Task ancestry records dependencies and provenance, without giving an Agent authority over its peers. The independent Harness owns model/tool execution, policies, session checkpoints, cancellation, and execution receipts. Checkpoints do not guarantee exactly-once external effects: tools must supply their own idempotency or transaction contract. See [runtime contracts](docs/runtime.md) and the [target architecture](docs/managed-agents.zh-CN.md).
+The control plane manages capacity, Preset selection, and lifecycle. Agents share the claim and split protocol; planning and integration are work that ordinary instances can perform. Task ancestry records dependencies and provenance, without giving an Agent authority over its peers. The independent Ant owns model/tool execution, policies, session checkpoints, cancellation, and execution receipts. Checkpoints do not guarantee exactly-once external effects: tools must supply their own idempotency or transaction contract. See [runtime contracts](docs/runtime.md) and the [target architecture](docs/managed-agents.zh-CN.md).
 
 ## Use the runtime independently
 
@@ -115,13 +115,13 @@ The [offline example](examples/quickstart.rs) runs a model → tool → model cy
 
 ```toml
 [dependencies]
-harness3 = { git = "https://github.com/NeoPanic/Ant3.git", branch = "main" }
+ant3 = { git = "https://github.com/NeoPanic/Ant3.git", branch = "main" }
 ```
 
 ```rust
-use harness3::{Harness, Limits, Registry};
+use ant3::{Ant, Limits, Registry};
 
-let harness = Harness::new(Registry::default(), Limits::default());
+let agent = Ant::new(Registry::default(), Limits::default());
 ```
 
 Register capabilities as shown in the complete example. Pin a Git revision for reproducible builds. API reference: `cargo doc --locked --workspace --no-deps --open`.
@@ -130,7 +130,7 @@ Register capabilities as shown in the complete example. Pin a Git revision for r
 
 An ant can do a small piece of work; a colony combines many local actions into a shared outcome. **³** expresses that composition across three connected steps: **claim → contribute → continue**. It describes the collaboration loop, with capacity and permissions enforced by the platform.
 
-The display name is **Ant³**, the repository is **Ant3**, and the existing Cargo packages, CLI command, API identifiers, and `.harness3/` data directory retain `harness3` for compatibility. [Brand assets and usage](docs/brand/README.md).
+The display name is **Ant³**, the repository is **Ant3**, and technical identifiers use `ant3`: the CLI, Cargo packages, protocol names, and `.ant3/` data directory. See the [upgrade guide](docs/upgrade-ant3.zh-CN.md) when moving an existing workspace. [Brand assets and usage](docs/brand/README.md).
 
 ## Contribute
 
