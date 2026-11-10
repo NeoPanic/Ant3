@@ -18,3 +18,12 @@ CREATE TABLE IF NOT EXISTS board_commands(
  scope TEXT NOT NULL,key TEXT NOT NULL,fingerprint TEXT NOT NULL,response TEXT NOT NULL,
  PRIMARY KEY(scope,key)
 );
+CREATE TABLE IF NOT EXISTS board_progress(
+ task_id TEXT PRIMARY KEY REFERENCES board_tasks(id),run_id TEXT NOT NULL REFERENCES runs(id),
+ message TEXT NOT NULL,updated_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS board_reviews(
+ task_id TEXT NOT NULL REFERENCES board_tasks(id),run_id TEXT NOT NULL REFERENCES runs(id),
+ decision TEXT NOT NULL,feedback TEXT NOT NULL,result TEXT NOT NULL,split_count INTEGER NOT NULL,created_at INTEGER NOT NULL,
+ PRIMARY KEY(task_id,run_id)
+);

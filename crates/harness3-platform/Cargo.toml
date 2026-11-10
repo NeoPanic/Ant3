@@ -2,7 +2,7 @@
 name = "harness3-platform"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.99"
 license = "MIT"
 description = "Local Harness³ control plane and inspection console"
 
@@ -18,10 +18,10 @@ harness3-plugins = { path = "../harness3-plugins" }
 harness3 = { path = "../harness3-core" }
 harness3-plugin-protocol = { path = "../harness3-plugin-protocol" }
 async-trait = "0.1"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
-rusqlite = { version = "0.37", features = ["bundled"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
+rusqlite = { version = "0.41", features = ["bundled", "fallible_uint"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sha2 = "0.10"
+sha2 = "0.11"
 tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
 uuid = { version = "1", features = ["v4"] }

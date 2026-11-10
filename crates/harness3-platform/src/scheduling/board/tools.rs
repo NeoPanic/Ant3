@@ -19,8 +19,13 @@ fn spec(kind: u8) -> ToolSpec {
         ),
         2 => (
             "platform.board.split",
-            "Split your claimed task into independent subtasks described only by title, instructions and acceptance. The control plane chooses Presets and starts peers; you do not assign identities. Children activate after this Run succeeds. After submitting, finish this Run instead of waiting. Once all children complete, the parent task returns to the board for integration by an ordinary peer. A task can be split only once; do not split a continuation. Use a stable command_key for retries.",
+            "Split your claimed task into independent subtasks described only by title, instructions and acceptance. The control plane chooses Presets and starts peers; you do not assign identities. Children activate after this Run succeeds. After submitting, finish this Run instead of waiting. Once all children complete, the parent task returns to the board for integration by an ordinary peer. A task can be split once per human review cycle; do not split a child-integration continuation again. Use a stable command_key for retries.",
             json!({"type":"object","additionalProperties":false,"properties":{"tasks":{"type":"array","minItems":1,"maxItems":8,"items":task},"command_key":{"type":"string","minLength":1,"maxLength":160}},"required":["tasks","command_key"]}),
+        ),
+        4 => (
+            "platform.board.progress",
+            "Report concrete progress, findings or blockers on your claimed task. This records progress, not completion or human approval. Update at meaningful milestones; use a stable command_key for retries.",
+            json!({"type":"object","additionalProperties":false,"properties":{"message":{"type":"string","minLength":1,"maxLength":2000},"command_key":{"type":"string","minLength":1,"maxLength":160}},"required":["message","command_key"]}),
         ),
         _ => (
             "platform.board.result",
@@ -32,11 +37,11 @@ fn spec(kind: u8) -> ToolSpec {
         name: name.into(),
         description: description.into(),
         parameters,
-        mutates: kind == 1 || kind == 2,
+        mutates: matches!(kind, 1 | 2 | 4),
     }
 }
 pub fn tools(store: Store, run: &str) -> Vec<Arc<dyn Tool>> {
-    (0..4)
+    (0..5)
         .map(|kind| {
             Arc::new(BoardTool {
                 store: store.clone(),
@@ -60,6 +65,12 @@ struct Claim {
 #[serde(deny_unknown_fields)]
 struct Split {
     tasks: Vec<super::PublishInput>,
+    command_key: String,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Progress {
+    message: String,
     command_key: String,
 }
 #[derive(Deserialize)]
@@ -123,6 +134,12 @@ impl Tool for BoardTool {
                     &input.command_key,
                 )
             }
+            4 => {
+                let input: Progress =
+                    serde_json::from_value(args).map_err(|_| Error::new("invalid_arguments"))?;
+                self.store
+                    .update_board_progress(&self.run, &input.message, &input.command_key)
+            }
             _ => {
                 let input: ResultPage =
                     serde_json::from_value(args).map_err(|_| Error::new("invalid_arguments"))?;
@@ -133,7 +150,7 @@ impl Tool for BoardTool {
         .map_err(|e| Error::new(e.1))?;
         Ok(ToolOutput {
             content,
-            changed: self.kind == 1 || self.kind == 2,
+            changed: matches!(self.kind, 1 | 2 | 4),
         })
     }
 }

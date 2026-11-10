@@ -790,7 +790,7 @@ impl Harness {
             .len();
         Ok(
             json!({"purpose":purpose,"cache_phase":phase,"tools_added":added,"tools_changed":changed,
-            "tool_count":tools.len(),"tool_schema_bytes":encoded.len(),"tool_fingerprint":format!("{:x}",Sha256::digest(&encoded)),
+            "tool_count":tools.len(),"tool_schema_bytes":encoded.len(),"tool_fingerprint":Sha256::digest(&encoded).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),
             "compaction_generation":compaction_generation,"compaction_through":through}),
         )
     }

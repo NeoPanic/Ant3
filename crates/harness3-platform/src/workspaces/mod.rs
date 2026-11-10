@@ -32,7 +32,13 @@ fn io(_: std::io::Error) -> Fault {
     fault(500, "workspace_io_error")
 }
 fn digest(content: &str) -> String {
-    format!("sha256:{:x}", Sha256::digest(content.as_bytes()))
+    format!(
+        "sha256:{}",
+        Sha256::digest(content.as_bytes())
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    )
 }
 fn relative(path: &str) -> PResult<PathBuf> {
     let p = Path::new(path);

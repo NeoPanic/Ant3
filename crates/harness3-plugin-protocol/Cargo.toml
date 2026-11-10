@@ -2,7 +2,7 @@
 name = "harness3-plugin-protocol"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.99"
 license = "MIT"
 description = "Versioned process plugin manifests and bounded schema contracts for Harness³"
 

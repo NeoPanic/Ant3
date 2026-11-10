@@ -7,7 +7,10 @@ use std::{
 };
 
 pub fn digest(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>()
 }
 fn read(path: &Path, limit: u64) -> PResult<Vec<u8>> {
     if !std::fs::symlink_metadata(path)
@@ -134,4 +137,19 @@ pub fn verify(cache: &Path, hash: &str, manifest: &Manifest) -> PResult<PathBuf>
         }
     }
     Ok(root)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn sha256_encoding_preserves_existing_package_identifiers() {
+        assert_eq!(
+            super::digest(b""),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+        assert_eq!(
+            super::digest(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+    }
 }

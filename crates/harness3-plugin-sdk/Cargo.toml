@@ -2,7 +2,7 @@
 name = "harness3-plugin-sdk"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.99"
 license = "MIT"
 description = "Reference synchronous stdio tool authoring SDK for Harness³ process plugins"
 

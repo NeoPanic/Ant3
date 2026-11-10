@@ -302,7 +302,10 @@ fn wire_tool_name(name: &str) -> String {
             }
         })
         .collect();
-    let digest = format!("{:x}", Sha256::digest(name.as_bytes()));
+    let digest = Sha256::digest(name.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     format!("h3_{stem}_{}", &digest[..16])
 }
 fn required(body: &Value, key: &str) -> Result<String> {

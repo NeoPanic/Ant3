@@ -502,6 +502,14 @@ fn demo_board(input: &ModelInput) -> Result<ModelReply> {
         {
             text = "[确定性演示] 子任务已回投任务板，等待控制面选型和同级实例认领。".into();
             None
+        } else if !observations
+            .iter()
+            .any(|o| o.call.name == "platform.board.progress")
+        {
+            Some((
+                "platform.board.progress",
+                json!({"command_key":"demo-progress","message":"[确定性演示] 已认领，正在检查材料与验收标准。"}),
+            ))
         } else if task["depth"] == 0 && children.is_empty() {
             Some((
                 "platform.board.split",

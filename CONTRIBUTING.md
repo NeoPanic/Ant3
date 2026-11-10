@@ -4,7 +4,7 @@ Bug reports, documentation in English or Chinese, integration examples, and focu
 
 ## Development setup
 
-Install Rust 1.89 or newer, then clone the [repository](https://github.com/NeoPanic/harness3). Run the offline example before making changes:
+Install the latest stable Rust (1.99 or newer), then clone the [repository](https://github.com/NeoPanic/harness3). Run the offline example before making changes:
 
 ```sh
 cargo run --locked --example quickstart
@@ -36,7 +36,7 @@ cargo run --locked --example quickstart
 RUSTDOCFLAGS="-D warnings" cargo doc --locked --workspace --no-deps
 ```
 
-Format new Rust code with `rustfmt --edition 2024 path/to/file.rs`. Avoid unrelated repository-wide formatting in a focused patch. CI runs the same compilation, test, example, and documentation checks on Rust 1.89 and stable.
+Format new Rust code with `rustfmt --edition 2024 path/to/file.rs`. Avoid unrelated repository-wide formatting in a focused patch. CI runs the same compilation, test, example, and documentation checks on the latest stable Rust, with Clippy and rustfmt installed explicitly.
 
 ## Review expectations
 

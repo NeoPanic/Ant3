@@ -5,14 +5,12 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        toolchain: ["1.89.0", stable]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ matrix.toolchain }}
+          toolchain: stable
+          components: clippy, rustfmt
       - run: python3 scripts/render-progress.py --check
       - run: python3 scripts/check-boundaries.py
       - run: cargo check --locked --workspace --all-targets

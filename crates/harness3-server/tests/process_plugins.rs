@@ -33,7 +33,7 @@ impl Fixture {
         std::fs::write(source.join("worker.py"), script).unwrap();
         std::fs::write(source.join("mode.txt"), mode).unwrap();
         let manifest = json!({"api_version":"harness3.plugins/v1","id":"test.text","version":version,"description":"test external process","instructions":"Use test.text.inspect.","runtime":{"protocol":"harness3-plugin-rpc/v1","entry":"worker.py"},
-            "files":{"worker.py":format!("{:x}",Sha256::digest(script)),"mode.txt":format!("{:x}",Sha256::digest(mode.as_bytes()))},"timeout_ms":timeout,
+            "files":{"worker.py":Sha256::digest(script).iter().map(|byte| format!("{byte:02x}")).collect::<String>(),"mode.txt":Sha256::digest(mode.as_bytes()).iter().map(|byte| format!("{byte:02x}")).collect::<String>()},"timeout_ms":timeout,
             "tools":[{"name":"inspect","description":"inspect text","input_schema":{"type":"object","properties":{"text":{"type":"string","maxLength":100}},"required":["text"],"additionalProperties":false},"output_schema":{"type":"object","properties":{"characters":{"type":"integer","minimum":0}},"required":["characters"],"additionalProperties":true},"mutates":false,"parallel_safe":true}]});
         std::fs::write(source.join("manifest.json"), manifest.to_string()).unwrap();
         source

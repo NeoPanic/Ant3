@@ -35,8 +35,11 @@ fn spec(kind: u8) -> ToolSpec {
 pub fn package() -> Value {
     let mut p = json!({"id":"platform.tasks","version":"1.0.0","kind":"organization","description":"自主任务板、下一任务领取与追加任务","instructions":"Use platform.tasks.board to inspect the shared task graph. When your current assignment reveals necessary follow-up work, append a focused task with a published local Preset; the new Agent starts after your Run succeeds. If you are a candidate for pending work, request your next assignment and finish this Run. Appending connects the new contribution to pending downstream work, while preserving dispatched tasks and completed outputs. Do not wait for your own next-task request or misrepresent provisional requests as completed work. Keep the Goal finite and avoid duplicate tasks.","tools":[spec(0),spec(1),spec(2)]});
     p["digest"] = json!(format!(
-        "sha256:{:x}",
+        "sha256:{}",
         Sha256::digest(p.to_string().as_bytes())
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
     ));
     p
 }

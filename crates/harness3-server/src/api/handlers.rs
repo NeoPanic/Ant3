@@ -39,6 +39,18 @@ pub(super) async fn board_cancel(
 ) -> PResult<Json<Value>> {
     Ok(Json(app.store.cancel_board_task(&id)?))
 }
+pub(super) async fn board_review(
+    State(app): State<App>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+    Json(input): Json<harness3_platform::board::ReviewInput>,
+) -> PResult<Json<Value>> {
+    Ok(Json(app.store.review_board_task(
+        &id,
+        &input,
+        key(&headers)?,
+    )?))
+}
 pub(super) async fn publish(
     State(app): State<App>,
     Json(preset): Json<Value>,

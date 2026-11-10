@@ -11,7 +11,7 @@ fn schema_and_transaction_failures_preserve_atomicity() {
             |r| r.get(0),
         )
         .unwrap();
-    assert_eq!(tables, 49);
+    assert_eq!(tables, 51);
     let result: Result<(), _> = db.transaction(|tx| {
         tx.execute(
             "INSERT INTO events(kind,subject,body,at) VALUES('test','test','{}',0)",

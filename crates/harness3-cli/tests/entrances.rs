@@ -1364,3 +1364,81 @@ async fn verifier_retry_cli_and_mcp_share_http_receipt_and_readonly_boundary() {
         2
     );
 }
+
+#[tokio::test]
+async fn board_review_via_cli_and_http_preserves_feedback_and_rejects_unauthenticated_requests() {
+    let f = Fixture::new().await;
+    let task = f
+        .store
+        .publish_board_task(
+            &harness3_domain::board::PublishInput {
+                title: "human review".into(),
+                instructions: "inspect evidence".into(),
+                acceptance: "cite sources".into(),
+            },
+            "review-task",
+        )
+        .unwrap();
+    let task_id = task["id"].as_str().unwrap();
+    f.store
+        .provision_board_task(task_id, "worker", "1", "test")
+        .unwrap();
+    let run = f.store.claim().unwrap().unwrap();
+    let run_id = run["id"].as_str().unwrap();
+    f.store.claim_board_task(run_id, task_id).unwrap();
+    f.store
+        .finish(
+            run_id,
+            run["instance_id"].as_str().unwrap(),
+            "completed",
+            json!({"output":"evidence"}),
+        )
+        .unwrap();
+    f.store.reconcile_board().unwrap();
+    let review =
+        json!({"run_id":run_id,"decision":"changes_requested","feedback":"include source dates"});
+    let path = f.root.join("review.json");
+    std::fs::write(&path, review.to_string()).unwrap();
+    let cli = f
+        .cli(&[
+            "board",
+            "review",
+            task_id,
+            "--file",
+            path.to_str().unwrap(),
+            "--key",
+            "review-cli",
+        ])
+        .await;
+    assert!(
+        cli.status.success(),
+        "{}",
+        String::from_utf8_lossy(&cli.stderr)
+    );
+    let reopened: Value = serde_json::from_slice(&cli.stdout).unwrap();
+    assert_eq!(reopened["review_state"], "changes_requested");
+    assert_eq!(reopened["reviews"][0]["feedback"], "include source dates");
+    let repeated = f
+        .client()
+        .execute(
+            serde_json::from_value(
+                json!({"tool":"board_review","id":task_id,"input":review,"key":"review-cli"}),
+            )
+            .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(repeated, reopened);
+    let unauthorized = reqwest::Client::new()
+        .post(format!(
+            "http://127.0.0.1:{}/api/board/tasks/{task_id}/review",
+            f.port
+        ))
+        .header("Idempotency-Key", "unauthorized")
+        .json(&review)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(unauthorized.status(), 401);
+    assert_eq!(f.store.board_task(task_id).unwrap()["state"], "pending");
+}

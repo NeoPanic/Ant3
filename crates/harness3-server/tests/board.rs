@@ -5,6 +5,168 @@ use harness3_platform::{
 };
 
 use serde_json::{Value, json};
+
+#[test]
+fn progress_requires_an_active_claim_and_retries_cannot_overwrite_newer_progress() {
+    let (s, t) = fixture();
+    let r = provision(&s, &t);
+    assert_eq!(
+        s.update_board_progress(id(&r), "reading", "p1")
+            .unwrap_err()
+            .1,
+        "board_claim_required"
+    );
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    let first = s.update_board_progress(id(&r), "reading", "p1").unwrap();
+    s.update_board_progress(id(&r), "evidence collected", "p2")
+        .unwrap();
+    assert_eq!(
+        s.update_board_progress(id(&r), "reading", "p1").unwrap(),
+        first
+    );
+    assert_eq!(
+        s.board_task(id(&t)).unwrap()["progress"]["message"],
+        "evidence collected"
+    );
+    assert_eq!(
+        s.update_board_progress(id(&r), "different", "p1")
+            .unwrap_err()
+            .1,
+        "idempotency_conflict"
+    );
+    assert!(s.update_board_progress(id(&r), "  ", "empty").is_err());
+    s.cancel_board_task(id(&t)).unwrap();
+    assert!(s.update_board_progress(id(&r), "late", "late").is_err());
+}
+
+#[test]
+fn human_review_reopens_work_and_binds_approval_to_the_exact_result() {
+    use harness3_platform::board::{ReviewDecision, ReviewInput};
+    let (s, t) = fixture();
+    let r = provision(&s, &t);
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    let mut review = ReviewInput {
+        run_id: id(&r).into(),
+        decision: ReviewDecision::ChangesRequested,
+        feedback: "Cite primary evidence".into(),
+    };
+    assert!(s.review_board_task(id(&t), &review, "early").is_err());
+    finish(&s, &r, "completed");
+    assert_eq!(s.board_task(id(&t)).unwrap()["review_state"], "pending");
+    assert!(s.board_pending().unwrap().is_empty());
+    let reopened = s.review_board_task(id(&t), &review, "review1").unwrap();
+    assert_eq!(reopened["state"], "pending");
+    assert_eq!(reopened["review_state"], "changes_requested");
+    assert_eq!(
+        s.review_board_task(id(&t), &review, "review1").unwrap(),
+        reopened
+    );
+    let next = provision(&s, &t);
+    s.claim_board_task(id(&next), id(&t)).unwrap();
+    let rework = s.board_task(id(&t)).unwrap();
+    assert!(rework["result"].is_null());
+    assert_eq!(rework["previous_run_id"], r["id"]);
+    assert_eq!(rework["previous_result"]["output"], "Evidence");
+    let previous = s.read_board_result(id(&next), id(&t), 0, 16000).unwrap();
+    assert_eq!(previous["run_id"], r["id"]);
+    assert_eq!(previous["previous_result"], true);
+    assert_eq!(
+        serde_json::from_str::<Value>(previous["content"].as_str().unwrap()).unwrap(),
+        json!({"output":"Evidence"})
+    );
+    assert_eq!(
+        s.read_board(id(&next)).unwrap()["target_task"]["reviews"][0]["feedback"],
+        review.feedback
+    );
+    finish(&s, &next, "completed");
+    assert_eq!(s.board_task(id(&t)).unwrap()["review_state"], "pending");
+    review.decision = ReviewDecision::Accepted;
+    assert_eq!(
+        s.review_board_task(id(&t), &review, "stale").unwrap_err().1,
+        "board_review_result_changed"
+    );
+    review.run_id = id(&next).into();
+    let accepted = s.review_board_task(id(&t), &review, "accept").unwrap();
+    assert_eq!(accepted["review_state"], "accepted");
+    assert_eq!(accepted["reviews"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        s.review_board_task(id(&t), &review, "accept").unwrap(),
+        accepted
+    );
+    assert_eq!(
+        s.review_board_task(id(&t), &review, "duplicate")
+            .unwrap_err()
+            .1,
+        "board_result_already_reviewed"
+    );
+}
+
+#[test]
+fn review_rework_can_split_again_without_reexecuting_old_children() {
+    use harness3_platform::board::{ReviewDecision, ReviewInput};
+    let (s, t) = fixture();
+    let split = SplitInput {
+        tasks: vec![input("evidence")],
+    };
+    for cycle in 0..2 {
+        let run = provision(&s, &t);
+        s.claim_board_task(id(&run), id(&t)).unwrap();
+        let children = s.split_board_task(id(&run), &split, "split").unwrap();
+        finish(&s, &run, "completed");
+        let child = s
+            .board_task(children["task_ids"][0].as_str().unwrap())
+            .unwrap();
+        let work = provision(&s, &child);
+        s.claim_board_task(id(&work), id(&child)).unwrap();
+        finish(&s, &work, "completed");
+        assert_eq!(
+            s.review_board_task(
+                id(&child),
+                &ReviewInput {
+                    run_id: id(&work).into(),
+                    decision: ReviewDecision::Accepted,
+                    feedback: String::new()
+                },
+                "child-review"
+            )
+            .unwrap_err()
+            .1,
+            "board_review_root_required"
+        );
+        let integrate = provision(&s, &t);
+        s.claim_board_task(id(&integrate), id(&t)).unwrap();
+        assert_eq!(
+            s.split_board_task(id(&integrate), &split, "again")
+                .unwrap_err()
+                .1,
+            "board_task_already_split"
+        );
+        finish(&s, &integrate, "completed");
+        let decision = if cycle == 0 {
+            ReviewDecision::ChangesRequested
+        } else {
+            ReviewDecision::Accepted
+        };
+        s.review_board_task(
+            id(&t),
+            &ReviewInput {
+                run_id: id(&integrate).into(),
+                decision,
+                feedback: "Check another source".into(),
+            },
+            &format!("review{cycle}"),
+        )
+        .unwrap();
+    }
+    assert_eq!(s.board_task(id(&t)).unwrap()["review_state"], "accepted");
+    assert_eq!(
+        s.board_snapshot().unwrap()["tasks"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+}
 fn input(title: &str) -> PublishInput {
     PublishInput {
         title: title.into(),
@@ -436,8 +598,24 @@ async fn worker_loop_completes_a_peer_board_split_and_continuation() {
         Router::for_tests(),
     ));
     let outcome = tokio::time::timeout(std::time::Duration::from_secs(25), async {
+        let mut reviewed = false;
         loop {
             let root = s.board_task(id(&t)).unwrap();
+            if root["state"] == "completed" && !reviewed {
+                assert_eq!(root["review_state"], "pending");
+                s.review_board_task(
+                    id(&t),
+                    &harness3_platform::board::ReviewInput {
+                        run_id: root["run_id"].as_str().unwrap().into(),
+                        decision: harness3_platform::board::ReviewDecision::ChangesRequested,
+                        feedback: "复核子任务贡献后重新提交".into(),
+                    },
+                    "human-rework",
+                )
+                .unwrap();
+                reviewed = true;
+                continue;
+            }
             if ["completed", "failed", "blocked", "cancelled"]
                 .contains(&root["state"].as_str().unwrap())
             {
@@ -454,6 +632,20 @@ async fn worker_loop_completes_a_peer_board_split_and_continuation() {
         .unwrap();
     let root = outcome.expect("Demo board timed out");
     assert_eq!(root["state"], "completed", "{root}");
+    assert_eq!(root["review_state"], "pending");
+    assert_eq!(root["reviews"][0]["feedback"], "复核子任务贡献后重新提交");
+    let accepted = s
+        .review_board_task(
+            id(&t),
+            &harness3_platform::board::ReviewInput {
+                run_id: root["run_id"].as_str().unwrap().into(),
+                decision: harness3_platform::board::ReviewDecision::Accepted,
+                feedback: String::new(),
+            },
+            "human-accept",
+        )
+        .unwrap();
+    assert_eq!(accepted["review_state"], "accepted");
     let snapshot = s.board_snapshot().unwrap();
     assert_eq!(snapshot["tasks"].as_array().unwrap().len(), 3);
     assert!(
@@ -463,7 +655,7 @@ async fn worker_loop_completes_a_peer_board_split_and_continuation() {
             .iter()
             .all(|t| t["state"] == "completed")
     );
-    assert_eq!(snapshot["agents"].as_array().unwrap().len(), 4);
+    assert_eq!(snapshot["agents"].as_array().unwrap().len(), 5);
     assert!(
         snapshot["agents"]
             .as_array()
@@ -575,4 +767,72 @@ fn a_slow_obsolete_invitation_cannot_fail_a_new_continuation() {
         "completed"
     );
     s.cancel_board_task(id(&root)).unwrap();
+}
+
+#[test]
+fn schema_upgrade_preserves_completed_results_and_review_snapshots_survive_restart() {
+    use harness3_platform::board::{ReviewDecision, ReviewInput};
+    let path = std::env::temp_dir().join(format!(
+        "harness3-board-review-{}.sqlite",
+        uuid::Uuid::new_v4()
+    ));
+    let s = Store::open(&path).unwrap();
+    s.publish(Preset {
+        name: "reader".into(),
+        version: "1".into(),
+        purpose: "Read".into(),
+        objective: "Find evidence".into(),
+        instructions: "Read evidence".into(),
+        protocol: Protocol::Demo,
+        plugin: None,
+    })
+    .unwrap();
+    let t = s.publish_board_task(&input("root"), "root").unwrap();
+    let r = provision(&s, &t);
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    finish(&s, &r, "completed");
+    drop(s);
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute_batch(
+        "DROP TABLE board_reviews; DROP TABLE board_progress; PRAGMA user_version=15;",
+    )
+    .unwrap();
+    drop(db);
+    let s = Store::open(&path).unwrap();
+    assert_eq!(s.board_task(id(&t)).unwrap()["review_state"], "pending");
+    s.review_board_task(
+        id(&t),
+        &ReviewInput {
+            run_id: id(&r).into(),
+            decision: ReviewDecision::ChangesRequested,
+            feedback: "Add evidence".into(),
+        },
+        "review",
+    )
+    .unwrap();
+    drop(s);
+    let s = Store::open(&path).unwrap();
+    let reopened = s.board_task(id(&t)).unwrap();
+    assert_eq!(reopened["state"], "pending");
+    assert_eq!(reopened["reviews"][0]["feedback"], "Add evidence");
+    let db = rusqlite::Connection::open(&path).unwrap();
+    let frozen: String = db
+        .query_row(
+            "SELECT result FROM board_reviews WHERE task_id=?",
+            [id(&t)],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(
+        serde_json::from_str::<Value>(&frozen).unwrap(),
+        json!({"output":"Evidence"})
+    );
+    assert_eq!(
+        db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        16
+    );
+    drop(db);
+    drop(s);
+    std::fs::remove_file(path).unwrap();
 }

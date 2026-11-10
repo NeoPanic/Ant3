@@ -19,10 +19,12 @@ pub fn router(app: App) -> Router {
         .route("/api/board/tasks", post(board_create))
         .route("/api/board/tasks/{id}", get(board_show))
         .route("/api/board/tasks/{id}/cancel", post(board_cancel))
+        .route("/api/board/tasks/{id}/review", post(board_review))
         .route("/api/v1/board", get(board_list))
         .route("/api/v1/board/tasks", post(board_create))
         .route("/api/v1/board/tasks/{id}", get(board_show))
         .route("/api/v1/board/tasks/{id}/cancel", post(board_cancel))
+        .route("/api/v1/board/tasks/{id}/review", post(board_review))
         .route(
             "/studio.css",
             get(|| async {

@@ -68,7 +68,7 @@ async function api(path, body, method = 'POST', key = null) {
     Object.assign(messages,{invalid_research:'请填写任务名称、目标和验收标准，并选择 2–6 位研究者。',research_quota_exceeded:'正在执行的调研已达 8 项，请先完成或取消已有任务。',research_not_cancellable:'调研已经结算，请核对最新状态。',research_not_found:'调研任务不存在，请返回列表。'});
     Object.assign(messages,{invalid_message:'消息不能为空，最多 8,000 个 UTF-8 字节；请检查关联 ID。',message_recipient_terminal:'接收实例已停止接收消息，请选择其他身份。',message_backlog_full:'消息积压已达上限；请等待消费或丢弃待处理消息。',message_action_state_conflict:'状态已变化，无法执行此处置；请刷新消息详情。',invalid_message_action:'请填写处置说明，最多 2,000 个 UTF-8 字节。',message_goal_scope_invalid:'接收实例不属于正在运行或待验收的目标。',message_causal_context_conflict:'关联 ID 或目标与前置消息不一致。',message_hop_limit:'消息因果链已达 8 层，请检查是否存在回复循环。',message_correlation_quota_exceeded:'该关联链已达 128 条消息上限。',causation_message_not_found:'前置消息不存在，请核对完整 ID。',message_not_found:'消息不存在，请刷新列表。'});
     Object.assign(messages,{invalid_goal:'请填写目标名称、共同目标、验收标准及 1–64 项任务；检查 UTF-8 字节上限。',invalid_task_graph:'任务 key 必须唯一，依赖只能引用前面的任务，且不能重复。',goal_quota_exceeded:'运行中或待验收目标已达 32 个，请先验收或取消已有目标。',goal_instance_terminated:'计划包含已终止的实例，请重新选择执行实例。',goal_not_reviewable:'目标尚未完成或已经结算，请刷新后核对状态。',goal_not_cancellable:'目标已经结算，无法再取消。',invalid_goal_review:'请填写验收结论，最多 8,000 个 UTF-8 字节。',goal_not_found:'没有找到该目标，请返回目标列表。'});
-    Object.assign(messages,{invalid_board_task:'请填写任务名称、内容和验收标准；名称最多 200、内容和验收标准各 8,000 个 UTF-8 字节。',board_root_limit:'活动任务已达上限，请等待已有任务完成或取消后再发布。',board_task_not_found:'任务不存在，请返回任务板刷新。',board_root_not_active:'这项任务已结束，无法继续操作。'});
+    Object.assign(messages,{invalid_board_review:'退回修改必须填写评审意见，最多 8,000 个 UTF-8 字节。',board_review_result_changed:'成果已变化，请刷新任务后评审最新结果。',board_result_already_reviewed:'本轮结果已经评审，请刷新任务。',board_review_root_required:'请在根任务汇总结果后进行评审。',invalid_board_task:'请填写任务名称、内容和验收标准；名称最多 200、内容和验收标准各 8,000 个 UTF-8 字节。',board_root_limit:'活动任务已达上限，请等待已有任务完成或取消后再发布。',board_task_not_found:'任务不存在，请返回任务板刷新。',board_root_not_active:'这项任务已结束，无法继续操作。'});
     throw new Error(messages[code] || `操作未完成（${code}），请检查配置后重试。`);
   }
   return value;
@@ -408,6 +408,11 @@ document.addEventListener('submit',async event=>{
       result=await api('/api/board/tasks',{title:values.title,instructions:values.instructions,acceptance:values.acceptance},'POST',form.dataset.commandKey);location.hash=`board/${result.id}`;
     }
     if(form.dataset.form==='board-cancel')result=await api(`/api/board/tasks/${encodeURIComponent(form.dataset.id)}/cancel`,{});
+    if(form.dataset.form==='board-review') {
+      if(values.decision==='changes_requested'&&!values.feedback.trim())throw new Error('退回修改时请填写评审意见。');
+      form.dataset.commandKey ||= crypto.randomUUID();
+      result=await api(`/api/board/tasks/${encodeURIComponent(form.dataset.id)}/review`,{run_id:form.dataset.run,decision:values.decision,feedback:values.feedback},'POST',form.dataset.commandKey);
+    }
     if(form.dataset.form==='research') {
       const ref=JSON.parse(values.preset);result=await api('/api/v1/research-jobs',{title:values.title,objective:values.objective,acceptance:values.acceptance,preset_name:ref.name,preset_version:ref.version,researchers:Number(values.researchers),parameters:instanceParameters(form),verification:verificationFromForm(form),delegation:researchDelegation(form,ref)},'POST',form.dataset.commandKey);location.hash=`research/${result.id}`;
     }
@@ -445,6 +450,7 @@ document.addEventListener('submit',async event=>{
     if(form.dataset.form==='run-cancel'){await runDetail(form.dataset.id);toast('取消请求已提交，运行将协作收尾。');return;}
     if(form.dataset.form==='board-publish'){toast('任务已发布，等待控制面选型。');return;}
     if(form.dataset.form==='board-cancel'){toast('取消请求已保存。');return;}
+    if(form.dataset.form==='board-review'){toast(result.review_state==='accepted'?'评审通过，任务已归档。':'评审意见已保存，任务重新等待选型。');return;}
     if(form.dataset.form==='run'&&data.runs.some(r=>r.id===result.id)){await runDetail(result.id);}
     toast(form.dataset.form.startsWith('channel-')?'频道设置已保存。':form.dataset.form==='verification-retry'?'重新验证已接纳，正在创建独立实例。':form.dataset.form==='task-claim'?'认领已接纳，执行尝试与 Run 已保存。':form.dataset.form==='task-release'?'认领已释放，任务等待人工重新领取。':form.dataset.form==='context-publish'?'共享记录已保存，参与实例可读取新版本。':form.dataset.form==='goal-rework'?'返工已接纳，正在创建独立新团队；旧产物已保留。':form.dataset.form==='research'?'调研已接纳：创建团队后自动规划与派发。':form.dataset.form==='research-cancel'?'取消已保存，正在回收团队。':form.dataset.form==='message-send'?'消息已接纳；投递与消费状态见协作消息页。':form.dataset.form==='message-action'?'处置记录已保存。':form.dataset.form==='process-state'?(result.state==='disabled'?'插件版本已禁用，新的调用将被拒绝。':'健康检查通过，插件版本已启用。'):result?.operation_id ? '操作已接纳，协调进度见Agent 池详情。' : result?.count ? `已创建 ${result.count} 个独立实例` : form.dataset.form==='goal'?'目标已接纳，将按依赖派发任务。':form.dataset.form==='goal-review'?'验收结论已保存。':form.dataset.form==='goal-cancel'?'取消请求已保存，已开始的运行将协作收尾。':form.dataset.form==='run'?'任务已接纳，可在执行详情中检查结果。':form.dataset.form==='drain'?'排空请求已保存，活动任务结算后终止。':form.dataset.form==='terminate'?'实例已终止，历史记录已保留。':'版本已保存');
   }catch(error){const target=form.querySelector('#form-error');if(target){target.textContent=error.message;target.tabIndex=-1;target.focus();}}

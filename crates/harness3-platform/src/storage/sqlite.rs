@@ -22,7 +22,7 @@ impl Store {
             tx.execute("INSERT OR IGNORE INTO goal_rounds(goal_id,number,state,review,created_at,finished_at) SELECT id,1,state,review,created_at,finished_at FROM goals",[])?;
             crate::artifacts::backfill(tx)?;
             if version < 10 { crate::claims::backfill(tx)?; }
-            tx.execute_batch("PRAGMA user_version=15;")?;
+            tx.execute_batch("PRAGMA user_version=16;")?;
             Ok(())
         })?;
         Ok(store)
@@ -72,7 +72,13 @@ impl Store {
                 }
                 return Ok(serde_json::from_str(&body)?);
             }
-            let digest = format!("sha256:{:x}", Sha256::digest(body.as_bytes()));
+            let digest = format!(
+                "sha256:{}",
+                Sha256::digest(body.as_bytes())
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>()
+            );
             tx.execute(
                 "INSERT INTO plugins(id,version,body,digest,created_at) VALUES(?,?,?,?,?)",
                 params![bundle.id, bundle.version, body, digest, now()],

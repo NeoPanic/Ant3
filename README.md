@@ -18,7 +18,7 @@ Crew animations follow real execution state: typing, waiting, or sleeping. Selec
 
 ## Start locally
 
-Requires **Rust 1.89+**. The first start opens an empty workspace. Configure a model provider and publish your own Preset before running tasks; Cargo downloads dependencies on the first build.
+Requires **Rust 1.99+ (latest stable recommended)**. The first start opens an empty workspace. Configure a model provider and publish your own Preset before running tasks; Cargo downloads dependencies on the first build.
 
 ```sh
 git clone https://github.com/NeoPanic/harness3.git
@@ -56,7 +56,7 @@ The local desktop console, shown with historical sample data. New workspaces sta
 | Extension | Prompt packages and local process Tool plugins with pinned versions and health checks. |
 | Access | Desktop Web, HTTP API, CLI, and outward MCP stdio share persistent local state. |
 
-Agent pools manage resources from one Preset. Task-board work starts from a published task and provisions its own participants. Goal workflows provide separate channel, artifact, and review contracts; their capabilities are not automatically implied by a task-board result.
+Agent pools manage resources from one Preset. Task-board work starts from a published task and provisions its own participants. Completed root results await human review: accept to archive, or request changes to resume work with feedback. Goal channels, file artifacts, and independent verification are not yet integrated into the board.
 
 <details>
 <summary>Historical console examples: team collaboration and workspace artifacts</summary>

@@ -232,7 +232,7 @@
     "name": "对等 Agent 共享任务板",
     "phase": "P2",
     "status": "partial",
-    "detail": "任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；支持取消、已知结果结算与回收。独立选型模型支持三类通用协议及百炼 decision-model-preview 的结构化选择、置信度校验和事件记录，失败退避。尚未接入 Goal 频道、文件产物与独立验证，没有分布式租约或费用硬预算。",
+    "detail": "任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。尚未接入 Goal 频道、文件产物与自动独立验证，没有分布式租约或费用硬预算。",
     "source": [
       "crates/harness3-platform/src/scheduling/board/mod.rs",
       "crates/harness3-platform/src/scheduling/board/tools.rs",

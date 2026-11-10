@@ -8,7 +8,7 @@ use rusqlite::{OptionalExtension, Transaction, TransactionBehavior, params};
 use serde_json::{Value, json};
 pub use tools::tools;
 
-pub use harness3_domain::board::{PublishInput, SplitInput};
+pub use harness3_domain::board::{PublishInput, ReviewDecision, ReviewInput, SplitInput};
 fn key_valid(key: &str) -> PResult<()> {
     if key.is_empty() || key.len() > 160 {
         Err(fault(400, "invalid_command_key"))
@@ -50,8 +50,55 @@ fn receipt(
 }
 fn task(tx: &Transaction<'_>, id: &str) -> PResult<Value> {
     let body:Option<String>=tx.query_row("SELECT json_object('id',id,'root_id',root_id,'parent_id',parent_id,'title',title,'instructions',instructions,'acceptance',acceptance,'state',state,'depth',depth,'route_state',route_state,'preset_name',preset_name,'preset_version',preset_version,'route_reason',route_reason,'instance_id',instance_id,'run_id',run_id,'source_run_id',source_run_id,'result',json(result),'error',error,'created_at',created_at,'finished_at',finished_at) FROM board_tasks WHERE id=?",[id],|r|r.get(0)).optional()?;
-    serde_json::from_str(&body.ok_or_else(|| fault(404, "board_task_not_found"))?)
-        .map_err(Into::into)
+    let mut value: Value =
+        serde_json::from_str(&body.ok_or_else(|| fault(404, "board_task_not_found"))?)?;
+    let progress: Option<String> = tx.query_row(
+        "SELECT json_object('run_id',run_id,'message',message,'updated_at',updated_at) FROM board_progress WHERE task_id=? AND run_id=?",
+        params![id, value["run_id"].as_str()], |r| r.get(0),
+    ).optional()?;
+    value["progress"] = progress
+        .map(|s| serde_json::from_str(&s))
+        .transpose()?
+        .unwrap_or(Value::Null);
+    let mut stmt = tx.prepare("SELECT json_object('run_id',run_id,'decision',decision,'feedback',feedback,'created_at',created_at) FROM board_reviews WHERE task_id=? ORDER BY created_at DESC,rowid DESC LIMIT 16")?;
+    let reviews = stmt
+        .query_map([id], |r| r.get::<_, String>(0))?
+        .map(|r| Ok(serde_json::from_str::<Value>(&r?)?))
+        .collect::<PResult<Vec<_>>>()?;
+    value["review_state"] = if value["parent_id"].is_null() {
+        if value["state"] == "completed" {
+            if reviews
+                .first()
+                .is_some_and(|r| r["run_id"] == value["run_id"] && r["decision"] == "accepted")
+            {
+                json!("accepted")
+            } else {
+                json!("pending")
+            }
+        } else if reviews
+            .first()
+            .is_some_and(|r| r["decision"] == "changes_requested")
+        {
+            json!("changes_requested")
+        } else {
+            Value::Null
+        }
+    } else {
+        Value::Null
+    };
+    if value["result"].is_null()
+        && let Some(review) = reviews.first()
+    {
+        let frozen: String = tx.query_row(
+            "SELECT result FROM board_reviews WHERE task_id=? AND run_id=?",
+            params![id, review["run_id"].as_str()],
+            |r| r.get(0),
+        )?;
+        value["previous_result"] = serde_json::from_str(&frozen)?;
+        value["previous_run_id"] = review["run_id"].clone();
+    }
+    value["reviews"] = json!(reviews);
+    Ok(value)
 }
 fn task_ids(tx: &Transaction<'_>, root: Option<&str>) -> PResult<Vec<String>> {
     let mut stmt = tx.prepare(
@@ -150,10 +197,12 @@ fn cancel_descendants(tx: &Transaction<'_>, id: &str, reason: &str) -> PResult<(
     Ok(())
 }
 fn preview(mut task: Value) -> Value {
-    if task["result"].is_object() {
-        let result = &task["result"];
-        let output = result["output"].as_str().unwrap_or_default();
-        task["result"] = json!({"output":output.chars().take(4000).collect::<String>(),"error":result["error"],"output_truncated":output.chars().count()>4000,"output_characters":output.chars().count(),"observations_omitted":result["observations"].as_array().map_or(0,Vec::len),"full_report_tool":"platform.board.result"});
+    for field in ["result", "previous_result"] {
+        if task[field].is_object() {
+            let result = &task[field];
+            let output = result["output"].as_str().unwrap_or_default();
+            task[field] = json!({"output":output.chars().take(4000).collect::<String>(),"error":result["error"],"output_truncated":output.chars().count()>4000,"output_characters":output.chars().count(),"observations_omitted":result["observations"].as_array().map_or(0,Vec::len),"full_report_tool":"platform.board.result"});
+        }
     }
     task
 }
@@ -171,7 +220,7 @@ impl Store {
         self.board_transaction(|tx| {
             let fingerprint=serde_json::to_string(input)?;
             if let Some(value)=replay(tx,"publish",key,&fingerprint)? {return Ok(value);}
-            let active:usize=tx.query_row("SELECT count(*) FROM board_tasks WHERE parent_id IS NULL AND state IN ('pending','running','waiting')",[],|r|r.get(0))?;
+            let active:usize=tx.query_row("SELECT count(*) FROM board_tasks t WHERE parent_id IS NULL AND (state IN ('pending','running','waiting') OR (state='completed' AND NOT EXISTS(SELECT 1 FROM board_reviews v WHERE v.task_id=t.id AND v.run_id=t.run_id AND v.decision='accepted')))",[],|r|r.get(0))?;
             if active>=crate::limits::TASKS_PER_GOAL {return Err(fault(409,"board_root_limit"));}
             let id=id("task");insert_task(tx,&id,&id,None,input,0,None)?;
             receipt(tx,"publish",key,&fingerprint,task(tx,&id)?)
@@ -182,7 +231,7 @@ impl Store {
     }
     pub fn board_snapshot(&self) -> PResult<Value> {
         self.board_transaction(|tx| {
-            let mut stmt=tx.prepare("SELECT id FROM board_tasks WHERE parent_id IS NULL ORDER BY (state IN ('pending','running','waiting')) DESC,created_at DESC,rowid DESC LIMIT 100")?;
+            let mut stmt=tx.prepare("SELECT id FROM board_tasks t WHERE parent_id IS NULL ORDER BY (state IN ('pending','running','waiting') OR (state='completed' AND NOT EXISTS(SELECT 1 FROM board_reviews v WHERE v.task_id=t.id AND v.run_id=t.run_id AND v.decision='accepted'))) DESC,created_at DESC,rowid DESC LIMIT 100")?;
             let roots=stmt.query_map([],|r|r.get::<_,String>(0))?.collect::<Result<Vec<_>,_>>()?;
             drop(stmt);
             let mut tasks=vec![];let mut agents=vec![];
@@ -200,6 +249,45 @@ impl Store {
             let mut stmt=tx.prepare("SELECT id FROM board_tasks WHERE state='pending' AND route_state='unassigned' ORDER BY created_at,rowid LIMIT 64")?;
             let ids=stmt.query_map([],|r|r.get::<_,String>(0))?.collect::<Result<Vec<_>,_>>()?;
             ids.iter().map(|id|task(tx,id)).collect()
+        })
+    }
+    pub fn update_board_progress(&self, run: &str, message: &str, key: &str) -> PResult<Value> {
+        key_valid(key)?;
+        if message.trim().is_empty() || message.len() > 2000 {
+            return Err(fault(400, "invalid_board_progress"));
+        }
+        self.board_transaction(|tx| {
+            let s = active_scope(tx, run)?;
+            let claimed = s["claimed_task_id"].as_str().ok_or_else(|| fault(409, "board_claim_required"))?;
+            let t = task(tx, claimed)?;
+            if t["state"] != "running" || t["run_id"] != run {return Err(fault(409, "board_claim_not_owned"));}
+            let fingerprint = json!({"message":message}).to_string();
+            let command_scope = format!("progress:{run}");
+            if let Some(value) = replay(tx, &command_scope, key, &fingerprint)? {return Ok(value);}
+            let progress = json!({"run_id":run,"message":message,"updated_at":now()});
+            tx.execute("INSERT INTO board_progress(task_id,run_id,message,updated_at) VALUES(?,?,?,?) ON CONFLICT(task_id) DO UPDATE SET run_id=excluded.run_id,message=excluded.message,updated_at=excluded.updated_at", params![claimed,run,message,progress["updated_at"].as_i64()])?;
+            event(tx, "board.progress_updated", claimed, progress.clone())?;
+            receipt(tx, &command_scope, key, &fingerprint, progress)
+        })
+    }
+    pub fn review_board_task(&self, id: &str, input: &ReviewInput, key: &str) -> PResult<Value> {
+        input.validate()?;
+        key_valid(key)?;
+        self.board_transaction(|tx| {
+            let command_scope = format!("review:{id}");
+            let fingerprint = serde_json::to_string(input)?;
+            if let Some(value) = replay(tx, &command_scope, key, &fingerprint)? {return Ok(value);}
+            let t = task(tx, id)?;
+            if !t["parent_id"].is_null() {return Err(fault(409, "board_review_root_required"));}
+            if t["state"] != "completed" || t["run_id"] != input.run_id {return Err(fault(409, "board_review_result_changed"));}
+            if t["reviews"].as_array().unwrap().iter().any(|r| r["run_id"] == input.run_id) {return Err(fault(409, "board_result_already_reviewed"));}
+            let decision = if input.decision == ReviewDecision::Accepted {"accepted"} else {"changes_requested"};
+            tx.execute("INSERT INTO board_reviews(task_id,run_id,decision,feedback,result,split_count,created_at) VALUES(?,?,?,?,?,(SELECT count(*) FROM board_tasks WHERE parent_id=?),?)", params![id,input.run_id,decision,input.feedback,t["result"].to_string(),id,now()])?;
+            if input.decision == ReviewDecision::ChangesRequested {
+                tx.execute("UPDATE board_tasks SET state='pending',route_state='unassigned',instance_id=NULL,run_id=NULL,result=NULL,finished_at=NULL,error=NULL WHERE id=?", [id])?;
+            }
+            event(tx, "board.task_reviewed", id, json!({"run_id":input.run_id,"decision":decision,"feedback":input.feedback,"author_kind":"operator"}))?;
+            receipt(tx, &command_scope, key, &fingerprint, task(tx, id)?)
         })
     }
     pub fn board_run(&self, run: &str) -> PResult<Option<Value>> {
@@ -234,10 +322,11 @@ impl Store {
         self.board_transaction(|tx| {
             let s=active_scope(tx,run)?;let t=task(tx,id)?;
             if t["root_id"]!=s["root_id"] {return Err(fault(403,"board_task_outside_scope"));}
-            let full=t["result"].to_string();let total=full.chars().count();
+            let previous=t["result"].is_null() && !t["previous_result"].is_null();
+            let full=if previous {&t["previous_result"]}else{&t["result"]}.to_string();let total=full.chars().count();
             let content:String=full.chars().skip(offset).take(limit).collect();
             let next=offset.saturating_add(content.chars().count());
-            Ok(json!({"task_id":id,"run_id":t["run_id"],"format":"json","content":content,"offset":offset,"total_characters":total,"next_offset":if next<total{Some(next)}else{None}}))
+            Ok(json!({"task_id":id,"run_id":if previous {&t["previous_run_id"]}else{&t["run_id"]},"previous_result":previous,"format":"json","content":content,"offset":offset,"total_characters":total,"next_offset":if next<total{Some(next)}else{None}}))
         })
     }
     pub fn provision_board_task(
@@ -308,7 +397,7 @@ impl Store {
             if t["state"]!="running"||t["run_id"]!=run {return Err(fault(409,"board_claim_not_owned"));}
             let depth=t["depth"].as_u64().unwrap() as usize;
             if depth>=crate::limits::DELEGATION_DEPTH {return Err(fault(409,"board_depth_limit"));}
-            let existing:bool=tx.query_row("SELECT EXISTS(SELECT 1 FROM board_tasks WHERE parent_id=?)",[parent],|r|r.get(0))?;
+            let existing:bool=tx.query_row("SELECT (SELECT count(*) FROM board_tasks WHERE parent_id=?) > coalesce((SELECT split_count FROM board_reviews WHERE task_id=? AND decision='changes_requested' ORDER BY created_at DESC,rowid DESC LIMIT 1),0)",params![parent,parent],|r|r.get(0))?;
             if existing {return Err(fault(409,"board_task_already_split"));}
             let count:usize=tx.query_row("SELECT count(*) FROM board_tasks WHERE root_id=?",[s["root_id"].as_str().unwrap()],|r|r.get(0))?;
             if count+input.tasks.len()>crate::limits::TASKS_PER_GOAL {return Err(fault(409,"board_task_limit"));}

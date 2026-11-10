@@ -35,6 +35,8 @@ resource!(BoardArgs, BoardAction {
     /// Publish work without choosing an Agent or Preset. Routing and execution may call models.
     Publish { #[arg(long)] file:PathBuf, #[arg(long)] key:String },
     Cancel { id:String },
+    /// Review a completed root result; requesting changes resumes model execution.
+    Review { id:String, #[arg(long)] file:PathBuf, #[arg(long)] key:String },
 });
 pub async fn board(args: BoardArgs) -> ClientResult<()> {
     let command = match args.action {
@@ -45,6 +47,11 @@ pub async fn board(args: BoardArgs) -> ClientResult<()> {
             key,
         },
         BoardAction::Cancel { id } => Command::BoardCancel { id },
+        BoardAction::Review { id, file, key } => Command::BoardReview {
+            id,
+            input: read_json(file)?,
+            key,
+        },
     };
     print(args.connection.client()?.execute(command).await?)
 }

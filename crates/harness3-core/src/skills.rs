@@ -281,7 +281,10 @@ impl Skill for FileSkill {
                     instructions.push_str(&format!("\n{}: {}", resource.id, resource.description));
                 }
             }
-            let revision = format!("{:x}", Sha256::digest(instructions.as_bytes()));
+            let revision = Sha256::digest(instructions.as_bytes())
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>();
             Ok(LoadedSkill {
                 info,
                 instructions,

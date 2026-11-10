@@ -43,7 +43,13 @@ pub(crate) fn capture(tx: &Transaction<'_>, goal: &str, task: &Value) -> PResult
         return Ok(Some(serde_json::from_str(&body)?));
     }
     let content = task["run"]["report"]["output"].as_str().unwrap_or_default();
-    let digest = format!("sha256:{:x}", Sha256::digest(content.as_bytes()));
+    let digest = format!(
+        "sha256:{}",
+        Sha256::digest(content.as_bytes())
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    );
     let checks = json!([
         {"rule":"non_empty","passed":!content.trim().is_empty(),"scope":"non-whitespace text; no semantic quality judgment"},
         {"rule":"text_size","passed":content.len()<=1_048_576,"scope":"at most 1 MiB of UTF-8 text; original content is retained"}
@@ -165,8 +171,13 @@ impl Store {
             let mut value: Value = serde_json::from_str(&body)?;
             value["content"] = json!(content);
             value["integrity_verified"] = json!(
-                format!("sha256:{:x}", Sha256::digest(content.as_bytes()))
-                    == value["digest"].as_str().unwrap_or_default()
+                format!(
+                    "sha256:{}",
+                    Sha256::digest(content.as_bytes())
+                        .iter()
+                        .map(|byte| format!("{byte:02x}"))
+                        .collect::<String>()
+                ) == value["digest"].as_str().unwrap_or_default()
             );
             Ok(value)
         })
@@ -460,5 +471,11 @@ pub(crate) fn verify_integrity(tx: &Transaction<'_>, id: &str) -> PResult<bool> 
         [id],
         |r| Ok((r.get(0)?, r.get(1)?)),
     )?;
-    Ok(format!("sha256:{:x}", Sha256::digest(content.as_bytes())) == digest)
+    Ok(format!(
+        "sha256:{}",
+        Sha256::digest(content.as_bytes())
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    ) == digest)
 }

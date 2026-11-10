@@ -25,3 +25,30 @@ impl PublishInput {
 pub struct SplitInput {
     pub tasks: Vec<PublishInput>,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewInput {
+    pub run_id: String,
+    pub decision: ReviewDecision,
+    pub feedback: String,
+}
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum ReviewDecision {
+    Accepted,
+    ChangesRequested,
+}
+impl ReviewInput {
+    pub fn validate(&self) -> PResult<()> {
+        if self.run_id.is_empty()
+            || self.run_id.len() > 80
+            || self.feedback.len() > 8000
+            || (self.decision == ReviewDecision::ChangesRequested
+                && self.feedback.trim().is_empty())
+        {
+            return Err(fault(400, "invalid_board_review"));
+        }
+        Ok(())
+    }
+}

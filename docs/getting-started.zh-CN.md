@@ -4,7 +4,7 @@ Harness³ 在本地管理 Preset、实例、任务和工具执行。默认流程
 
 ## 启动与登录
 
-要求 Rust 1.89+。在仓库根目录执行，无需 Node、外部数据库或前端开发服务器：
+要求 Rust 1.99+，建议使用最新稳定版。在仓库根目录执行，无需 Node、外部数据库或前端开发服务器：
 
 ```sh
 cargo run --locked -p harness3-cli -- up

@@ -14,7 +14,14 @@ pub use text::InspectText;
 
 fn definition(id: &str, description: &str, instructions: &str, tool: &dyn Tool) -> Value {
     let mut value = json!({"id":id,"version":"1.0.0","kind":"organization","description":description,"instructions":instructions,"tools":[tool.spec()]});
-    value["digest"] = format!("sha256:{:x}", Sha256::digest(value.to_string().as_bytes())).into();
+    value["digest"] = format!(
+        "sha256:{}",
+        Sha256::digest(value.to_string().as_bytes())
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    )
+    .into();
     value
 }
 pub fn packages() -> Vec<Value> {

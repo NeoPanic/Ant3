@@ -29,6 +29,11 @@ pub enum Command {
     BoardCancel {
         id: String,
     },
+    BoardReview {
+        id: String,
+        input: harness3_domain::board::ReviewInput,
+        key: String,
+    },
     VerificationRetry {
         id: String,
         input: harness3_domain::verification::Retry,
@@ -305,6 +310,12 @@ impl PlatformClient {
                 format!("/board/tasks/{}/cancel", segment(&id)?),
                 None,
                 None,
+            ),
+            BoardReview { id, input, key } => (
+                Method::POST,
+                format!("/board/tasks/{}/review", segment(&id)?),
+                Some(serde_json::to_value(input)?),
+                Some(key),
             ),
             VerificationRetry { id, input, key } => (
                 Method::POST,

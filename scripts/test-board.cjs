@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const context=vm.createContext({location:{hash:'#board'}});
 Object.assign(context,{
   esc:(value='')=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
-  badge:(state,text)=>`<span>${text}</span>`,button:(label,action)=>`<button data-action="${action}">${label}</button>`,
+  badge:(state,text)=>`<span>${text}</span>`,button:(label,action,primary,attributes='')=>`<button data-action="${action}" ${attributes}>${label}</button>`,
   head:(_,title,description,actions)=>`<h1>${title}</h1><p>${description}</p>${actions}`,
   panel:(title,body,extra='')=>`<section><h2>${title}</h2>${extra}${body}</section>`,
   empty:(title,description,action='')=>`${title}${description}${action}`,
@@ -32,10 +32,11 @@ test('空任务板提供发布入口，快照尚无 board 时可正常显示',()
   assert(html.includes('0 项待完成'));
 });
 
-test('完成与取消归入历史，失败和结果未知任务仍在当前列表',()=>{
+test('评审通过与取消归入历史，待评审、失败和结果未知任务保留在当前列表',()=>{
   context.location.hash='#board';
   context.data={board:{tasks:[
-    {id:'done',title:'已交付',state:'completed'},
+    {id:'done',title:'已交付',state:'completed',review_state:'accepted'},
+    {id:'review',title:'等待人类检查',state:'completed',review_state:'pending'},
     {id:'cancel',title:'已撤回',state:'cancelled'},
     {id:'failed',title:'需要排查',state:'failed',instructions:'<img src=x>检查失败原因'},
     {id:'unknown',title:'需要核对',state:'interrupted'},
@@ -43,12 +44,25 @@ test('完成与取消归入历史，失败和结果未知任务仍在当前列�
     {id:'pending',title:'等待执行',state:'pending'},
   ]}};
   const html=vm.runInContext('boardPage()',context),[current,history]=html.split('<details id="board-history"');
-  for(const title of ['需要排查','需要核对','需要解除阻断','等待执行'])assert(current.includes(title));
+  for(const title of ['需要排查','需要核对','需要解除阻断','等待执行','等待人类检查'])assert(current.includes(title));
+  assert(current.includes('待人类评审'));
   assert(!current.includes('已交付'));
   assert(history.includes('已交付'));
   assert(history.includes('已撤回'));
   assert(!html.includes('<img'));
   assert(html.includes('&lt;img src=x&gt;'));
+});
+
+test('成果、进度和人类评审意见可见且转义，评审绑定当前 Run',()=>{
+  context.location.hash='#board/review';
+  context.data={board:{tasks:[{id:'review',title:'检查',state:'completed',review_state:'pending',run_id:'run-current',result:{output:'<img src=x>成果'},progress:{message:'<script>进度</script>'},reviews:[{decision:'changes_requested',feedback:'<b>补充证据</b>',run_id:'run-previous'}]}]}};
+  const html=vm.runInContext('boardPage()',context);
+  assert(html.includes('人类评审'));
+  assert(html.includes('board-review'));
+  assert(html.includes('data-run="run-current"'));
+  assert(html.includes('&lt;b&gt;补充证据&lt;/b&gt;'));
+  assert(!html.includes('<img'));
+  assert(!html.includes('<script>'));
 });
 
 test('已选型未认领和执行中状态分开显示',()=>{
