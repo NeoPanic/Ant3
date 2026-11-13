@@ -127,6 +127,8 @@ impl Router {
                 json!({"name":"platform.board.split","description":"Publish independent subtasks to the shared board; the control plane starts peers and reoffers the parent for integration after children finish."}),
                 json!({"name":"platform.board.result","description":"Read complete child results for comparison and integration."}),
                 json!({"name":"platform.board.progress","description":"Report concrete milestones or blockers on claimed work."}),
+                json!({"name":"platform.board.traces","description":"Read pheromone trails left by peers and verified events, sorted by decayed strength."}),
+                json!({"name":"platform.board.trace","description":"Deposit a bounded finding/path/blocker signal on a shared trail for peers."}),
             ]);
             result.push(
                 json!({"preset_name":preset.name,"preset_version":preset.version,

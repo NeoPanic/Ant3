@@ -22,7 +22,7 @@ impl Store {
             tx.execute("INSERT OR IGNORE INTO goal_rounds(goal_id,number,state,review,created_at,finished_at) SELECT id,1,state,review,created_at,finished_at FROM goals",[])?;
             crate::artifacts::backfill(tx)?;
             if version < 10 { crate::claims::backfill(tx)?; }
-            tx.execute_batch("PRAGMA user_version=16;")?;
+            tx.execute_batch("PRAGMA user_version=17;")?;
             Ok(())
         })?;
         Ok(store)

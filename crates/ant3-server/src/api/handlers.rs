@@ -51,6 +51,15 @@ pub(super) async fn board_review(
         key(&headers)?,
     )?))
 }
+pub(super) async fn board_traces(
+    State(app): State<App>,
+    Query(query): Query<HashMap<String, String>>,
+) -> PResult<Json<Value>> {
+    let root = query
+        .get("root_id")
+        .ok_or_else(|| fault(400, "root_id_required"))?;
+    Ok(Json(app.store.board_traces(root)?))
+}
 pub(super) async fn publish(
     State(app): State<App>,
     Json(preset): Json<Value>,

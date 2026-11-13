@@ -9,6 +9,7 @@ use serde_json::{Value, json};
 pub use tools::tools;
 
 pub use ant3_domain::board::{PublishInput, ReviewDecision, ReviewInput, SplitInput};
+pub use ant3_domain::traces::TraceInput;
 fn key_valid(key: &str) -> PResult<()> {
     if key.is_empty() || key.len() > 160 {
         Err(fault(400, "invalid_command_key"))
@@ -16,7 +17,7 @@ fn key_valid(key: &str) -> PResult<()> {
         Ok(())
     }
 }
-fn replay(
+pub(crate) fn replay(
     tx: &Transaction<'_>,
     scope: &str,
     key: &str,
@@ -35,7 +36,7 @@ fn replay(
         None => Ok(None),
     }
 }
-fn receipt(
+pub(crate) fn receipt(
     tx: &Transaction<'_>,
     scope: &str,
     key: &str,
@@ -98,6 +99,8 @@ fn task(tx: &Transaction<'_>, id: &str) -> PResult<Value> {
         value["previous_run_id"] = review["run_id"].clone();
     }
     value["reviews"] = json!(reviews);
+    value["trace"] = crate::traces::trace_view(tx, value["root_id"].as_str().unwrap(), id)?
+        .unwrap_or(Value::Null);
     Ok(value)
 }
 fn task_ids(tx: &Transaction<'_>, root: Option<&str>) -> PResult<Vec<String>> {
@@ -139,7 +142,7 @@ fn scope(tx: &Transaction<'_>, run: &str, active: bool) -> PResult<Option<Value>
         json!({"root_id":root,"task_id":target,"target_task_id":target,"instance_id":agent,"claimed_task_id":claimed,"preset_name":name,"preset_version":version}),
     ))
 }
-fn active_scope(tx: &Transaction<'_>, run: &str) -> PResult<Value> {
+pub(crate) fn active_scope(tx: &Transaction<'_>, run: &str) -> PResult<Value> {
     scope(tx, run, true)?.ok_or_else(|| fault(403, "board_run_not_authorized"))
 }
 fn insert_task(
@@ -207,7 +210,7 @@ fn preview(mut task: Value) -> Value {
     task
 }
 impl Store {
-    fn board_transaction<T>(&self, f: impl FnOnce(&Transaction<'_>) -> PResult<T>) -> PResult<T> {
+    pub(crate) fn board_transaction<T>(&self, f: impl FnOnce(&Transaction<'_>) -> PResult<T>) -> PResult<T> {
         let mut connection = self.lock()?;
         let tx = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
         let result = f(&tx)?;
@@ -283,6 +286,9 @@ impl Store {
             if t["reviews"].as_array().unwrap().iter().any(|r| r["run_id"] == input.run_id) {return Err(fault(409, "board_result_already_reviewed"));}
             let decision = if input.decision == ReviewDecision::Accepted {"accepted"} else {"changes_requested"};
             tx.execute("INSERT INTO board_reviews(task_id,run_id,decision,feedback,result,split_count,created_at) VALUES(?,?,?,?,?,(SELECT count(*) FROM board_tasks WHERE parent_id=?),?)", params![id,input.run_id,decision,input.feedback,t["result"].to_string(),id,now()])?;
+            if input.decision == ReviewDecision::Accepted {
+                crate::traces::deposit(tx,t["root_id"].as_str().unwrap(),id,crate::domain::traces::RESULT_TRACE_KIND,crate::domain::traces::TRACE_ACCEPTED_AMOUNT,"accepted",Some(&input.run_id))?;
+            }
             if input.decision == ReviewDecision::ChangesRequested {
                 tx.execute("UPDATE board_tasks SET state='pending',route_state='unassigned',instance_id=NULL,run_id=NULL,result=NULL,finished_at=NULL,error=NULL WHERE id=?", [id])?;
             }
@@ -326,6 +332,13 @@ impl Store {
             let full=if previous {&t["previous_result"]}else{&t["result"]}.to_string();let total=full.chars().count();
             let content:String=full.chars().skip(offset).take(limit).collect();
             let next=offset.saturating_add(content.chars().count());
+            // Stigmergy: reading a peer's settled result reinforces that trail
+            // once per Run. Self-reads and empty results deposit nothing.
+            let author=if previous {t["previous_run_id"].as_str()} else {t["run_id"].as_str()};
+            let has_result=!t["result"].is_null()||!t["previous_result"].is_null();
+            if has_result && author.is_some_and(|author| author!=run) {
+                crate::traces::deposit_reuse_once(tx,s["root_id"].as_str().unwrap(),id,run)?;
+            }
             Ok(json!({"task_id":id,"run_id":if previous {&t["previous_run_id"]}else{&t["run_id"]},"previous_result":previous,"format":"json","content":content,"offset":offset,"total_characters":total,"next_offset":if next<total{Some(next)}else{None}}))
         })
     }
@@ -430,6 +443,7 @@ impl Store {
                     if t["state"]=="running"&&t["run_id"]==run {
                         tx.execute("UPDATE board_tasks SET result=? WHERE id=?",params![report,claimed])?;
                         if state=="completed" {
+                            crate::traces::deposit(tx,t["root_id"].as_str().unwrap(),claimed,crate::domain::traces::RESULT_TRACE_KIND,crate::domain::traces::TRACE_COMPLETION_AMOUNT,"completion",Some(&run))?;
                             let staged:usize=tx.query_row("SELECT count(*) FROM board_tasks WHERE source_run_id=?",[&run],|r|r.get(0))?;
                             if staged>0 {
                                 let activated=tx.execute("UPDATE board_tasks SET state='pending' WHERE source_run_id=? AND state='staged'",[&run])?;

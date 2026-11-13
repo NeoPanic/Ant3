@@ -14,6 +14,6 @@ pub use collaboration::{
     autonomy, channels, claims, coordination, delegation, messaging, research, verification,
 };
 pub use control::{fleets, lifecycle, organization, presets};
-pub use scheduling::{board, decision, routing};
+pub use scheduling::{board, decision, routing, traces};
 pub use storage::sqlite as store;
 pub use workspaces::artifacts;

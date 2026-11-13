@@ -830,7 +830,7 @@ fn schema_upgrade_preserves_completed_results_and_review_snapshots_survive_resta
     assert_eq!(
         db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
             .unwrap(),
-        16
+        17
     );
     drop(db);
     drop(s);

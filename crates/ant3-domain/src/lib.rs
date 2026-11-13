@@ -213,4 +213,5 @@ pub mod fleets;
 pub mod limits;
 pub mod messaging;
 pub mod research;
+pub mod traces;
 pub mod verification;

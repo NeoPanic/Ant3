@@ -18,7 +18,7 @@ impl Database {
         let connection = Connection::open(path)?;
         connection.busy_timeout(std::time::Duration::from_secs(5))?;
         let version: i64 = connection.query_row("PRAGMA user_version", [], |r| r.get(0))?;
-        if version > 16 {
+        if version > 17 {
             return Err(fault(500, "database_version_unsupported"));
         }
         connection.execute_batch(include_str!("../migrations/sqlite/schema.sql"))?;
@@ -26,6 +26,7 @@ impl Database {
         connection.execute_batch(include_str!("../migrations/sqlite/autonomy.sql"))?;
         connection.execute_batch(include_str!("../migrations/sqlite/board.sql"))?;
         connection.execute_batch(include_str!("../migrations/sqlite/routing.sql"))?;
+        connection.execute_batch(include_str!("../migrations/sqlite/traces.sql"))?;
         if version < 4 {
             connection.execute_batch("BEGIN IMMEDIATE;
                 INSERT OR IGNORE INTO fleets(id,preset_name,preset_version,snapshot,mode,desired_count,state,revision,created_at)
