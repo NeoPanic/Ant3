@@ -321,3 +321,78 @@ fn trace_field_capacity_is_bounded_for_agent_keys() {
     );
     std::fs::remove_file(path).unwrap();
 }
+#[test]
+fn successful_run_recruits_its_signposted_paths_once() {
+    let (s, t) = fixture();
+    let r = provision(&s, &t);
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    deposit(&s, id(&r), "route.arxiv", "path", "d1");
+    near(strength(&s, id(&t), "route.arxiv"), 2.0);
+    finish(&s, &r, "completed");
+    // Success amplifies the path this Run signposted: agent 2 + recruitment 2.
+    near(
+        strength(&s, id(&t), "route.arxiv"),
+        traces::TRACE_AGENT_AMOUNT + traces::TRACE_RECRUITMENT_AMOUNT,
+    );
+    // Reconciliation is idempotent; no double recruitment.
+    s.reconcile_board().unwrap();
+    near(
+        strength(&s, id(&t), "route.arxiv"),
+        traces::TRACE_AGENT_AMOUNT + traces::TRACE_RECRUITMENT_AMOUNT,
+    );
+    let events = s.events(0).unwrap();
+    assert_eq!(
+        events
+            .iter()
+            .filter(|e| e["kind"] == "board.trace_deposited"
+                && e["data"]["reason"] == "recruitment"
+                && e["data"]["key"] == "route.arxiv")
+            .count(),
+        1
+    );
+    // Failed Runs recruit nothing.
+    let other = s.publish_board_task(&input("other"), "other").unwrap();
+    let bad = provision(&s, &other);
+    s.claim_board_task(id(&bad), id(&other)).unwrap();
+    deposit(&s, id(&bad), "route.deadend", "path", "d1");
+    finish(&s, &bad, "failed");
+    near(strength(&s, id(&other), "route.deadend"), traces::TRACE_AGENT_AMOUNT);
+}
+
+#[test]
+fn pending_offering_prefers_stronger_trails_then_fifo() {
+    let path = std::env::temp_dir().join(format!("ant3-trace-offer-{}.sqlite", uuid::Uuid::new_v4()));
+    let s = Store::open(&path).unwrap();
+    s.publish(Preset {
+        name: "reader".into(),
+        version: "1".into(),
+        purpose: "Read".into(),
+        objective: "Find evidence".into(),
+        instructions: "Read evidence".into(),
+        protocol: Protocol::Demo,
+        plugin: None,
+    })
+    .unwrap();
+    let a = s.publish_board_task(&input("a"), "a").unwrap();
+    let b = s.publish_board_task(&input("b"), "b").unwrap();
+    // FIFO without traces.
+    let pending = s.board_pending().unwrap();
+    assert_eq!(pending[0]["id"], a["id"]);
+    assert_eq!(pending[1]["id"], b["id"]);
+    // Signpost a trail on task A, then return it to the unassigned pool.
+    let r = provision(&s, &a);
+    deposit(&s, id(&r), id(&a), "finding", "d1");
+    drop(s);
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute(
+        "UPDATE board_tasks SET route_state='unassigned' WHERE id=?",
+        [id(&a)],
+    )
+    .unwrap();
+    drop(db);
+    let s = Store::open(&path).unwrap();
+    let pending = s.board_pending().unwrap();
+    assert_eq!(pending[0]["id"], a["id"]);
+    assert_eq!(pending[1]["id"], b["id"]);
+    std::fs::remove_file(path).unwrap();
+}

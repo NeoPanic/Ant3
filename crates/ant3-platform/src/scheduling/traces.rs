@@ -15,10 +15,9 @@ use serde_json::{Value, json};
 use ant3_domain::traces::*;
 pub use ant3_domain::traces::TraceInput;
 
-/// Deposit into a trace. `reason` is `agent`, `reuse`, `completion` or
-/// `accepted`. Capacity is enforced on the agent path only; verified-event
-/// deposits on task keys must never fail because agents filled the field.
-pub(crate) fn deposit(
+/// Evaporate the current strength to `now`, reinforce, upsert and emit the
+/// deposit event. Does not write the ledger; callers own deduplication.
+fn apply(
     tx: &Transaction<'_>,
     root: &str,
     key: &str,
@@ -44,10 +43,6 @@ pub(crate) fn deposit(
          ON CONFLICT(root_id,key) DO UPDATE SET strength=excluded.strength,deposits=deposits+1,updated_at=excluded.updated_at",
         params![root, key, kind, strength, at, at],
     )?;
-    tx.execute(
-        "INSERT INTO board_trace_deposits(root_id,key,amount,reason,source_run_id,created_at) VALUES(?,?,?,?,?,?)",
-        params![root, key, amount, reason, source_run, at],
-    )?;
     event(
         tx,
         "board.trace_deposited",
@@ -56,45 +51,83 @@ pub(crate) fn deposit(
     )
 }
 
-/// Reuse deposit that silently no-ops when this Run already reinforced the
-/// same trace. Returns whether a deposit happened.
+/// Deposit into a trace. `reason` is `agent`, `completion` or `accepted`.
+/// Capacity is enforced on the agent path only; verified-event deposits on
+/// task keys must never fail because agents filled the field.
+pub(crate) fn deposit(
+    tx: &Transaction<'_>,
+    root: &str,
+    key: &str,
+    kind: &str,
+    amount: f64,
+    reason: &str,
+    source_run: Option<&str>,
+) -> PResult<()> {
+    tx.execute(
+        "INSERT INTO board_trace_deposits(root_id,key,amount,reason,source_run_id,created_at) VALUES(?,?,?,?,?,?)",
+        params![root, key, amount, reason, source_run, now()],
+    )?;
+    apply(tx, root, key, kind, amount, reason, source_run)
+}
+
+/// Once-per-Run deposit for `reuse` and `recruitment`, deduplicated by a
+/// partial unique index on the ledger. Returns whether a deposit happened.
+fn deposit_once(
+    tx: &Transaction<'_>,
+    root: &str,
+    key: &str,
+    run: &str,
+    reason: &str,
+    amount: f64,
+    kind: Option<&str>,
+) -> PResult<bool> {
+    let inserted = tx.execute(
+        "INSERT OR IGNORE INTO board_trace_deposits(root_id,key,amount,reason,source_run_id,created_at) VALUES(?,?,?,?,?,?)",
+        params![root, key, amount, reason, run, now()],
+    )?;
+    if inserted == 0 {
+        return Ok(false);
+    }
+    let kind = match kind {
+        Some(kind) => kind.to_owned(),
+        None => tx.query_row(
+            "SELECT kind FROM board_traces WHERE root_id=? AND key=?",
+            params![root, key],
+            |r| r.get(0),
+        )?,
+    };
+    apply(tx, root, key, &kind, amount, reason, Some(run))?;
+    Ok(true)
+}
+
+/// Reuse deposit: reading a peer's settled result reinforces that trail once
+/// per Run.
 pub(crate) fn deposit_reuse_once(
     tx: &Transaction<'_>,
     root: &str,
     key: &str,
     run: &str,
 ) -> PResult<bool> {
-    let inserted = tx.execute(
-        "INSERT OR IGNORE INTO board_trace_deposits(root_id,key,amount,reason,source_run_id,created_at) VALUES(?,?,?,'reuse',?,?)",
-        params![root, key, TRACE_REUSE_AMOUNT, run, now()],
-    )?;
-    if inserted == 0 {
-        return Ok(false);
-    }
-    let at = now();
-    let existing: Option<(f64, i64)> = tx
-        .query_row(
-            "SELECT strength,updated_at FROM board_traces WHERE root_id=? AND key=?",
-            params![root, key],
-            |r| Ok((r.get(0)?, r.get(1)?)),
-        )
-        .optional()?;
-    let base = existing
-        .map(|(strength, updated_at)| effective_strength(strength, updated_at, at))
-        .unwrap_or(0.0);
-    let strength = reinforce(base, TRACE_REUSE_AMOUNT);
-    tx.execute(
-        "INSERT INTO board_traces(root_id,key,kind,strength,deposits,created_at,updated_at) VALUES(?,?,?, ?,1,?,?)
-         ON CONFLICT(root_id,key) DO UPDATE SET strength=excluded.strength,deposits=deposits+1,updated_at=excluded.updated_at",
-        params![root, key, RESULT_TRACE_KIND, strength, at, at],
-    )?;
-    event(
+    deposit_once(
         tx,
-        "board.trace_deposited",
         root,
-        json!({"key":key,"kind":RESULT_TRACE_KIND,"amount":TRACE_REUSE_AMOUNT,"strength":strength,"reason":"reuse","source_run_id":run}),
-    )?;
-    Ok(true)
+        key,
+        run,
+        "reuse",
+        TRACE_REUSE_AMOUNT,
+        Some(RESULT_TRACE_KIND),
+    )
+}
+
+/// Recruitment deposit: a successful Run amplifies the signals it left
+/// behind, once per trail per Run.
+pub(crate) fn deposit_recruitment_once(
+    tx: &Transaction<'_>,
+    root: &str,
+    key: &str,
+    run: &str,
+) -> PResult<bool> {
+    deposit_once(tx, root, key, run, "recruitment", TRACE_RECRUITMENT_AMOUNT, None)
 }
 
 pub(crate) fn trace_view(tx: &Transaction<'_>, root: &str, key: &str) -> PResult<Option<Value>> {

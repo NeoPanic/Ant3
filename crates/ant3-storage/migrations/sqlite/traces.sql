@@ -19,3 +19,4 @@ CREATE TABLE IF NOT EXISTS board_trace_deposits(
 );
 CREATE INDEX IF NOT EXISTS board_trace_deposits_root ON board_trace_deposits(root_id,seq);
 CREATE UNIQUE INDEX IF NOT EXISTS board_trace_reuse_once ON board_trace_deposits(root_id,key,source_run_id) WHERE reason='reuse';
+CREATE UNIQUE INDEX IF NOT EXISTS board_trace_recruit_once ON board_trace_deposits(root_id,key,source_run_id) WHERE reason='recruitment';

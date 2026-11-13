@@ -249,9 +249,20 @@ impl Store {
     }
     pub fn board_pending(&self) -> PResult<Vec<Value>> {
         self.board_transaction(|tx| {
-            let mut stmt=tx.prepare("SELECT id FROM board_tasks WHERE state='pending' AND route_state='unassigned' ORDER BY created_at,rowid LIMIT 64")?;
-            let ids=stmt.query_map([],|r|r.get::<_,String>(0))?.collect::<Result<Vec<_>,_>>()?;
-            ids.iter().map(|id|task(tx,id)).collect()
+            let mut stmt=tx.prepare("SELECT id,root_id,created_at FROM board_tasks WHERE state='pending' AND route_state='unassigned' ORDER BY created_at,rowid LIMIT 64")?;
+            let candidates=stmt.query_map([],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,i64>(2)?)))?.collect::<Result<Vec<_>,_>>()?;
+            drop(stmt);
+            // Trace-weighted offering: stronger trails surface first; FIFO
+            // breaks ties. Exploration is opt-in and seeded per sweep.
+            let entries:Vec<(String,f64,i64)>=candidates.iter().map(|(id,root,created_at)|{
+                let strength=crate::traces::trace_view(tx,root,id)?
+                    .and_then(|v|v["strength"].as_f64())
+                    .unwrap_or(0.0);
+                Ok((id.clone(),strength,*created_at))
+            }).collect::<PResult<_>>()?;
+            let explore=std::env::var("ANT3_BOARD_EXPLORATION").is_ok_and(|v|v=="1");
+            let order=crate::domain::traces::offer_order(&entries,explore,now() as u64);
+            order.iter().map(|id|task(tx,id)).collect()
         })
     }
     pub fn update_board_progress(&self, run: &str, message: &str, key: &str) -> PResult<Value> {
@@ -444,6 +455,15 @@ impl Store {
                         tx.execute("UPDATE board_tasks SET result=? WHERE id=?",params![report,claimed])?;
                         if state=="completed" {
                             crate::traces::deposit(tx,t["root_id"].as_str().unwrap(),claimed,crate::domain::traces::RESULT_TRACE_KIND,crate::domain::traces::TRACE_COMPLETION_AMOUNT,"completion",Some(&run))?;
+                            // Recruitment: success amplifies the trails this Run
+                            // signposted, recruiting peers toward used paths.
+                            let root=t["root_id"].as_str().unwrap().to_owned();
+                            let mut stmt=tx.prepare("SELECT DISTINCT key FROM board_trace_deposits WHERE source_run_id=? AND reason='agent'")?;
+                            let keys=stmt.query_map([&run],|r|r.get::<_,String>(0))?.collect::<Result<Vec<_>,_>>()?;
+                            drop(stmt);
+                            for key in keys {
+                                crate::traces::deposit_recruitment_once(tx,&root,&key,&run)?;
+                            }
                             let staged:usize=tx.query_row("SELECT count(*) FROM board_tasks WHERE source_run_id=?",[&run],|r|r.get(0))?;
                             if staged>0 {
                                 let activated=tx.execute("UPDATE board_tasks SET state='pending' WHERE source_run_id=? AND state='staged'",[&run])?;

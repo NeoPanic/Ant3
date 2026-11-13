@@ -256,13 +256,14 @@
     "name": "信息素痕迹场",
     "phase": "P2",
     "status": "implemented",
-    "detail": "根任务作用域痕迹浓度：完成/验收/复用按固定权重自动增强，Agent finding/path/blocker 沉积有界（每 Run 8 次、每根 64 条）；30 分钟半衰期惰性蒸发、六位小数量化、饱和上限 100；沉积台账与事件可审计。任务视图附带痕迹浓度，HTTP 提供操作员视图。选型证据、概率化探索与招募放大尚未接入。",
+    "detail": "根任务作用域痕迹浓度：完成/验收/复用按固定权重自动增强，成功 Run 招募放大其留下的路径信号（每痕迹每 Run 一次），Agent finding/path/blocker 沉积有界（每 Run 8 次、每根 64 条）；30 分钟半衰期惰性蒸发、六位小数量化、饱和上限 100；沉积台账与事件可审计。待处理任务按浓度加权供给（FIFO 平局），可选种子化概率探索；选型模型接收最强 8 条痕迹作为不可信证据。局部感知与响应阈值分工未实现。",
     "source": [
       "crates/ant3-domain/src/traces.rs",
       "crates/ant3-platform/src/scheduling/traces.rs",
       "crates/ant3-storage/migrations/sqlite/traces.sql",
       "crates/ant3-platform/src/scheduling/board/tools.rs",
-      "crates/ant3-server/tests/traces.rs"
+      "crates/ant3-server/tests/traces.rs",
+      "crates/ant3-server/tests/evaluation.rs"
     ],
     "target": [
       "crates/ant3-platform/src/scheduling/"
