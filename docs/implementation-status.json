@@ -232,7 +232,7 @@
     "name": "对等 Agent 共享任务板",
     "phase": "P2",
     "status": "partial",
-    "detail": "任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。尚未接入 Goal 频道、文件产物与自动独立验证，没有分布式租约或费用硬预算。",
+    "detail": "任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。任务视图已接入信息素痕迹浓度；尚未接入 Goal 频道、文件产物与自动独立验证，没有分布式租约或费用硬预算。",
     "source": [
       "crates/ant3-platform/src/scheduling/board/mod.rs",
       "crates/ant3-platform/src/scheduling/board/tools.rs",
@@ -252,11 +252,30 @@
     "scope": "current"
   },
   {
+    "id": "traces",
+    "name": "信息素痕迹场",
+    "phase": "P2",
+    "status": "implemented",
+    "detail": "根任务作用域痕迹浓度：完成/验收/复用按固定权重自动增强，Agent finding/path/blocker 沉积有界（每 Run 8 次、每根 64 条）；30 分钟半衰期惰性蒸发、六位小数量化、饱和上限 100；沉积台账与事件可审计。任务视图附带痕迹浓度，HTTP 提供操作员视图。选型证据、概率化探索与招募放大尚未接入。",
+    "source": [
+      "crates/ant3-domain/src/traces.rs",
+      "crates/ant3-platform/src/scheduling/traces.rs",
+      "crates/ant3-storage/migrations/sqlite/traces.sql",
+      "crates/ant3-platform/src/scheduling/board/tools.rs",
+      "crates/ant3-server/tests/traces.rs"
+    ],
+    "target": [
+      "crates/ant3-platform/src/scheduling/"
+    ],
+    "verification": "existing-tests",
+    "scope": "current"
+  },
+  {
     "id": "goal-graph",
     "name": "显式目标与任务依赖",
     "phase": "P2",
     "status": "implemented",
-    "detail": "持久依赖图最多 64 项任务，传递上游输出与 Run ID，支持取消、候选池及人工验收；可自动选择就绪候选或等待人工认领。",
+    "detail": "持久依赖图最多 64 项任务，传递上游输出与 Run ID，支持取消、候选池及人工验收；可自动选择就绪候选或等待人工认领。显式依赖图作为脚手架与对照组；群体路径经任务板自组织。",
     "source": [
       "crates/ant3-platform/src/collaboration/coordination.rs"
     ],
@@ -271,7 +290,7 @@
     "name": "固定调研模板与动态委派",
     "phase": "P2",
     "status": "partial",
-    "detail": "兼容调研模板固定规划、研究和汇总分工，支持递归委派、原实例续作与独立验证；Goal 内 Agent 可读取任务、来源成功后追加或请求接续，验证器按证据选择局部返工。该模板与对等任务板独立。没有已运行节点重写、任意子树迁移或通用自主修复。",
+    "detail": "兼容调研模板固定规划、研究和汇总分工，支持递归委派、原实例续作与独立验证；Goal 内 Agent 可读取任务、来源成功后追加或请求接续，验证器按证据选择局部返工。该模板与对等任务板独立。没有已运行节点重写、任意子树迁移或通用自主修复。固定模板定位为中央编排对照组，不是群体涌现路径。",
     "source": [
       "crates/ant3-platform/src/collaboration/research/mod.rs",
       "crates/ant3-platform/src/collaboration/research/tools.rs",
@@ -485,7 +504,7 @@
     "name": "预算预留与账本",
     "phase": "P2",
     "status": "planned",
-    "detail": "提供单 Run 轮次、工具次数及超时限制；没有团队费用硬上限、原子预算预留、结算账本或费用归属。",
+    "detail": "提供单 Run 轮次、工具次数及超时限制；没有团队费用硬上限、原子预算预留、结算账本或费用归属。设计方向：预算作为能量与选择压力服务群体涌现，不止会计治理。",
     "source": [],
     "target": [
       "crates/ant3-platform/src/accounting/",
@@ -538,11 +557,27 @@
     "scope": "deferred"
   },
   {
+    "id": "evaluation",
+    "name": "涌现评估基线",
+    "phase": "P2",
+    "status": "partial",
+    "detail": "单/多 Agent 同任务同验收对照：确定性契约基线报告通过/验收、Run 成本代理、信息复用率与痕迹浓度，断言群体整合复用全部子任务贡献；不预设多 Agent 更优。真实模型等预算对照、个体损失鲁棒性与收敛速度指标未实现。",
+    "source": [
+      "crates/ant3-server/tests/evaluation.rs",
+      "docs/evaluation.zh-CN.md"
+    ],
+    "target": [
+      "tests/evaluation/"
+    ],
+    "verification": "existing-tests",
+    "scope": "current"
+  },
+  {
     "id": "distribution",
     "name": "发行、生态与验收套件",
     "phase": "P4",
     "status": "partial",
-    "detail": "提供社区文档、CI 和源码本地启动；没有完整发行物/容器交付、插件分发生态或单/多 Agent 对照评估。",
+    "detail": "提供社区文档、CI 和源码本地启动；没有完整发行物/容器交付或插件分发生态；单/多 Agent 确定性对照基线已落地，真实模型对照未实现。",
     "source": [
       ".github/workflows/check.yml",
       "docs/getting-started.zh-CN.md"

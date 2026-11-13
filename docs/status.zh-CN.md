@@ -29,6 +29,6 @@ Goal 内追加不删除或改写已运行节点，其接续领取要求实例已
 
 ## 验证范围
 
-已验证原生 Cargo check、Clippy、Rust 测试、rustdoc、quickstart、HTTP 插件 fixture，以及桌面 Web 的主要操作链路。确定性 Demo 和真实 OpenAI Responses / `gpt-6-luna` 均验证了多实例协作、文件交接与验证；真实模型还验证了自主追加、依赖调整和后续汇总。浏览器覆盖 1024、1440、1920 px；完整屏幕阅读器、跨浏览器、多机故障及单/多 Agent 效果对照尚未完成。
+已验证原生 Cargo check、Clippy、Rust 测试、rustdoc、quickstart、HTTP 插件 fixture，以及桌面 Web 的主要操作链路。确定性 Demo 和真实 OpenAI Responses / `gpt-6-luna` 均验证了多实例协作、文件交接与验证；真实模型还验证了自主追加、依赖调整和后续汇总。浏览器覆盖 1024、1440、1920 px；完整屏幕阅读器、跨浏览器、多机故障尚未完成。单/多 Agent 对照已有确定性契约基线（信息复用与成本代理），真实模型等预算效果对照尚未完成。
 
-能力契约见[共享任务板](task-board.zh-CN.md)、[Goal 内自主性](autonomy.zh-CN.md)、[频道](channels.zh-CN.md)、[工作区](workspaces.zh-CN.md)和[验证](verification.zh-CN.md)。目标架构及扩展边界见[架构设计](managed-agents.zh-CN.md)。
+能力契约见[共享任务板](task-board.zh-CN.md)、[信息素痕迹场](traces.zh-CN.md)、[涌现评估基线](evaluation.zh-CN.md)、[Goal 内自主性](autonomy.zh-CN.md)、[频道](channels.zh-CN.md)、[工作区](workspaces.zh-CN.md)和[验证](verification.zh-CN.md)。目标架构及扩展边界见[架构设计](managed-agents.zh-CN.md)。
