@@ -30,6 +30,7 @@
 | [母体组合](presets.zh-CN.md) | 固定版本继承、参数和插件绑定 |
 | [共享任务板](task-board.zh-CN.md) | 无实例绑定发布、Preset 选型、原子认领与拆分 |
 | [信息素痕迹场](traces.zh-CN.md) | 浓度、增强、蒸发与有界 Agent 信号 |
+| [涌现评估基线](evaluation.zh-CN.md) | 单/多 Agent 同任务对照与信息复用指标 |
 | [Goal 任务领取](task-claims.zh-CN.md) | 兼容候选池、所有权和执行尝试 |
 | [Goal 自主协作](autonomy.zh-CN.md) | 兼容后续工作追加和接续约束 |
 | [动态委派](dynamic-delegation.zh-CN.md) | 角色、父子任务和续作 |
