@@ -32,14 +32,14 @@ Use **³** (U+00B3) in display text; use `Ant3` where ASCII is required. Technic
 
 | Asset | Intended use |
 | --- | --- |
-| [banner.svg](banner.svg) | README hero; wordmark, tagline, three ants, and shared-task paths. |
+| [banner.svg](banner.svg) | README hero; wordmark, tagline, three ants on pheromone trails around a shared task node. |
 | [mark.svg](mark.svg) | Warm orange ant for dark navigation and the favicon. |
 | [mark-mono.svg](mark-mono.svg) | Ink ant for light backgrounds and single-color use. |
 | [social-preview.png](social-preview.png) | 1280 × 640 social sharing image; upload in GitHub repository settings. |
 
 ![Ant³ banner](banner.svg)
 
-The ant has three body segments, six legs, and two bent antennae. The banner connects three peers through a shared task node. Dotted paths suggest coordination through shared traces. All SVGs are static, self-contained, and include accessible titles and descriptions; the marks contain geometry only. The banner uses system fonts.
+The ant has three body segments, six legs, and two bent antennae. The banner connects three peers through a shared task node. A dashed orange loop with fading concentration dots reads as a pheromone trail, suggesting stigmergic coordination. All SVGs are static, self-contained, and include accessible titles and descriptions; the marks contain geometry only. The banner uses system fonts.
 
 ## Palette and placement
 

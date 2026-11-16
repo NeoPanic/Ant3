@@ -77,8 +77,6 @@ Open [localhost:7333](http://127.0.0.1:7333) and sign in with the contents of `.
 
 Ant³ speaks **OpenAI-compatible Chat Completions**, **OpenAI Responses**, and **Anthropic Messages**. Configuration, CLI/API/MCP usage, and local process plugins are in the [getting-started guide](docs/getting-started.zh-CN.md).
 
-![Ant³ local task board](docs/images/ant3-board.png)
-
 ## How the colony works
 
 | Colony principle | Ant³ mechanism |
@@ -127,17 +125,53 @@ Crew animations reflect recorded execution states: working, waiting, or sleeping
 
 ```mermaid
 flowchart LR
-    Entry[Publish task] --> Board[Shared task board + trace field]
-    Board --> Control[Control plane: select Preset]
-    Preset[Versioned Presets + experience] --> Control
-    Control -->|start and manage| A[Agent A: independent Ant]
-    Control -->|start and manage| B[Agent B: independent Ant]
-    A -->|claim / results / subtasks / traces| Board
-    B -->|claim / results / subtasks / traces| Board
-    Board <--> State[SQLite: tasks / claims / Runs / traces]
+    Human(["Human<br/>publish task + acceptance"]):::human
+    Review(["Human review<br/>accept / request changes"]):::human
+
+    subgraph Control["Control plane — capacity, selection, budgets (not a leader)"]
+        Selector["Preset selection<br/>thresholds · trails · crowding"]:::control
+        Presets["Versioned Presets<br/>+ adaptive experience"]:::control
+    end
+
+    subgraph Swarm["Peer agents — same protocol, no fixed roles"]
+        A["Ant A<br/>claim · act · split"]:::agent
+        B["Ant B<br/>claim · act · split"]:::agent
+        C["Ant C<br/>integrate contributions"]:::agent
+    end
+
+    subgraph Env["Shared environment — stigmergy"]
+        Board["Task board<br/>atomic claims · subtasks"]:::env
+        Traces["Pheromone trace field<br/>reinforce · evaporate"]:::trace
+        State[("SQLite<br/>tasks · runs · traces")]:::store
+    end
+
+    Human --> Board
+    Board --> Selector
+    Presets --> Selector
+    Selector -->|provision| A
+    Selector -->|provision| B
+    Selector -->|provision| C
+    A -->|claim / results| Board
+    B -->|claim / results| Board
+    C -->|integrate| Board
+    A -.->|deposit / reuse| Traces
+    B -.->|deposit / reuse| Traces
+    C -.->|deposit / reuse| Traces
+    Traces -.->|stimulus| Selector
+    Board --> State
+    Traces --> State
+    Board --> Review
+    Review -.->|feedback reshapes trails| Traces
+
+    classDef human fill:#fde68a,stroke:#b45309,color:#1f2937;
+    classDef control fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef agent fill:#dcfce7,stroke:#16a34a,color:#14532d;
+    classDef env fill:#cffafe,stroke:#0891b2,color:#164e63;
+    classDef trace fill:#fce7f3,stroke:#db2777,color:#831843;
+    classDef store fill:#e5e7eb,stroke:#6b7280,color:#111827;
 ```
 
-The independent Ant owns model/tool execution, policies, session checkpoints, cancellation, and receipts. Checkpoints do not guarantee exactly-once external effects: tools supply their own idempotency or transaction contract. See [runtime contracts](docs/runtime.md) and the [target architecture](docs/managed-agents.zh-CN.md).
+Solid edges are task flow; dotted edges are pheromone feedback. The control plane enforces capacity, permissions, and budgets but is **not a permanent leader** — selection is guided by traces and adaptive thresholds, and every agent runs the same claim/split protocol. The independent Ant owns model/tool execution, policies, session checkpoints, cancellation, and receipts. Checkpoints do not guarantee exactly-once external effects: tools supply their own idempotency or transaction contract. See [runtime contracts](docs/runtime.md) and the [target architecture](docs/managed-agents.zh-CN.md).
 
 ## Use the runtime independently
 

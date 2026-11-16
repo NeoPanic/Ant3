@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 640" width="1600" height="640" role="img" aria-labelledby="title desc">
-<title id="title">Ant³ — Small agents. Shared work.</title>
-<desc id="desc">Ant-inspired collaboration for AI agents. Three ants follow connected paths between shared tasks: claim, contribute, continue.</desc>
+<title id="title">Ant³ — Swarm intelligence for AI agents.</title>
+<desc id="desc">Ant-inspired emergent coordination for AI agents. Three ants follow pheromone trails between shared tasks: claim, contribute, continue.</desc>
 <defs>
   <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#D9D4C8"/></pattern>
   <g id="ant"><g fill="none" stroke="#22251F" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
@@ -12,19 +12,25 @@
 <rect x="810" y="32" width="758" height="576" rx="18" fill="url(#dots)"/>
 <path d="M80 72h42" stroke="#EF7543" stroke-width="5"/>
 <g font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
-  <text x="138" y="79" fill="#62665B" font-size="15" font-weight="600" letter-spacing="3">ANT-INSPIRED AGENT COLLECTIVES</text>
+  <text x="138" y="79" fill="#62665B" font-size="15" font-weight="600" letter-spacing="3">EMERGENT MULTI-AGENT COORDINATION</text>
   <text x="72" y="296" fill="#22251F" font-size="192" font-weight="750" letter-spacing="-12">Ant<tspan dy="-91" fill="#D8572B" font-size="89" letter-spacing="0">3</tspan></text>
   <text x="82" y="378" fill="#22251F" font-size="43" font-weight="550" letter-spacing="-1">Small agents. Shared work.</text>
-  <text x="84" y="426" fill="#62665B" font-size="23">A shared task board. A colony of peers.</text>
+  <text x="84" y="426" fill="#62665B" font-size="23">Swarm intelligence for AI agents, in Rust.</text>
   <path d="M84 477h620" stroke="#D9D4C8"/>
   <text x="84" y="527" fill="#62665B" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="16" letter-spacing="2">CLAIM → CONTRIBUTE → CONTINUE</text>
-  <text x="84" y="574" fill="#62665B" font-size="15">RUST RUNTIME / SHARED TASKS / HUMAN REVIEW</text>
+  <text x="84" y="574" fill="#62665B" font-size="15">STIGMERGY / ADAPTIVE DIVISION OF LABOR / HUMAN REVIEW</text>
 </g>
 <g fill="none" stroke-linecap="round">
   <path d="M948 194C1050 124 1290 146 1408 286S1308 520 1148 478 890 346 948 194Z" stroke="#DCD7CC" stroke-width="44"/>
   <path d="M948 194C1050 124 1290 146 1408 286S1308 520 1148 478 890 346 948 194Z" stroke="#EF7543" stroke-width="3" stroke-dasharray="3 12"/>
   <path d="M975 218 1180 324 1360 304m-180 20-16 132" stroke="#ADAFA1" stroke-width="2" stroke-dasharray="4 10"/>
 </g>
+<g fill="#D8572B">
+  <circle cx="1010" cy="163" r="5" opacity=".9"/><circle cx="1120" cy="140" r="4" opacity=".65"/><circle cx="1250" cy="150" r="3.5" opacity=".45"/><circle cx="1360" cy="205" r="3" opacity=".3"/>
+  <circle cx="1408" cy="360" r="4" opacity=".55"/><circle cx="1330" cy="470" r="3.5" opacity=".4"/><circle cx="1210" cy="492" r="3" opacity=".28"/>
+  <circle cx="1050" cy="430" r="4" opacity=".5"/><circle cx="930" cy="330" r="3.5" opacity=".38"/><circle cx="920" cy="250" r="3" opacity=".25"/>
+</g>
+<text x="1048" y="92" fill="#D8572B" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="13" letter-spacing="2">PHEROMONE TRAILS</text>
 <g transform="translate(1180 324)">
   <rect x="-53" y="-53" width="106" height="106" rx="25" fill="#22251F"/>
   <g fill="none" stroke="#F5F1E8" stroke-width="4" stroke-linecap="round"><path d="M-18-20h36m-36 20h36m-36 20h23"/></g>

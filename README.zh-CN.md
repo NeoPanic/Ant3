@@ -77,8 +77,6 @@ cargo run --locked -p ant3-cli -- up
 
 Ant³ 支持 **OpenAI-compatible Chat Completions**、**OpenAI Responses**、**Anthropic Messages** 三类协议。配置、CLI/API/MCP 用法与本地进程插件见[入门指南](docs/getting-started.zh-CN.md)。
 
-![Ant³ 本地任务板](docs/images/ant3-board.png)
-
 ## 蚁群如何协作
 
 | 协作机制 | Ant³ 中的对应 |
@@ -127,17 +125,53 @@ Ant³ 支持 **OpenAI-compatible Chat Completions**、**OpenAI Responses**、**A
 
 ```mermaid
 flowchart LR
-    Entry[发布任务] --> Board[共享任务板 + 痕迹场]
-    Board --> Control[控制面：母体选型]
-    Preset[版本化母体 + 经验] --> Control
-    Control -->|启动与管理| A[Agent A：独立 Ant]
-    Control -->|启动与管理| B[Agent B：独立 Ant]
-    A -->|认领 / 成果 / 子任务 / 痕迹| Board
-    B -->|认领 / 成果 / 子任务 / 痕迹| Board
-    Board <--> State[SQLite：任务 / 认领 / Run / 痕迹]
+    Human(["人类<br/>发布任务 + 验收标准"]):::human
+    Review(["人类评审<br/>通过 / 附意见退回"]):::human
+
+    subgraph Control["控制面 — 容量、选型、预算（非 leader）"]
+        Selector["母体选型<br/>阈值 · 痕迹 · 拥挤"]:::control
+        Presets["版本化母体<br/>+ 自适应经验"]:::control
+    end
+
+    subgraph Swarm["对等 Agent — 同一协议，无固定角色"]
+        A["Ant A<br/>认领 · 执行 · 拆分"]:::agent
+        B["Ant B<br/>认领 · 执行 · 拆分"]:::agent
+        C["Ant C<br/>整合贡献"]:::agent
+    end
+
+    subgraph Env["共享环境 — stigmergy"]
+        Board["任务板<br/>原子认领 · 子任务"]:::env
+        Traces["信息素痕迹场<br/>增强 · 蒸发"]:::trace
+        State[("SQLite<br/>任务 · Run · 痕迹")]:::store
+    end
+
+    Human --> Board
+    Board --> Selector
+    Presets --> Selector
+    Selector -->|启动| A
+    Selector -->|启动| B
+    Selector -->|启动| C
+    A -->|认领 / 成果| Board
+    B -->|认领 / 成果| Board
+    C -->|整合| Board
+    A -.->|沉积 / 复用| Traces
+    B -.->|沉积 / 复用| Traces
+    C -.->|沉积 / 复用| Traces
+    Traces -.->|刺激| Selector
+    Board --> State
+    Traces --> State
+    Board --> Review
+    Review -.->|反馈重塑痕迹| Traces
+
+    classDef human fill:#fde68a,stroke:#b45309,color:#1f2937;
+    classDef control fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+    classDef agent fill:#dcfce7,stroke:#16a34a,color:#14532d;
+    classDef env fill:#cffafe,stroke:#0891b2,color:#164e63;
+    classDef trace fill:#fce7f3,stroke:#db2777,color:#831843;
+    classDef store fill:#e5e7eb,stroke:#6b7280,color:#111827;
 ```
 
-独立 Ant 拥有模型/工具执行、策略、会话检查点、取消与回执。检查点不保证外部效果恰好一次：工具自行提供幂等或事务契约。见[运行契约](docs/runtime.md)与[目标架构](docs/managed-agents.zh-CN.md)。
+实线为任务流，虚线为信息素反馈。控制面约束容量、权限与预算，但**不是永久 leader**——选型由痕迹与自适应阈值引导，每个 Agent 运行同一套认领/拆分协议。独立 Ant 拥有模型/工具执行、策略、会话检查点、取消与回执。检查点不保证外部效果恰好一次：工具自行提供幂等或事务契约。见[运行契约](docs/runtime.md)与[目标架构](docs/managed-agents.zh-CN.md)。
 
 ## 独立使用运行时
 
