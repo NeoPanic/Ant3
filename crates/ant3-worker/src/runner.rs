@@ -76,7 +76,6 @@ pub(super) async fn execute(
     let snapshot = &work["snapshot"];
     let preset = ant3_platform::presets::runtime_preset(snapshot)?;
     let bound = ant3_platform::presets::bindings(snapshot);
-    let planning = store.planner_job(run)?;
     let verification = store.verification_job(run)?;
     let board = store.board_run(run)?;
     let mut instructions = format!(
@@ -94,32 +93,6 @@ pub(super) async fn execute(
     }
     if board.is_some() {
         instructions.push_str("\nShared task board protocol: you are a peer Agent. Read platform.board.read, then claim a compatible pending task with platform.board.claim before using work tools. Follow the claimed task's instructions and acceptance criteria. Every peer can read, claim and split; no peer controls other identities. Split only when independent work is useful; publish task descriptions without choosing Presets or Agents, then finish this Run. Report concrete milestones and blockers with platform.board.progress. A continuation has completed children: inspect their results before integrating. Read target_task.reviews for human feedback; after changes_requested, correct the result and split additional work only if needed. Your final output is the durable task contribution, submitted for human review on the root task. Only the human operator can accept it. Do not claim success beyond available evidence.");
-    }
-    if let Some(job) = &planning {
-        let mut worker_tools = vec![
-            json!({"name":"text.inspect","description":"Count Unicode characters, lines and bytes in supplied text; no filesystem or network access."}),
-        ];
-        for plugin in &bound {
-            if plugin["kind"] == "process"
-                && let Some(tools) = plugin["manifest"]["tools"].as_array()
-            {
-                for tool in tools {
-                    worker_tools.push(json!({"name":format!("{}.{}",plugin["id"].as_str().unwrap_or_default(),tool["name"].as_str().unwrap_or_default()),"description":tool["description"].as_str().unwrap_or_default().chars().take(512).collect::<String>()}));
-                }
-            }
-            if plugin["kind"] == "organization" {
-                for tool in plugin["tools"].as_array().unwrap() {
-                    worker_tools
-                        .push(json!({"name":tool["name"],"description":tool["description"]}));
-                }
-            }
-        }
-        instructions = format!(
-            "You are the planning Agent for a bounded research team. Your only tool submits a plan; you cannot execute research tools, spawn recursively or pick identities. Produce exactly {} independent assignments and one synthesis brief. The selected worker role is:\n{}\nAvailable worker capabilities (declarations only): {}\nNever claim web research unless an actual retrieval tool is available. Submit the plan then stop.",
-            job["researchers"],
-            instructions,
-            serde_json::to_string(&worker_tools)?
-        );
     }
     if verification.is_some() {
         instructions = format!(
@@ -158,14 +131,6 @@ pub(super) async fn execute(
             tools.push(tool.spec().name);
             registry.tool(tool).map_err(core_error)?;
         }
-    } else if let Some(job) = &planning {
-        let tool = ant3_platform::research::tool(
-            store.clone(),
-            run,
-            job["researchers"].as_u64().unwrap() as usize,
-        );
-        tools.push(tool.spec().name);
-        registry.tool(tool).map_err(core_error)?;
     } else {
         let work_tool = |inner: Arc<dyn Tool>| -> Arc<dyn Tool> {
             if board.is_some() {
@@ -218,7 +183,6 @@ pub(super) async fn execute(
             required_tool: verification
                 .as_ref()
                 .map(|_| "platform.verification.report".into())
-                .or_else(|| planning.as_ref().map(|_| "platform.research.plan".into()))
                 .or_else(|| board.as_ref().map(|_| "platform.board.claim".into())),
             skills: vec![],
         })

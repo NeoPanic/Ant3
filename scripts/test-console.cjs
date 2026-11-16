@@ -30,17 +30,6 @@ test('能力列表按涌现路径分组，每项仅有一个状态标签，范�
   assert(html.includes('能力 &lt;A&gt;'));
 });
 
-test('调研工具列表按需展开，工具名称不会作为 HTML 执行',()=>{
-  const context=consoleContext(),target={};
-  context.document={querySelector:()=>target,addEventListener(){}};
-  vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/research/research.js'),'utf8'),context);
-  vm.runInContext(`data={presets:[{name:'test',version:'1',definition:{protocol:'demo'}}]};presetBindings=()=>[{kind:'process',id:'<img>',manifest:{tools:[{name:'<script>'}]}}];updateResearchCapabilities({elements:{preset:{value:'{"name":"test","version":"1"}'}}})`,context);
-  assert(target.innerHTML.includes('<details>'));
-  assert(target.innerHTML.includes('可用工具（2）'));
-  assert(target.innerHTML.includes('&lt;img&gt;.&lt;script&gt;'));
-  assert(!target.innerHTML.includes('<img>'));
-});
-
 test('仅操作列固定在表格右侧，数据列正常滚动',()=>{
   const context=consoleContext();
   assert(vm.runInContext("table(['目标','操作'],[])",context).includes('class="table-actions"'));

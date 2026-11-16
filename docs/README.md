@@ -6,7 +6,6 @@
 
 - [入门指南](getting-started.zh-CN.md)：本地启动、模型配置、任务发布与兼容流程入口。
 - [共享任务板](task-board.zh-CN.md)：任务先发布，控制面动态选型，Agent 认领、拆分与回投。
-- [固定调研模板](research.zh-CN.md)：显式使用规划、研究、汇总和验收的兼容流程。
 - [客户端示例](../examples/clients/)：CLI 计划文件与 MCP 配置。
 
 ## 当前状态

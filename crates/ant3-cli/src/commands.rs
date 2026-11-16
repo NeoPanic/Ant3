@@ -55,25 +55,6 @@ pub async fn board(args: BoardArgs) -> ClientResult<()> {
     };
     print(args.connection.client()?.execute(command).await?)
 }
-resource!(ResearchArgs, ResearchAction {
-    List,
-    Show {id:String},
-    /// Start a bounded planner -> parallel researchers -> synthesis team. May call paid models.
-    Create {#[arg(long)] file:PathBuf,#[arg(long)] key:String},
-    Cancel {id:String},
-});
-pub async fn research(args: ResearchArgs) -> ClientResult<()> {
-    let command = match args.action {
-        ResearchAction::List => Command::ResearchList,
-        ResearchAction::Show { id } => Command::ResearchShow { id },
-        ResearchAction::Create { file, key } => Command::ResearchCreate {
-            input: read_json(file)?,
-            key,
-        },
-        ResearchAction::Cancel { id } => Command::ResearchCancel { id },
-    };
-    print(args.connection.client()?.execute(command).await?)
-}
 resource!(MessageArgs, MessageAction {
     List {#[arg(long,default_value="0")] after:i64,#[arg(long)] limit:Option<usize>,#[arg(long)] instance_id:Option<String>,#[arg(long)] direction:Option<String>},
     Show {id:String},

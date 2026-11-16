@@ -69,9 +69,6 @@ pub async fn worker_loop_with_router(
                 }
             }
         }
-        if let Err(error) = store.reconcile_research() {
-            eprintln!("Research coordination failed: {error}");
-        }
         if let Err(error) = store.reconcile_channels() {
             eprintln!("channel reconciliation: {}", error.1);
         }

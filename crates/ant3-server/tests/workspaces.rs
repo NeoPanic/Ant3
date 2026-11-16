@@ -321,7 +321,7 @@ fn shared_file_and_json_snapshots_are_frozen_read_and_cited_by_independent_verif
 #[tokio::test]
 async fn actual_demo_team_verifier_paginates_large_workspace_evidence_before_passing() {
     use ant3::CancellationToken;
-    use ant3_platform::{models::Models, research::ResearchInput};
+    use ant3_platform::models::Models;
     use ant3_worker as runtime;
     use std::{collections::HashMap, sync::Arc, time::Duration};
     use tokio::sync::Mutex;
@@ -343,15 +343,35 @@ async fn actual_demo_team_verifier_paginates_large_workspace_evidence_before_pas
         "name":"demo-verifier","version":"1.0.0","purpose":"deterministic evidence reader",
         "objective":"read every supplied artifact","instructions":"Read frozen evidence before reporting. Demo does not judge semantic quality.","protocol":"demo","plugins":[]
     })).unwrap();
-    let input:ResearchInput=serde_json::from_value(json!({
+    let team = s
+        .spawn(
+            &Spawn {
+                preset_name: "demo-team".into(),
+                preset_version: "1.0.0".into(),
+                count: 3,
+            },
+            "demo-team",
+        )
+        .unwrap();
+    let members = team["instance_ids"].as_array().unwrap();
+    let objective = format!(
+        "Inspect the following supplied fixture material using the deterministic team tools. {}",
+        "A".repeat(6500)
+    );
+    let plan: GoalPlan = serde_json::from_value(json!({
         "title":"large shared evidence pagination",
-        "objective":format!("Inspect the following supplied fixture material using the deterministic team tools. {}","A".repeat(6500)),
+        "objective":objective,
         "acceptance":"Files, structured publications and final contributions are source-traceable; all cited evidence must be fully read.",
-        "preset_name":"demo-team","preset_version":"1.0.0","researchers":2,
-        "verification":{"preset_name":"demo-verifier","preset_version":"1.0.0","checks":[{"key":"read-evidence","description":"Read and cite all frozen contributions and file/JSON publications."}],"max_auto_reworks":0}
-    })).unwrap();
-    let receipt = s.create_research(&input, "large-file-review").unwrap();
-    let research = receipt["id"].as_str().unwrap();
+        "verification":{"preset_name":"demo-verifier","preset_version":"1.0.0","checks":[{"key":"read-evidence","description":"Read and cite all frozen contributions and file/JSON publications."}],"max_auto_reworks":0},
+        "tasks":[
+            {"key":"first","instance_id":members[0],"instructions":objective},
+            {"key":"second","instance_id":members[1],"instructions":objective},
+            {"key":"synthesis","instance_id":members[2],"instructions":"Synthesize the upstream contributions and cite their Run IDs.","depends_on":["first","second"]}
+        ]
+    }))
+    .unwrap();
+    let receipt = s.create_goal(&plan, "large-file-review").unwrap();
+    let goal_id = receipt["id"].as_str().unwrap();
     let stop = CancellationToken::new();
     let worker = tokio::spawn(runtime::worker_loop(
         s.clone(),
@@ -361,10 +381,10 @@ async fn actual_demo_team_verifier_paginates_large_workspace_evidence_before_pas
     ));
     let result = tokio::time::timeout(Duration::from_secs(45), async {
         loop {
-            let job = s.research(research).unwrap();
-            if ["awaiting-review", "failed", "cancelled"].contains(&job["state"].as_str().unwrap())
+            let goal = s.goal(goal_id).unwrap();
+            if ["awaiting-review", "failed", "cancelled"].contains(&goal["state"].as_str().unwrap())
             {
-                break job;
+                break goal;
             }
             tokio::time::sleep(Duration::from_millis(40)).await;
         }
@@ -372,9 +392,8 @@ async fn actual_demo_team_verifier_paginates_large_workspace_evidence_before_pas
     .await;
     stop.cancel();
     worker.await.unwrap();
-    let job = result.expect("the actual Demo team must settle within the fixture deadline");
-    assert_eq!(job["state"], "awaiting-review", "{job}");
-    let goal = &job["goal"];
+    let goal = result.expect("the actual Demo team must settle within the fixture deadline");
+    assert_eq!(goal["state"], "awaiting-review", "{goal}");
     let review = &goal["verification"]["current"];
     assert_eq!(review["state"], "passed", "{review}");
     let manifest = review["manifest"].as_array().unwrap();

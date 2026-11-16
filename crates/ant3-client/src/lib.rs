@@ -81,17 +81,6 @@ pub enum Command {
         input: ant3_domain::artifacts::ReworkInput,
         key: String,
     },
-    ResearchList,
-    ResearchShow {
-        id: String,
-    },
-    ResearchCreate {
-        input: ant3_domain::research::ResearchInput,
-        key: String,
-    },
-    ResearchCancel {
-        id: String,
-    },
     MessagesList {
         #[serde(default)]
         after: i64,
@@ -207,10 +196,8 @@ impl Command {
                 | Self::ContextHistory { .. }
                 | Self::ArtifactsList { .. }
                 | Self::ArtifactsShow { .. }
-                | Self::ResearchList
                 | Self::BoardList
                 | Self::BoardShow { .. }
-                | Self::ResearchShow { .. }
                 | Self::MessagesList { .. }
                 | Self::MessagesShow { .. }
                 | Self::Snapshot
@@ -393,20 +380,6 @@ impl PlatformClient {
                 object("goals", &id, "/rework")?,
                 Some(serde_json::to_value(input)?),
                 Some(key),
-            ),
-            ResearchList => (Method::GET, "/research-jobs".into(), None, None),
-            ResearchShow { id } => (Method::GET, object("research-jobs", &id, "")?, None, None),
-            ResearchCreate { input, key } => (
-                Method::POST,
-                "/research-jobs".into(),
-                Some(serde_json::to_value(input)?),
-                Some(key),
-            ),
-            ResearchCancel { id } => (
-                Method::POST,
-                object("research-jobs", &id, "/cancel")?,
-                Some(json!({})),
-                None,
             ),
             MessagesList {
                 after,

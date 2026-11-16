@@ -113,9 +113,9 @@
     "status": "partial",
     "detail": "Agent 按批准母体/参数派生子任务，宿主绑定父任务、Run 和实例；最多 6 层、单次 8 项、每根 48 个后代，Goal 共 64 项。没有任意子树授权、迁移或分布式租约。",
     "source": [
-      "crates/ant3-platform/src/collaboration/research/mod.rs",
-      "web/src/features/research/research.js",
-      "crates/ant3-platform/src/collaboration/delegation/mod.rs"
+      "crates/ant3-platform/src/collaboration/delegation/mod.rs",
+      "crates/ant3-platform/src/collaboration/delegation/tools.rs",
+      "crates/ant3-server/tests/delegation.rs"
     ],
     "target": [
       "crates/ant3-domain/src/agents/"
@@ -310,7 +310,7 @@
     "name": "显式目标与任务依赖",
     "phase": "P2",
     "status": "implemented",
-    "detail": "持久依赖图最多 64 项任务，传递上游输出与 Run ID，支持取消、候选池及人工验收；可自动选择就绪候选或等待人工认领。显式依赖图作为脚手架与对照组；群体路径经任务板自组织。",
+    "detail": "持久依赖图最多 64 项任务，传递上游输出与 Run ID，支持取消、候选池及人工验收；可自动选择就绪候选或等待人工认领。显式依赖图作为脚手架；群体路径经任务板自组织。",
     "source": [
       "crates/ant3-platform/src/collaboration/coordination.rs"
     ],
@@ -322,16 +322,12 @@
     "path": "control-group"
   },
   {
-    "id": "planning",
-    "name": "固定调研模板与动态委派",
+    "id": "delegation",
+    "name": "动态委派与任务自主",
     "phase": "P2",
     "status": "partial",
-    "detail": "兼容调研模板固定规划、研究和汇总分工，支持递归委派、原实例续作与独立验证；Goal 内 Agent 可读取任务、来源成功后追加或请求接续，验证器按证据选择局部返工。该模板与对等任务板独立。没有已运行节点重写、任意子树迁移或通用自主修复。固定模板定位为中央编排对照组，不是群体涌现路径。",
+    "detail": "Goal 内 Agent 按批准母体递归委派子任务，原实例在子任务来源成功后续作；可读取任务、追加或请求接续，验证器按证据选择局部返工，独立验证按冻结清单执行。没有已运行节点重写、任意子树迁移或通用自主修复。",
     "source": [
-      "crates/ant3-platform/src/collaboration/research/mod.rs",
-      "crates/ant3-platform/src/collaboration/research/tools.rs",
-      "web/src/features/research/research.js",
-      "crates/ant3-server/tests/research.rs",
       "crates/ant3-platform/src/collaboration/delegation/mod.rs",
       "crates/ant3-platform/src/collaboration/delegation/tools.rs",
       "crates/ant3-server/tests/delegation.rs",
@@ -510,7 +506,7 @@
     "name": "API / CLI / MCP 入口",
     "phase": "P2",
     "status": "partial",
-    "detail": "HTTP/Web、共享本地客户端、CLI 与 MCP stdio 共用状态；44 个 MCP 工具，默认开放 22 个查询工具。没有 MCP resources、Streamable HTTP、细粒度授权、并发取消或 CLI --wait。",
+    "detail": "HTTP/Web、共享本地客户端、CLI 与 MCP stdio 共用状态；40 个 MCP 工具，默认开放 20 个查询工具。没有 MCP resources、Streamable HTTP、细粒度授权、并发取消或 CLI --wait。",
     "source": [
       "crates/ant3-server/src/api/mod.rs",
       "crates/ant3-client/src/lib.rs",

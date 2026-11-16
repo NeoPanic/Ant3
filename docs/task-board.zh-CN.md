@@ -118,7 +118,7 @@ cargo run --locked -p ant3-cli -- up
 
 当前为单 daemon、本地 Worker 的任务板。已有 Goal 的频道、共享上下文、文件产物和独立验证仍属另一套流程契约。`completed` 表示已知执行成功，根任务的 `review_state=pending` 表示待人类评审，`accepted` 才归档；子任务成功后可直接参与父任务整合。尚无分布式租约、跨机器调度、团队费用硬预算或通用公平性保证。
 
-兼容用例分别见[固定调研模板](research.zh-CN.md)、[Goal 候选池认领](task-claims.zh-CN.md)和[Goal 内追加与接续](autonomy.zh-CN.md)。这些用例继续保存各自的状态与接口，任务板无需依赖它们的预设角色。
+兼容用例分别见[Goal 候选池认领](task-claims.zh-CN.md)和[Goal 内追加与接续](autonomy.zh-CN.md)。这些用例继续保存各自的状态与接口，任务板无需依赖它们的预设角色。
 
 ## 人类评审与返工
 

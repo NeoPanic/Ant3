@@ -370,8 +370,6 @@ form input[type="checkbox"],form input[type="radio"] {accent-color:var(--ink)}
 
 .brand{padding-bottom:28px;letter-spacing:-.8px}.connection-status{padding:16px 8px 4px;gap:8px;font:12px var(--mono);white-space:nowrap}.connection-status .repository-link{margin-left:auto;color:#b8b8b8;display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;border-radius:4px}.repository-link:hover{color:#fff}@media(pointer:coarse){.connection-status .repository-link{min-width:44px;min-height:44px}}.connection-indicator{color:#a3a3a3;font-size:12px}.connection-indicator.connected{color:#68d391}.connection-indicator.disconnected{color:#f0a8a8;outline:1px solid currentColor;outline-offset:3px;border-radius:50%}
 
-.research-plan{padding-left:20px;display:grid;gap:16px}.research-plan p{margin:5px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65}
-
 .delegation-record { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 8px; }
 .delegation-children { padding-left: 20px; display: grid; gap: 8px; }
 .delegation-children li { overflow-wrap: anywhere; }

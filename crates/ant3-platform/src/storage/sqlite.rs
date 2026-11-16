@@ -22,7 +22,11 @@ impl Store {
             tx.execute("INSERT OR IGNORE INTO goal_rounds(goal_id,number,state,review,created_at,finished_at) SELECT id,1,state,review,created_at,finished_at FROM goals",[])?;
             crate::artifacts::backfill(tx)?;
             if version < 10 { crate::claims::backfill(tx)?; }
-            tx.execute_batch("PRAGMA user_version=19;")?;
+            // The fixed research template was removed; retire its tables on legacy databases.
+            if version < 20 {
+                tx.execute_batch("DROP TABLE IF EXISTS research_verification_policies; DROP TABLE IF EXISTS research_delegation_policies; DROP TABLE IF EXISTS research_members; DROP TABLE IF EXISTS research_jobs;")?;
+            }
+            tx.execute_batch("PRAGMA user_version=20;")?;
             Ok(())
         })?;
         Ok(store)

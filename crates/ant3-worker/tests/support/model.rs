@@ -90,35 +90,6 @@ impl Model for DemoModel {
                 reasoning: None,
             });
         }
-        if let Some(spec) = input
-            .tools
-            .iter()
-            .find(|s| s.name == "platform.research.plan")
-        {
-            let finished = matches!(input.turns.last(), Some(Turn::Tools(_)));
-            let count = spec.parameters["properties"]["tasks"]["minItems"]
-                .as_u64()
-                .unwrap() as usize;
-            return Ok(ModelReply {
-                text: if finished {
-                    "[确定性演示] 分工计划已提交；研究任务由平台派发。".into()
-                } else {
-                    String::new()
-                },
-                calls: if finished {
-                    vec![]
-                } else {
-                    vec![Call {
-                        id: "demo-plan".into(),
-                        name: spec.name.clone(),
-                        arguments: json!({"tasks":(0..count).map(|i|json!({"title":format!("演示维度 {}",i+1),"instructions":format!("确定性演示：检查第 {} 个维度的输入文本，报告工具统计；这不是语义调研。",i+1)})).collect::<Vec<_>>(),"synthesis":"确定性演示：检查上游贡献文本；不宣称执行真实调研。"}),
-                    }]
-                },
-                usage: None,
-                continuation: Value::Null,
-                reasoning: None,
-            });
-        }
         if input
             .tools
             .iter()

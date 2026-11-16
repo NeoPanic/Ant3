@@ -57,7 +57,7 @@ The first start opens an empty task board. Configure a model and publish a Prese
 | Agent definitions | Versioned Presets, pinned inheritance, parameters, model and plugin bindings. |
 | Lifecycle | Independent instances; Agent pools for provisioning, scaling, retirement, and TTL. |
 | Shared task board | Publish unassigned tasks; select Presets, provision instances, claim work atomically, and return subtasks. |
-| Explicit workflows | Existing Goal graphs, candidate-based claiming, bounded delegation, and research templates. |
+| Explicit workflows | Existing Goal graphs, candidate-based claiming, and bounded delegation. |
 | Collaboration | Direct messages, Goal channels, explicit membership, subscribed wake-ups, shared context. |
 | Deliverables | Private workspaces, immutable text/file/JSON snapshots, peer evidence handoffs. |
 | Review | Independent verification, evidence-linked repair, review rounds, human acceptance. |

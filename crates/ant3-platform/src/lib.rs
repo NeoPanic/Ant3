@@ -11,7 +11,7 @@ pub mod workspaces;
 
 // Preserve existing module paths while implementations move behind their boundaries.
 pub use collaboration::{
-    autonomy, channels, claims, coordination, delegation, messaging, research, verification,
+    autonomy, channels, claims, coordination, delegation, messaging, verification,
 };
 pub use control::{fleets, lifecycle, organization, presets};
 pub use scheduling::{board, decision, division, routing, traces};

@@ -20,11 +20,11 @@
 {
   "key": "follow-up",
   "instructions": "核对缺失的数据来源，并保留不能核实的结论。",
-  "depends_on": ["research-1"],
-  "preset_name": "research-team",
-  "preset_version": "1.1.0",
+  "depends_on": ["analyze-1"],
+  "preset_name": "demo-team",
+  "preset_version": "1.0.0",
   "parameters": {},
-  "command_key": "research-follow-up-1"
+  "command_key": "analyze-follow-up-1"
 }
 ```
 

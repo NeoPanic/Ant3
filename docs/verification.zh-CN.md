@@ -4,7 +4,7 @@
 
 ## 配置与入口
 
-Web 创建目标和自主调研表单提供“独立验证与自动返工”：选择固定版本母体及参数，逐行填写 1–8 项检查，选择最多 0–2 次自动返工。API 的 GoalPlan / ResearchInput 使用相同对象：
+Web 创建目标表单提供“独立验证与自动返工”：选择固定版本母体及参数，逐行填写 1–8 项检查，选择最多 0–2 次自动返工。API 的 GoalPlan 使用相同对象：
 
 ```json
 {
@@ -22,7 +22,7 @@ Web 创建目标和自主调研表单提供“独立验证与自动返工”：�
 }
 ```
 
-`demo-verifier` 只演示读证据与提交报告，不判断内容质量；配置 Responses 后可用 `research-verifier`。验证母体的模型、基础指令和参数生效，但插件工具不继承。当前验证实例仅有 `platform.verification.evidence` 和 `platform.verification.report`，不能检索外部事实或执行外部写入。
+`demo-verifier` 只演示读证据与提交报告，不判断内容质量；配置 Responses 后可发布绑定真实模型的验证母体（如 `research-verifier`）。验证母体的模型、基础指令和参数生效，但插件工具不继承。当前验证实例仅有 `platform.verification.evidence` 和 `platform.verification.report`，不能检索外部事实或执行外部写入。
 
 ## 证据与结论
 

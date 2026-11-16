@@ -1,6 +1,6 @@
 # 能力与源码索引
 
-本表与 Web 能力页共享 `docs/implementation-status.json`。能力按涌现路径分类：涌现机制是北极星目标路径，运行底座支撑个体执行，证据与验证保证可信交付，中央编排对照组用于收益对照，支撑能力与治理/规模化按需推进。状态描述已提供的功能与缺口；验证列仅适用于该行已提供的部分。平台概览见[当前平台状态](status.zh-CN.md)，分层与约束见[架构设计](managed-agents.zh-CN.md)。
+本表与 Web 能力页共享 `docs/implementation-status.json`。能力按涌现路径分类：涌现机制是北极星目标路径，运行底座支撑个体执行，证据与验证保证可信交付，显式编排脚手架提供确定性协作路径，支撑能力与治理/规模化按需推进。状态描述已提供的功能与缺口；验证列仅适用于该行已提供的部分。平台概览见[当前平台状态](status.zh-CN.md)，分层与约束见[架构设计](managed-agents.zh-CN.md)。
 
 ## 涌现机制
 
@@ -38,12 +38,12 @@
 | --- | --- | --- | --- |
 | 产物、验证与返工 | 部分实现 | 原生测试 + Web 联调 | 文本贡献、文件/JSON 快照保存版本、摘要与来源；当前成功任务证据进入冻结验证清单，支持有界自动返工、人工局部返工及按失败产物定位任务和下游。给定证据与抓取回执不构成外部事实认证。 |
 
-## 中央编排对照组
+## 显式编排脚手架
 
 | 能力 | 状态 | 验证范围 | 当前行为与限制 |
 | --- | --- | --- | --- |
-| 显式目标与任务依赖 | 已实现 | 原生测试 + Web 联调 | 持久依赖图最多 64 项任务，传递上游输出与 Run ID，支持取消、候选池及人工验收；可自动选择就绪候选或等待人工认领。显式依赖图作为脚手架与对照组；群体路径经任务板自组织。 |
-| 固定调研模板与动态委派 | 部分实现 | 原生测试 + Web 联调 | 兼容调研模板固定规划、研究和汇总分工，支持递归委派、原实例续作与独立验证；Goal 内 Agent 可读取任务、来源成功后追加或请求接续，验证器按证据选择局部返工。该模板与对等任务板独立。没有已运行节点重写、任意子树迁移或通用自主修复。固定模板定位为中央编排对照组，不是群体涌现路径。 |
+| 显式目标与任务依赖 | 已实现 | 原生测试 + Web 联调 | 持久依赖图最多 64 项任务，传递上游输出与 Run ID，支持取消、候选池及人工验收；可自动选择就绪候选或等待人工认领。显式依赖图作为脚手架；群体路径经任务板自组织。 |
+| 动态委派与任务自主 | 部分实现 | 原生测试 + Web 联调 | Goal 内 Agent 按批准母体递归委派子任务，原实例在子任务来源成功后续作；可读取任务、追加或请求接续，验证器按证据选择局部返工，独立验证按冻结清单执行。没有已运行节点重写、任意子树迁移或通用自主修复。 |
 
 ## 支撑能力
 
@@ -52,7 +52,7 @@
 | 可执行插件契约与 SDK | 部分实现 | 原生测试 + Web 联调 | 版本化 manifest/RPC、严格 schema 子集、握手、健康、进度、取消、错误分类、Rust SDK 与 Python 示例；示例覆盖统计、HTTP 读取和文件交接。没有配置/权限/依赖锁、多能力包或完整对账协议。 |
 | 外部插件与热加载 | 部分实现 | 原生测试 + Web 联调 | 底层兼容接口支持本地进程包安装、内容寻址、调用前摘要检查、版本并存、母体快照、健康检查及禁用/取消。需显式启用，以系统用户运行；没有 MCP loader、watch、进程池、rollout、沙箱或作用域授权。 |
 | Web 执行证据检查 | 已实现 | 原生测试 + Web 联调 | 桌面导航按场景、协作、运行、配置分层；独立赛博工作站以卡通队员姿态展示实例状态、消息光点、任务依赖与委派和系统设备岛，详情点击展开，支持全屏、暂停与轮询同步。展示团队任务、频道、共享区、文件产物、验证返工，以及实例、Run、请求快照、回执和事件。详情、下载、候选认领与自主操作共用后端状态。任务板展示信息素痕迹浓度徽章与根任务痕迹场面板（按强度排序、沉积次数、半衰期），随轮询刷新；能力页按涌现路径分类展示进度。 |
-| API / CLI / MCP 入口 | 部分实现 | 原生测试 + Web 联调 | HTTP/Web、共享本地客户端、CLI 与 MCP stdio 共用状态；44 个 MCP 工具，默认开放 22 个查询工具。没有 MCP resources、Streamable HTTP、细粒度授权、并发取消或 CLI --wait。 |
+| API / CLI / MCP 入口 | 部分实现 | 原生测试 + Web 联调 | HTTP/Web、共享本地客户端、CLI 与 MCP stdio 共用状态；40 个 MCP 工具，默认开放 20 个查询工具。没有 MCP resources、Streamable HTTP、细粒度授权、并发取消或 CLI --wait。 |
 | 实时事件与查询 | 部分实现 | 原生测试 | 持久事件游标与 Web 轮询；没有 SSE、通用列表游标或统一事件订阅契约。 |
 | 发行、生态与验收套件 | 部分实现 | 原生测试 | 提供社区文档、CI 和源码本地启动；没有完整发行物/容器交付或插件分发生态；单/多 Agent 确定性对照基线已落地，真实模型对照未实现。 |
 
@@ -75,7 +75,7 @@
 | 有限批量实例化 | `crates/ant3-platform/src/control/fleets.rs`<br>`crates/ant3-platform/src/storage/sqlite.rs` | `crates/ant3-platform/src/control/` |
 | 实例生命周期与 TTL | `crates/ant3-platform/src/control/lifecycle.rs`<br>`crates/ant3-platform/src/storage/sqlite.rs` | `crates/ant3-platform/src/control/`<br>`crates/ant3-domain/src/agents/` |
 | Agent 池与异步 Operation | `crates/ant3-platform/src/control/fleets.rs`<br>`web/src/features/agents/fleets.js`<br>`crates/ant3-server/tests/fleets.rs` | `crates/ant3-domain/src/operations/`<br>`crates/ant3-platform/src/control/` |
-| 受限 Agent 派生 | `crates/ant3-platform/src/collaboration/research/mod.rs`<br>`web/src/features/research/research.js`<br>`crates/ant3-platform/src/collaboration/delegation/mod.rs` | `crates/ant3-domain/src/agents/` |
+| 受限 Agent 派生 | `crates/ant3-platform/src/collaboration/delegation/mod.rs`<br>`crates/ant3-platform/src/collaboration/delegation/tools.rs`<br>`crates/ant3-server/tests/delegation.rs` | `crates/ant3-domain/src/agents/` |
 | 持久队列与取消 | `crates/ant3-platform/src/storage/sqlite.rs`<br>`crates/ant3-worker/src/runner.rs` | `crates/ant3-platform/src/scheduling/` |
 | SQLite 与恢复 | `crates/ant3-platform/src/storage/sqlite.rs`<br>`crates/ant3-storage/migrations/sqlite/schema.sql`<br>`crates/ant3-storage/src/lib.rs`<br>`crates/ant3-storage/tests/database.rs` | `crates/ant3-storage/src/` |
 | 三类模型协议 | `crates/ant3-models/src/lib.rs` | `crates/ant3-models/src/` |
@@ -86,7 +86,7 @@
 | 信息素痕迹场 | `crates/ant3-domain/src/traces.rs`<br>`crates/ant3-platform/src/scheduling/traces.rs`<br>`crates/ant3-storage/migrations/sqlite/traces.sql`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-server/tests/traces.rs`<br>`crates/ant3-server/tests/evaluation.rs` | `crates/ant3-platform/src/scheduling/` |
 | 响应阈值分工与拥挤规避 | `crates/ant3-domain/src/division.rs`<br>`crates/ant3-platform/src/scheduling/division.rs`<br>`crates/ant3-platform/src/scheduling/routing.rs`<br>`crates/ant3-server/tests/division.rs` | `crates/ant3-platform/src/scheduling/` |
 | 显式目标与任务依赖 | `crates/ant3-platform/src/collaboration/coordination.rs` | `crates/ant3-platform/src/collaboration/` |
-| 固定调研模板与动态委派 | `crates/ant3-platform/src/collaboration/research/mod.rs`<br>`crates/ant3-platform/src/collaboration/research/tools.rs`<br>`web/src/features/research/research.js`<br>`crates/ant3-server/tests/research.rs`<br>`crates/ant3-platform/src/collaboration/delegation/mod.rs`<br>`crates/ant3-platform/src/collaboration/delegation/tools.rs`<br>`crates/ant3-server/tests/delegation.rs`<br>`crates/ant3-platform/src/collaboration/autonomy/mod.rs`<br>`crates/ant3-platform/src/collaboration/autonomy/tools.rs`<br>`web/src/features/autonomy/autonomy.js`<br>`crates/ant3-server/tests/autonomy.rs` | `plugins/organization/`<br>`crates/ant3-platform/src/collaboration/` |
+| 动态委派与任务自主 | `crates/ant3-platform/src/collaboration/delegation/mod.rs`<br>`crates/ant3-platform/src/collaboration/delegation/tools.rs`<br>`crates/ant3-server/tests/delegation.rs`<br>`crates/ant3-platform/src/collaboration/autonomy/mod.rs`<br>`crates/ant3-platform/src/collaboration/autonomy/tools.rs`<br>`web/src/features/autonomy/autonomy.js`<br>`crates/ant3-server/tests/autonomy.rs` | `plugins/organization/`<br>`crates/ant3-platform/src/collaboration/` |
 | 候选池认领与执行尝试 | `crates/ant3-platform/src/collaboration/claims.rs`<br>`crates/ant3-platform/src/collaboration/coordination.rs`<br>`web/src/features/goals/tasks.js`<br>`crates/ant3-server/tests/claims.rs`<br>`crates/ant3-platform/src/collaboration/autonomy/mod.rs` | `crates/ant3-domain/src/goals/`<br>`crates/ant3-platform/src/collaboration/` |
 | 可靠协作消息 | `crates/ant3-platform/src/collaboration/messaging/mod.rs`<br>`crates/ant3-platform/src/collaboration/messaging/tools.rs`<br>`web/src/features/messages/messages.js`<br>`crates/ant3-server/tests/messaging.rs` | `crates/ant3-storage/src/inbox_outbox/`<br>`crates/ant3-domain/src/collaboration/` |
 | 协作频道与订阅唤醒 | `crates/ant3-platform/src/collaboration/channels/mod.rs`<br>`crates/ant3-platform/src/collaboration/channels/tools.rs`<br>`web/src/features/channels/channels.js`<br>`crates/ant3-server/tests/channels.rs` | `crates/ant3-platform/src/collaboration/channels/`<br>`crates/ant3-storage/src/inbox_outbox/` |
@@ -149,7 +149,6 @@ crates/
 │   │   ├── lib.rs
 │   │   ├── limits.rs
 │   │   ├── messaging.rs
-│   │   ├── research.rs
 │   │   ├── traces.rs
 │   │   └── verification.rs
 │   └── Cargo.toml
@@ -173,9 +172,6 @@ crates/
 │   │   │   │   ├── mod.rs
 │   │   │   │   └── tools.rs
 │   │   │   ├── messaging/
-│   │   │   │   ├── mod.rs
-│   │   │   │   └── tools.rs
-│   │   │   ├── research/
 │   │   │   │   ├── mod.rs
 │   │   │   │   └── tools.rs
 │   │   │   ├── verification/
@@ -264,7 +260,6 @@ crates/
 │   │   ├── platform.rs
 │   │   ├── presets.rs
 │   │   ├── process_plugins.rs
-│   │   ├── research.rs
 │   │   ├── routing.rs
 │   │   ├── traces.rs
 │   │   ├── verification.rs
@@ -335,8 +330,6 @@ web/
 │       │   └── plugins.js
 │       ├── presets/
 │       │   └── presets.js
-│       ├── research/
-│       │   └── research.js
 │       ├── studio/
 │       │   ├── studio.css
 │       │   └── studio.js
@@ -350,7 +343,7 @@ examples/clients/
 ├── claim.json
 ├── composed-preset.json
 ├── context.json
-├── delegated-research.json
+├── delegated-goal.json
 ├── fleet.json
 ├── goal-partial-rework.json
 ├── mcp.json
@@ -358,8 +351,7 @@ examples/clients/
 ├── pool-goal.json
 ├── process-fleet.json
 ├── process-preset.json
-├── release.json
-└── research.json
+└── release.json
 examples/plugins/
 ├── http-reader/
 │   ├── README.md

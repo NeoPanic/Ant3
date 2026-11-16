@@ -5,6 +5,5 @@ pub mod context;
 pub mod coordination;
 pub mod delegation;
 pub mod messaging;
-pub mod research;
 pub mod verification;
 pub use context::*;

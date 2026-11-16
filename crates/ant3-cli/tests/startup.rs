@@ -79,7 +79,6 @@ async fn fresh_start_is_empty_with_or_without_a_model() {
             "fleets",
             "plugins",
             "channels",
-            "research_jobs",
         ] {
             assert!(
                 snapshot[collection].as_array().unwrap().is_empty(),

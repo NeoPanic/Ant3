@@ -1,7 +1,7 @@
 use super::status::capabilities;
 use super::*;
 pub(super) async fn snapshot(State(app): State<App>) -> PResult<Json<Value>> {
-    let mut value = json!({"channels":app.store.channels(None)?["channels"],"artifacts":app.store.recent_artifacts()?,"research_jobs":app.store.researches()?,"messages":app.store.recent_messages()?,"builtin_plugins":ant3_platform::organization::packages(),"builtin_plugin_status":ant3_builtin_plugins::status(),"process_plugins":app.store.process_plugins()?,"process_plugin_execution":app.plugins.is_enabled(),"capacity":app.store.capacity()?,"fleets":app.store.fleets()?,"presets":app.store.list("presets")?,"plugins":app.store.list("plugins")?,"instances":app.store.list("instances")?,"runs":app.store.list("runs")?,"goals":app.store.list("goals")?,"capabilities":capabilities(),"models":app.models.describe(),"limits":{"instances":ant3_platform::limits::INSTANCES,"workers":ant3_platform::limits::WORKERS,"runs_displayed":100,"collection_limit":200,"active_goals":32,"tasks_per_goal":ant3_platform::limits::TASKS_PER_GOAL},"version":env!("CARGO_PKG_VERSION")});
+    let mut value = json!({"channels":app.store.channels(None)?["channels"],"artifacts":app.store.recent_artifacts()?,"messages":app.store.recent_messages()?,"builtin_plugins":ant3_platform::organization::packages(),"builtin_plugin_status":ant3_builtin_plugins::status(),"process_plugins":app.store.process_plugins()?,"process_plugin_execution":app.plugins.is_enabled(),"capacity":app.store.capacity()?,"fleets":app.store.fleets()?,"presets":app.store.list("presets")?,"plugins":app.store.list("plugins")?,"instances":app.store.list("instances")?,"runs":app.store.list("runs")?,"goals":app.store.list("goals")?,"capabilities":capabilities(),"models":app.models.describe(),"limits":{"instances":ant3_platform::limits::INSTANCES,"workers":ant3_platform::limits::WORKERS,"runs_displayed":100,"collection_limit":200,"active_goals":32,"tasks_per_goal":ant3_platform::limits::TASKS_PER_GOAL},"version":env!("CARGO_PKG_VERSION")});
     value["board"] = board_value(&app)?;
     Ok(Json(value))
 }
@@ -306,34 +306,6 @@ pub(super) async fn message_action(
         &input,
         key(&headers)?,
     )?))
-}
-
-pub(super) async fn research_list(State(app): State<App>) -> PResult<Json<Value>> {
-    Ok(Json(
-        json!({"channels":app.store.channels(None)?["channels"],"artifacts":app.store.recent_artifacts()?,"research_jobs":app.store.researches()?}),
-    ))
-}
-pub(super) async fn research_create(
-    State(app): State<App>,
-    headers: HeaderMap,
-    Json(input): Json<ant3_platform::research::ResearchInput>,
-) -> PResult<(StatusCode, Json<Value>)> {
-    Ok((
-        StatusCode::ACCEPTED,
-        Json(app.store.create_research(&input, key(&headers)?)?),
-    ))
-}
-pub(super) async fn research_show(
-    State(app): State<App>,
-    Path(id): Path<String>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.research(&id)?))
-}
-pub(super) async fn research_cancel(
-    State(app): State<App>,
-    Path(id): Path<String>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.cancel_research(&id)?))
 }
 
 pub(super) async fn rework_goal(

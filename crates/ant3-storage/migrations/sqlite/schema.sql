@@ -32,9 +32,6 @@ CREATE INDEX IF NOT EXISTS messages_correlation ON messages(correlation_id,seq);
 CREATE INDEX IF NOT EXISTS messages_recipient ON messages(recipient_id,seq);
 CREATE INDEX IF NOT EXISTS messages_sender ON messages(sender_instance_id,seq);
 CREATE INDEX IF NOT EXISTS messages_source_run ON messages(source_run_id);
-CREATE TABLE IF NOT EXISTS research_jobs(id TEXT PRIMARY KEY,title TEXT NOT NULL,objective TEXT NOT NULL,acceptance TEXT NOT NULL,researchers INTEGER NOT NULL,fleet_id TEXT NOT NULL UNIQUE REFERENCES fleets(id),state TEXT NOT NULL,planner_run_id TEXT UNIQUE REFERENCES runs(id),plan TEXT,goal_id TEXT UNIQUE REFERENCES goals(id),error TEXT,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL);
-CREATE TABLE IF NOT EXISTS research_members(research_id TEXT NOT NULL REFERENCES research_jobs(id),instance_id TEXT PRIMARY KEY REFERENCES instances(id),role TEXT NOT NULL,position INTEGER NOT NULL,parent_instance_id TEXT REFERENCES instances(id),UNIQUE(research_id,position));
-CREATE INDEX IF NOT EXISTS research_jobs_state ON research_jobs(state,created_at);
 
 CREATE TABLE IF NOT EXISTS goal_rounds(goal_id TEXT NOT NULL REFERENCES goals(id),number INTEGER NOT NULL,note TEXT,state TEXT NOT NULL,review TEXT,manifest TEXT,tasks TEXT,created_at INTEGER NOT NULL,finished_at INTEGER,PRIMARY KEY(goal_id,number));
 CREATE TABLE IF NOT EXISTS artifacts(seq INTEGER PRIMARY KEY AUTOINCREMENT,id TEXT NOT NULL UNIQUE,goal_id TEXT NOT NULL REFERENCES goals(id),task_key TEXT NOT NULL,version INTEGER NOT NULL,run_id TEXT NOT NULL UNIQUE REFERENCES runs(id),instance_id TEXT NOT NULL REFERENCES instances(id),media_type TEXT NOT NULL,content TEXT NOT NULL,digest TEXT NOT NULL,bytes INTEGER NOT NULL,checks TEXT NOT NULL,created_at INTEGER NOT NULL,UNIQUE(goal_id,task_key,version));
@@ -53,10 +50,8 @@ CREATE INDEX IF NOT EXISTS task_attempts_goal ON task_attempts(goal_id,task_key,
 CREATE TABLE IF NOT EXISTS task_delegation_scopes(goal_id TEXT NOT NULL REFERENCES goals(id),task_key TEXT NOT NULL,root_task TEXT NOT NULL,depth INTEGER NOT NULL,policy TEXT NOT NULL,parent_task TEXT,delegation_id TEXT,title TEXT,PRIMARY KEY(goal_id,task_key));
 CREATE TABLE IF NOT EXISTS task_delegations(id TEXT PRIMARY KEY,goal_id TEXT NOT NULL REFERENCES goals(id),parent_task TEXT NOT NULL,root_task TEXT NOT NULL,round INTEGER NOT NULL,source_run_id TEXT NOT NULL UNIQUE REFERENCES runs(id),source_instance_id TEXT NOT NULL REFERENCES instances(id),depth INTEGER NOT NULL,plan TEXT NOT NULL,children TEXT NOT NULL,state TEXT NOT NULL,error TEXT,created_at INTEGER NOT NULL,activated_at INTEGER,UNIQUE(goal_id,parent_task));
 CREATE INDEX IF NOT EXISTS task_delegations_goal ON task_delegations(goal_id,state);
-CREATE TABLE IF NOT EXISTS research_delegation_policies(research_id TEXT PRIMARY KEY REFERENCES research_jobs(id),policy TEXT NOT NULL);
 
 CREATE TABLE IF NOT EXISTS verification_policies(goal_id TEXT PRIMARY KEY REFERENCES goals(id),body TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS research_verification_policies(research_id TEXT PRIMARY KEY REFERENCES research_jobs(id),body TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS goal_verifications(id TEXT PRIMARY KEY,goal_id TEXT NOT NULL REFERENCES goals(id),round INTEGER NOT NULL,attempt INTEGER NOT NULL,state TEXT NOT NULL,policy TEXT NOT NULL,manifest TEXT NOT NULL,context_revision INTEGER NOT NULL,context TEXT NOT NULL,fleet_id TEXT REFERENCES fleets(id),instance_id TEXT REFERENCES instances(id),run_id TEXT UNIQUE REFERENCES runs(id),verdict TEXT,error TEXT,auto_rework_round INTEGER,created_at INTEGER NOT NULL,finished_at INTEGER,expires_at INTEGER NOT NULL,UNIQUE(goal_id,round,attempt));
 CREATE TABLE IF NOT EXISTS verification_reads(verification_id TEXT NOT NULL REFERENCES goal_verifications(id),artifact_id TEXT NOT NULL REFERENCES artifacts(id),start_pos INTEGER NOT NULL,end_pos INTEGER NOT NULL,PRIMARY KEY(verification_id,artifact_id,start_pos,end_pos));
 

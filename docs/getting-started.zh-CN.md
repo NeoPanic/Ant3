@@ -1,6 +1,6 @@
 # Ant³ 本地平台使用指南
 
-Ant³ 在本地管理 Preset、实例、任务和工具执行。默认流程从共享任务板发布工作开始：控制面动态选择 Preset 并启动实例，Agent 自行认领、执行或拆分。已有 Agent 池、单实例 Run、显式 Goal 和固定调研模板继续可用。入口共用同一个 daemon 与持久状态；运行时 crate `ant3` 也可独立使用。
+Ant³ 在本地管理 Preset、实例、任务和工具执行。默认流程从共享任务板发布工作开始：控制面动态选择 Preset 并启动实例，Agent 自行认领、执行或拆分。已有 Agent 池、单实例 Run 和显式 Goal 继续可用。入口共用同一个 daemon 与持久状态；运行时 crate `ant3` 也可独立使用。
 
 ## 启动与登录
 
@@ -56,16 +56,6 @@ cargo run --locked -p ant3-cli -- up \
 
 模型与母体均需开发者显式配置，服务不自动生成研究团队或通用母体。没有可用模型时不会回退到模拟响应。选型可以独立使用低延迟模型，详见[共享任务板](task-board.zh-CN.md)。
 
-## 可选：固定调研模板
-
-1. 打开侧栏“场景 → 自主调研”，填写目标和验收标准，选择 2–6 位研究者。
-2. 选择自己发布的团队母体，按需绑定协作插件；平台创建规划、研究和汇总实例，规划完成后并行派发研究任务。
-3. 在调研详情查看任务板、成员、来源 Run、各项贡献和汇总。
-4. 真实模型可以通过团队母体绑定的工具发布发现、共享文件、按需追加任务，或请求领取自己候选池内的下一任务。需要递归派生并由原 Agent 续作时，在创建表单启用动态委派并定义角色。
-5. 可选独立验证，交付后按固定证据核查；允许自动返工时，可按失败产物定位来源任务及下游。最终验收由用户完成，也可人工要求修改指定任务及其下游。
-
-调研能力取决于实际插件。默认团队工具提供协作与文件交接，没有网页检索工具时应只分析用户资料和模型已有知识。具体流程见[自主调研](research.zh-CN.md)。
-
 ## 对象与侧栏分层
 
 侧栏按“场景 → 协作 → 运行 → 配置 → 开发”组织。场景用于完成用户目标；协作区检查分工与共享证据；运行区管理执行身份和生命周期；配置区定义母体及能力。
@@ -82,7 +72,7 @@ cargo run --locked -p ant3-cli -- up \
 | 频道 / 共享上下文 | 团队讨论与订阅唤醒，以及可修订、可追溯的发现与决策 |
 | Operation | Agent 池创建、扩缩容等异步操作的接纳与完成状态 |
 
-普通 Run 只执行单个 Agent。任务板按任务按需启动实例；兼容团队协作使用 Goal、调研模板或显式消息交接。批量创建 Agent 池本身不会产生任务。
+普通 Run 只执行单个 Agent。任务板按任务按需启动实例；兼容团队协作使用 Goal 或显式消息交接。批量创建 Agent 池本身不会产生任务。
 
 ## Agent 池与单实例运行
 
@@ -128,8 +118,6 @@ CLI 从 `--data-dir` 读取平台 token，只调用 loopback HTTP，不直接写
 ./target/debug/ant3 board list
 ./target/debug/ant3 board show TASK_ID
 ./target/debug/ant3 presets list
-./target/debug/ant3 research create --file examples/clients/research.json --key research-1
-./target/debug/ant3 research show RESEARCH_ID
 ./target/debug/ant3 goals create --file goal.json --key goal-create-1
 ./target/debug/ant3 goals show GOAL_ID
 ./target/debug/ant3 events --after 0
@@ -151,7 +139,6 @@ HTTP JSON 请求和 CLI 文件上限为 128 KiB，用户输入上限为 64,000 U
 | 需要完成的工作 | 文档 |
 | --- | --- |
 | 发布任务，动态选型、认领、拆分与回投 | [共享任务板](task-board.zh-CN.md) |
-| 显式使用固定规划 / 研究 / 汇总团队 | [固定调研模板](research.zh-CN.md) |
 | 定义母体、继承、多个插件和实例参数 | [母体与参数](presets.zh-CN.md) |
 | 安装自定义本地工具 | [进程插件](process-plugins.zh-CN.md) |
 | 理解候选池、人工领取与执行尝试 | [任务认领](task-claims.zh-CN.md) |

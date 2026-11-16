@@ -20,4 +20,4 @@ Local process Tool packages have a separate daemon opt-in. See [the plugin guide
 
 母体继承、多插件与参数示例：`composed-preset.json` / `parameterized-fleet.json`，依赖与操作顺序见 [母体组合指南](../../docs/presets.zh-CN.md)。
 
-`delegated-research.json` 可通过 `ant3 research create --file examples/clients/delegated-research.json --key demo-delegated-research` 发起离线动态委派；查询方式与普通调研一致。角色参数和策略契约见[动态委派](../../docs/dynamic-delegation.zh-CN.md)。
+`delegated-goal.json` 可通过 `ant3 goals create --file examples/clients/delegated-goal.json --key demo-delegated-goal` 发起离线动态委派（先把 `instance_id` 替换为绑定了 `platform.delegation` 的就绪实例）。角色参数和策略契约见[动态委派](../../docs/dynamic-delegation.zh-CN.md)。

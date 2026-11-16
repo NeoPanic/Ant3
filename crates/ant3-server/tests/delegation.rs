@@ -480,31 +480,39 @@ fn concurrent_submit_reuses_one_plan_and_one_reserved_team() {
     );
 }
 #[tokio::test]
-async fn research_entry_can_authorize_runtime_delegation() {
+async fn goal_entry_can_authorize_runtime_delegation() {
     use ant3::CancellationToken;
-    use ant3_platform::{models::Models, research::ResearchInput};
+    use ant3_platform::models::Models;
     use ant3_worker as runtime;
     use std::{collections::HashMap, sync::Arc, time::Duration};
     use tokio::sync::Mutex;
     let s = Store::memory().unwrap();
-    seed(&s);
-    let input = ResearchInput {
+    let a = seed(&s);
+    let plan = GoalPlan {
         verification: None,
-        title: "research with runtime delegation".into(),
-        objective: "split after planning".into(),
+        title: "goal with runtime delegation".into(),
+        objective: "split during execution".into(),
         acceptance: "each contributor resumes".into(),
-        preset_name: "delegate".into(),
-        preset_version: "1".into(),
-        researchers: 2,
-        parameters: Default::default(),
-        delegation: Some(policy(1, 2)),
+        tasks: vec![
+            TaskPlan {
+                key: "first".into(),
+                instance_id: a.clone(),
+                instructions: "inspect then delegate".into(),
+                delegation: Some(policy(1, 2)),
+                ..Default::default()
+            },
+            TaskPlan {
+                key: "second".into(),
+                instance_id: a.clone(),
+                instructions: "inspect independently".into(),
+                delegation: Some(policy(1, 2)),
+                ..Default::default()
+            },
+        ],
     };
-
-    let job = s.create_research(&input, "delegated-research").unwrap();
-    assert_eq!(
-        s.create_research(&input, "delegated-research").unwrap(),
-        job
-    );
+    let goal = s.create_goal(&plan, "delegated-goal").unwrap();
+    assert_eq!(s.create_goal(&plan, "delegated-goal").unwrap(), goal);
+    let id = goal["id"].as_str().unwrap().to_owned();
     let cancel = CancellationToken::new();
     let workers = tokio::spawn(runtime::worker_loop(
         s.clone(),
@@ -514,11 +522,10 @@ async fn research_entry_can_authorize_runtime_delegation() {
     ));
     tokio::time::timeout(Duration::from_secs(35), async {
         loop {
-            let j = s.research(job["id"].as_str().unwrap()).unwrap();
-            if j["state"] == "awaiting-review" {
-                assert_eq!(j["goal"]["tasks"].as_array().unwrap().len(), 7);
-                assert_eq!(j["delegation"]["max_depth"], 1);
-                let tasks = j["goal"]["tasks"].as_array().unwrap();
+            let g = s.goal(&id).unwrap();
+            if g["state"] == "awaiting-review" {
+                let tasks = g["tasks"].as_array().unwrap();
+                assert_eq!(tasks.len(), 6);
                 assert_eq!(
                     tasks
                         .iter()
@@ -528,7 +535,7 @@ async fn research_entry_can_authorize_runtime_delegation() {
                 );
                 break;
             }
-            assert_ne!(j["state"], "failed", "{j}");
+            assert_ne!(g["state"], "failed", "{g}");
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
     })

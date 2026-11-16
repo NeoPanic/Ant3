@@ -156,24 +156,6 @@ pub fn router(app: App) -> Router {
         .route("/api/logout", post(logout))
         .route("/api/v1/snapshot", get(snapshot))
         .route(
-            "/research.js",
-            get(|| async {
-                (
-                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
-                    include_str!(concat!(
-                        env!("CARGO_MANIFEST_DIR"),
-                        "/../../web/src/features/research/research.js"
-                    )),
-                )
-            }),
-        )
-        .route(
-            "/api/v1/research-jobs",
-            get(research_list).post(research_create),
-        )
-        .route("/api/v1/research-jobs/{id}", get(research_show))
-        .route("/api/v1/research-jobs/{id}/cancel", post(research_cancel))
-        .route(
             "/messages.js",
             get(|| async {
                 (

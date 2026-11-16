@@ -19,7 +19,6 @@ enum Command {
     Context(cli::ContextArgs),
     Tasks(cli::TaskArgs),
     Messages(cli::MessageArgs),
-    Research(cli::ResearchArgs),
     /// Manage durable fleets and asynchronous operation receipts.
     Fleets(cli::FleetArgs),
     /// Inspect instances, manage lifecycle, and read durable sessions.
@@ -82,7 +81,6 @@ enum McpCommand {
 async fn main() -> ant3_client::ClientResult<()> {
     match Cli::parse().command {
         Command::Board(args) => cli::board(args).await?,
-        Command::Research(args) => cli::research(args).await?,
         Command::Messages(args) => cli::messages(args).await?,
         Command::Goals(args) => cli::goals(args).await?,
         Command::Artifacts(args) => cli::artifacts(args).await?,

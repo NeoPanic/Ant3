@@ -226,20 +226,6 @@ pub(crate) fn rework_in(
     if round(tx, id)? != input.expected_round {
         return Err(fault(409, "goal_round_conflict"));
     }
-    let research: Option<String> = tx
-        .query_row("SELECT id FROM research_jobs WHERE goal_id=?", [id], |r| {
-            r.get(0)
-        })
-        .optional()?;
-    if research.is_some() {
-        let active:i64=tx.query_row("SELECT count(*) FROM research_jobs WHERE state IN ('provisioning','planning','running','verifying','cancelling') AND (goal_id IS NULL OR goal_id!=?)",[id],|r|r.get(0))?;
-        if active >= 8 {
-            return Err(fault(409, "research_quota_exceeded"));
-        }
-    }
-    if research.is_some() && !input.assignments.is_empty() {
-        return Err(fault(400, "research_rework_uses_fresh_team"));
-    }
     let tasks = goal["tasks"].as_array().unwrap();
     if tasks.iter().any(|t| outcome_unknown(&t["run"]["report"])) {
         return Err(fault(409, "goal_unknown_outcome"));
@@ -367,18 +353,6 @@ pub(crate) fn rework_in(
             crate::channels::join_team(tx, id, assigned[&task_key.to_owned()])?;
         }
     }
-    if let Some(research) = research {
-        tx.execute(
-            "UPDATE research_jobs SET state='running',expires_at=?,error=NULL WHERE id=?",
-            params![now() + 900_000, research],
-        )?;
-        event(
-            tx,
-            "research.rework_requested",
-            &research,
-            json!({"goal_id":id,"round":input.expected_round+1}),
-        )?;
-    }
     tx.execute(
         "UPDATE goals SET state='running',review=NULL,finished_at=NULL WHERE id=?",
         [id],
@@ -421,15 +395,6 @@ pub(crate) fn resolve_assignment(
     )?;
     if changed > 0 {
         crate::channels::join_team(tx, goal, &member)?;
-    }
-    let research:Option<(String,String)>=tx.query_row("SELECT j.id,m.instance_id FROM research_jobs j JOIN research_members m ON m.research_id=j.id AND m.role='planner' WHERE j.goal_id=? ORDER BY m.position LIMIT 1",[goal],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
-    if let Some((research, parent)) = research {
-        let position: i64 = tx.query_row(
-            "SELECT position FROM work_items WHERE goal_id=? AND key=?",
-            params![goal, key],
-            |r| r.get(0),
-        )?;
-        tx.execute("INSERT OR IGNORE INTO research_members(research_id,instance_id,role,position,parent_instance_id) VALUES(?,?,?,?,?)",params![research,member,if key=="synthesis"{"synthesizer"}else{"researcher"},round(tx,goal)?*100+position,parent])?;
     }
     Ok(Some(member))
 }
