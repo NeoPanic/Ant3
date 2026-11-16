@@ -40,7 +40,8 @@ function boardRoute(id){return (boardData().routing||[]).find(route=>route.task_
 function boardRoutingMessage(code){return ({board_no_suitable_preset:'暂无匹配的 Preset',board_no_eligible_preset:'暂无可用的 Preset，请检查母体、模型和插件配置',decision_low_confidence:'选型置信度不足',board_worker_capacity:'等待执行容量',instance_quota_exceeded:'等待实例配额',decision_network_error:'选型服务连接失败',decision_invalid_response:'选型服务返回了无效结果'})[code]||code;}
 function boardProvisioned(task){return task.route_state?task.route_state==='provisioned':Boolean(task.instance_id||task.preset_name);}
 function boardPreset(task){return task.state==='pending'&&!boardProvisioned(task)?null:task.preset_name;}
-function boardStatus(task,route){return task.review_state==='pending'?'待人类评审':task.review_state==='accepted'?'评审通过':task.state==='pending'?(boardProvisioned(task)?'等待认领':route?.state==='routing'?'正在选型':route?.error?'选型待重试':task.review_state==='changes_requested'?'退回修改，等待选型':'等待选型'):boardStates[task.state]||task.state;}
+function boardAuditing(task){const a=task.audits?.[task.audits.length-1];return a&&['pending','running'].includes(a.state)?a:null;}
+function boardStatus(task,route){return boardAuditing(task)?'独立验证中':task.review_state==='pending'?'待人类评审':task.review_state==='accepted'?'评审通过':task.state==='pending'?(boardProvisioned(task)?'等待认领':route?.state==='routing'?'正在选型':route?.error?'选型待重试':task.review_state==='changes_requested'?'退回修改，等待选型':'等待选型'):boardStates[task.state]||task.state;}
 function boardArchived(task){return task.state==='cancelled'||(task.state==='completed'&&task.review_state==='accepted');}
 function boardTaskRow(task){
   const route=boardRoute(task.id);
@@ -89,12 +90,21 @@ function boardDetail(task,tasks){
     (children.length?panel('拆分后的任务',`<div class="board-task-list">${children.map(boardTaskRow).join('')}</div>`):'')+
     (task.route_reason?`<details class="raw-data"><summary>Preset 选择依据</summary><p class="record-text">${esc(task.route_reason)}</p></details>`:'')+
     (result?panel(task.result?'执行结果':'上轮成果（待修改）',`<div class="panel-body output">${typeof result==='string'?esc(result):dataView(result)}</div>`):'')+
-    (task.review_state==='pending'?panel('人类评审',`<div class="panel-body"><p>根据验收标准检查结果。通过后归档；退回修改将按评审意见重新启动 Agent 执行。</p>${button('评审结果','board-review',true,`data-id="${esc(task.id)}" data-run="${esc(task.run_id)}"`)}</div>`):'')+
-    (task.reviews?.length?panel('最近评审记录',`<div class="panel-body">${task.reviews.map(review=>`<div class="record-text"><strong>${review.decision==='accepted'?'通过':'退回修改'}</strong><p>${esc(review.feedback)}</p>${button('查看本轮执行记录','run-detail',false,`data-id="${esc(review.run_id)}"`)}</div>`).join('')}</div>`):'')+
+    boardAuditPanel(task)+
+    (task.review_state==='pending'&&!boardAuditing(task)?panel('人类评审',`<div class="panel-body"><p>根据验收标准检查结果。通过后归档；退回修改将按评审意见重新启动 Agent 执行。</p>${button('评审结果','board-review',true,`data-id="${esc(task.id)}" data-run="${esc(task.run_id)}"`)}</div>`):'')+
+    (task.reviews?.length?panel('最近评审记录',`<div class="panel-body">${task.reviews.map(review=>`<div class="record-text"><strong>${review.decision==='accepted'?'通过':'退回修改'}</strong>${review.author_kind==='verifier'?' <span class="hint">（独立验证器）</span>':' <span class="hint">（人类）</span>'}<p>${esc(review.feedback)}</p>${button('查看本轮执行记录','run-detail',false,`data-id="${esc(review.run_id)}"`)}</div>`).join('')}</div>`):'')+
     `<div class="head-actions">${task.instance_id?button('认领实例','agent-detail',false,`data-id="${esc(task.instance_id)}"`):''}${task.run_id?button('执行记录','run-detail',false,`data-id="${esc(task.run_id)}"`):''}<a class="button" href="#studio">工作现场</a></div>`;
 }
+const auditStates={pending:'等待验证器',running:'验证中',passed:'验证通过','changes-requested':'验证退回',inconclusive:'证据不足',failed:'验证器失败',cancelled:'已取消',stale:'结果已变更'};
+function boardAuditPanel(task){
+  if(!task.verification&&!task.audits?.length)return '';
+  const audits=task.audits||[];
+  const rows=audits.map(a=>`<div class="record-text"><strong>第 ${esc(a.attempt)} 次 · ${esc(auditStates[a.state]||a.state)}</strong>${a.verdict?`<p>${esc(a.verdict.status)}：${esc(a.verdict.reason)}</p>`:''}${a.error?`<p class="hint">${esc(a.error)}</p>`:''}${a.run_id?button('验证执行记录','run-detail',false,`data-id="${esc(a.run_id)}"`):''}</div>`).join('');
+  const note=task.verification?`<p class="hint">发布时启用独立验证：全新实例按验收标准审计冻结结果。通过自动归档（验证器署名）；退回附意见有界返工；证据不足或预算耗尽交回人类评审。</p>`:'';
+  return panel('独立验证',`<div class="panel-body">${note}${rows||'<p class="hint">结果完成后自动开始。</p>'}</div>`);
+}
 function boardPublishForm(){
-  openModal('发布任务',`<form data-form="board-publish"><label>任务名称<input name="title" required maxlength="200" placeholder="例如：分析这个项目的性能瓶颈"></label><label>任务内容<textarea name="instructions" required maxlength="8000" rows="5" placeholder="描述目标、已有资料和约束。"></textarea></label><label>验收标准<textarea name="acceptance" required maxlength="8000" rows="3" placeholder="完成时应交付什么，如何判断结果可用？"></textarea></label>${formEnd('投递到任务板')}</form>`,'共享任务板');
+  openModal('发布任务',`<form data-form="board-publish"><label>任务名称<input name="title" required maxlength="200" placeholder="例如：分析这个项目的性能瓶颈"></label><label>任务内容<textarea name="instructions" required maxlength="8000" rows="5" placeholder="描述目标、已有资料和约束。"></textarea></label><label>验收标准<textarea name="acceptance" required maxlength="8000" rows="3" placeholder="完成时应交付什么，如何判断结果可用？"></textarea></label><details><summary>独立验证（可选）</summary><label>验证器母体<select name="verify_preset"><option value="">不启用（仅人类评审）</option>${(data?.presets||[]).map(p=>`<option value="${esc(p.name)}@${esc(p.version)}">${esc(p.name)} @ ${esc(p.version)}</option>`).join('')}</select></label><label>自动返工上限<select name="verify_reworks"><option value="0">0（退回即交人类）</option><option value="1" selected>1</option><option value="2">2</option></select></label><p class="hint">全新实例按验收标准审计冻结结果；通过自动归档，退回有界返工，人类保留最终评审权。</p></details>${formEnd('投递到任务板')}</form>`,'共享任务板');
 }
 async function boardAction(action,element){
   if(action==='board-publish'){boardPublishForm();return true;}

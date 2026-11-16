@@ -1308,7 +1308,8 @@ async fn board_review_via_cli_and_http_preserves_feedback_and_rejects_unauthenti
                 title: "human review".into(),
                 instructions: "inspect evidence".into(),
                 acceptance: "cite sources".into(),
-            },
+        verification: None,
+    },
             "review-task",
         )
         .unwrap();

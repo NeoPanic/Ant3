@@ -1,3 +1,4 @@
+pub mod audit;
 pub mod board;
 pub mod decision;
 pub mod division;

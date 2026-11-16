@@ -244,8 +244,8 @@
     "id": "shared-task-board",
     "name": "对等 Agent 共享任务板",
     "phase": "P2",
-    "status": "partial",
-    "detail": "任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。任务视图已接入信息素痕迹浓度；Agent 读取默认局部邻域（scope=all 可退出）；尚未接入 Goal 频道、文件产物与自动独立验证，确定失败与未认领任务在有界重试预算（默认 2 次）内自动重排队、新实例接手，预算耗尽才阻塞上游；结果未知不自动重试。没有分布式租约或费用硬预算。",
+    "status": "implemented",
+    "detail": "任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。任务视图已接入信息素痕迹浓度；Agent 读取默认局部邻域（scope=all 可退出）；根任务可选独立验证已接入：全新验证器实例审计冻结结果，通过自动归档（验证器署名）、失败有界返工、unknown 不通过、预算耗尽交回人类；尚未接入 Goal 频道与文件产物，确定失败与未认领任务在有界重试预算（默认 2 次）内自动重排队、新实例接手，预算耗尽才阻塞上游；结果未知不自动重试。没有分布式租约或费用硬预算。",
     "source": [
       "crates/ant3-platform/src/scheduling/board/mod.rs",
       "crates/ant3-platform/src/scheduling/board/tools.rs",
@@ -255,7 +255,9 @@
       "web/src/features/board/board.js",
       "crates/ant3-server/tests/board.rs",
       "crates/ant3-server/tests/routing.rs",
-      "crates/ant3-server/tests/decision.rs"
+      "crates/ant3-server/tests/decision.rs",
+      "crates/ant3-platform/src/scheduling/audit.rs",
+      "crates/ant3-server/tests/audit.rs"
     ],
     "target": [
       "crates/ant3-platform/src/collaboration/",
@@ -451,7 +453,7 @@
     "name": "产物、验证与返工",
     "phase": "P2",
     "status": "partial",
-    "detail": "文本贡献、文件/JSON 快照保存版本、摘要与来源；当前成功任务证据进入冻结验证清单，支持有界自动返工、人工局部返工及按失败产物定位任务和下游。给定证据与抓取回执不构成外部事实认证。",
+    "detail": "文本贡献、文件/JSON 快照保存版本、摘要与来源；当前成功任务证据进入冻结验证清单，支持有界自动返工、人工局部返工及按失败产物定位任务和下游。给定证据与抓取回执不构成外部事实认证。任务板根任务的独立验证由板上审计器提供（冻结结果+新鲜实例+结构化裁决）。",
     "source": [
       "crates/ant3-platform/src/workspaces/artifacts.rs",
       "crates/ant3-platform/src/collaboration/coordination.rs",

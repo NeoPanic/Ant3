@@ -399,7 +399,9 @@ document.addEventListener('submit',async event=>{
     if(form.dataset.form==='run-cancel')result=await api(`/api/v1/runs/${encodeURIComponent(form.dataset.id)}/cancel`,{});
     if(form.dataset.form==='board-publish') {
       for(const name of ['title','instructions','acceptance'])if(new TextEncoder().encode(values[name]).length>(name==='title'?200:8000))throw new Error(`${name==='title'?'任务名称':'任务内容或验收标准'}超过 UTF-8 字节上限。`);
-      result=await api('/api/board/tasks',{title:values.title,instructions:values.instructions,acceptance:values.acceptance},'POST',form.dataset.commandKey);location.hash=`board/${result.id}`;
+      const payload={title:values.title,instructions:values.instructions,acceptance:values.acceptance};
+      if(values.verify_preset){const [name,version]=values.verify_preset.split('@');payload.verification={preset_name:name,preset_version:version,max_auto_reworks:Number(values.verify_reworks||'1')};}
+      result=await api('/api/board/tasks',payload,'POST',form.dataset.commandKey);location.hash=`board/${result.id}`;
     }
     if(form.dataset.form==='board-cancel')result=await api(`/api/board/tasks/${encodeURIComponent(form.dataset.id)}/cancel`,{});
     if(form.dataset.form==='board-review') {

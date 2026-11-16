@@ -69,6 +69,7 @@ fn input(title: &str) -> PublishInput {
         title: title.into(),
         instructions: "Analyze supplied text".into(),
         acceptance: "Show evidence".into(),
+        verification: None,
     }
 }
 fn setup() -> (Store, Models) {

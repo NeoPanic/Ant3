@@ -30,4 +30,32 @@ CREATE TABLE IF NOT EXISTS preset_experience(
  successes INTEGER NOT NULL DEFAULT 0,
  failures INTEGER NOT NULL DEFAULT 0,
  PRIMARY KEY(preset_name,preset_version)
+);CREATE TABLE IF NOT EXISTS board_verifications(
+ id TEXT PRIMARY KEY,
+ task_id TEXT NOT NULL REFERENCES board_tasks(id),
+ attempt INTEGER NOT NULL,
+ state TEXT NOT NULL,
+ preset_name TEXT NOT NULL,
+ preset_version TEXT NOT NULL,
+ max_auto_reworks INTEGER NOT NULL,
+ evidence TEXT NOT NULL,
+ evidence_digest TEXT NOT NULL,
+ acceptance TEXT NOT NULL,
+ fleet_id TEXT REFERENCES fleets(id),
+ instance_id TEXT REFERENCES instances(id),
+ run_id TEXT UNIQUE REFERENCES runs(id),
+ verdict TEXT,
+ auto_rework INTEGER NOT NULL DEFAULT 0,
+ error TEXT,
+ created_at INTEGER NOT NULL,
+ finished_at INTEGER,
+ expires_at INTEGER NOT NULL,
+ UNIQUE(task_id,attempt)
+);
+CREATE INDEX IF NOT EXISTS board_verifications_active ON board_verifications(state,task_id);
+CREATE TABLE IF NOT EXISTS board_verification_reads(
+ verification_id TEXT NOT NULL REFERENCES board_verifications(id),
+ start_pos INTEGER NOT NULL,
+ end_pos INTEGER NOT NULL,
+ PRIMARY KEY(verification_id,start_pos,end_pos)
 );

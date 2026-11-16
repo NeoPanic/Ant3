@@ -172,6 +172,7 @@ fn input(title: &str) -> PublishInput {
         title: title.into(),
         instructions: format!("Inspect {title}"),
         acceptance: "Evidence is reported".into(),
+        verification: None,
     }
 }
 fn fixture() -> (Store, Value) {
@@ -860,7 +861,7 @@ fn schema_upgrade_preserves_completed_results_and_review_snapshots_survive_resta
     assert_eq!(
         db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
             .unwrap(),
-        20
+        21
     );
     drop(db);
     drop(s);

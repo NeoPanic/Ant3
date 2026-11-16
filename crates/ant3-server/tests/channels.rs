@@ -253,7 +253,7 @@ fn notification_run_reads_peer_files_updates_shared_context_and_replies_without_
                 name: "source evidence".into(),
                 path: Some("research/source.md".into()),
                 value: None,
-            },
+    },
             "publish-evidence",
         )
         .unwrap();

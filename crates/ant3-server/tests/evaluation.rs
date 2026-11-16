@@ -32,6 +32,7 @@ fn root_input() -> PublishInput {
         title: "Evidence synthesis".into(),
         instructions: "Collect three independent evidence summaries and integrate them.".into(),
         acceptance: "Integrated report cites every child contribution".into(),
+        verification: None,
     }
 }
 fn child_input(i: usize) -> PublishInput {
@@ -39,6 +40,7 @@ fn child_input(i: usize) -> PublishInput {
         title: format!("Evidence part {i}"),
         instructions: format!("Summarize evidence source {i}."),
         acceptance: "Summary reports source content".into(),
+        verification: None,
     }
 }
 fn id(v: &Value) -> &str {

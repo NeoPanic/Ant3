@@ -5,6 +5,11 @@ pub struct PublishInput {
     pub title: String,
     pub instructions: String,
     pub acceptance: String,
+    /// Optional independent verification for a root task. When present, a
+    /// fresh reviewer instance audits the frozen result against the acceptance
+    /// criteria before the result can be auto-accepted. Humans keep final say.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verification: Option<BoardVerification>,
 }
 impl PublishInput {
     pub fn validate(&self) -> PResult<()> {
@@ -16,6 +21,32 @@ impl PublishInput {
             || self.acceptance.len() > 8000
         {
             return Err(fault(400, "invalid_board_task"));
+        }
+        if let Some(v) = &self.verification {
+            v.validate()?;
+        }
+        Ok(())
+    }
+}
+
+/// Operator-chosen reviewer for a root task. The acceptance text becomes the
+/// single required check; the reviewer is always a fresh, independent
+/// instance — never the worker that produced the result.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BoardVerification {
+    pub preset_name: String,
+    pub preset_version: String,
+    #[serde(default)]
+    pub max_auto_reworks: usize,
+}
+impl BoardVerification {
+    pub fn validate(&self) -> PResult<()> {
+        if !valid_name(&self.preset_name)
+            || !valid_name(&self.preset_version)
+            || self.max_auto_reworks > 2
+        {
+            return Err(fault(400, "invalid_board_verification"));
         }
         Ok(())
     }

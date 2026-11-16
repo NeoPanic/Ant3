@@ -6,7 +6,7 @@
 
 | 能力 | 状态 | 验证范围 | 当前行为与限制 |
 | --- | --- | --- | --- |
-| 对等 Agent 共享任务板 | 部分实现 | 原生测试 + Web 联调 | 任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。任务视图已接入信息素痕迹浓度；Agent 读取默认局部邻域（scope=all 可退出）；尚未接入 Goal 频道、文件产物与自动独立验证，确定失败与未认领任务在有界重试预算（默认 2 次）内自动重排队、新实例接手，预算耗尽才阻塞上游；结果未知不自动重试。没有分布式租约或费用硬预算。 |
+| 对等 Agent 共享任务板 | 已实现 | 原生测试 + Web 联调 | 任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。任务视图已接入信息素痕迹浓度；Agent 读取默认局部邻域（scope=all 可退出）；根任务可选独立验证已接入：全新验证器实例审计冻结结果，通过自动归档（验证器署名）、失败有界返工、unknown 不通过、预算耗尽交回人类；尚未接入 Goal 频道与文件产物，确定失败与未认领任务在有界重试预算（默认 2 次）内自动重排队、新实例接手，预算耗尽才阻塞上游；结果未知不自动重试。没有分布式租约或费用硬预算。 |
 | 信息素痕迹场 | 已实现 | 原生测试 | 根任务作用域痕迹浓度：完成/验收/复用按固定权重自动增强，成功 Run 招募放大其留下的路径信号，确定失败施加负反馈降权（结果未知不惩罚不重试），Agent finding/path/blocker 沉积有界（每 Run 8 次、每根 64 条）；30 分钟半衰期惰性蒸发、六位小数量化、饱和上限 100；台账与事件可审计。冲突裁决与振荡抑制未实现。 |
 | 响应阈值分工与拥挤规避 | 已实现 | 原生测试 | 母体经验自适应响应阈值（成功×1/1.25、确定失败×1.25，夹[0.05,0.95]基线0.5；结果未知与取消不计经验），经验统计随能力目录进入选型证据，操作员可查 /api/presets/experience。任务供给刺激=浓度/(1+同根活跃工作者数)，拥挤分支降权、跨分支分散；可选种子化概率探索（splitmix64）按刺激+1 抽样防锁死。选型接收最强 8 条痕迹的稀释刺激与拥挤数。阈值是证据不是权威，能力匹配优先。 |
 | 候选池认领与执行尝试 | 部分实现 | 原生测试 + Web 联调 | 任务最多 16 位候选；认领、Run 和 Attempt 同事务，记录 generation 与幂等回执，每轮最多 8 次尝试，仅未开始可释放。platform.tasks.board/claim 提供任务板及下一任务请求；没有分布式租约、执行后对账或预算预留。 |
@@ -36,7 +36,7 @@
 
 | 能力 | 状态 | 验证范围 | 当前行为与限制 |
 | --- | --- | --- | --- |
-| 产物、验证与返工 | 部分实现 | 原生测试 + Web 联调 | 文本贡献、文件/JSON 快照保存版本、摘要与来源；当前成功任务证据进入冻结验证清单，支持有界自动返工、人工局部返工及按失败产物定位任务和下游。给定证据与抓取回执不构成外部事实认证。 |
+| 产物、验证与返工 | 部分实现 | 原生测试 + Web 联调 | 文本贡献、文件/JSON 快照保存版本、摘要与来源；当前成功任务证据进入冻结验证清单，支持有界自动返工、人工局部返工及按失败产物定位任务和下游。给定证据与抓取回执不构成外部事实认证。任务板根任务的独立验证由板上审计器提供（冻结结果+新鲜实例+结构化裁决）。 |
 
 ## 显式编排脚手架
 
@@ -82,7 +82,7 @@
 | 内置工具与提示词包 | `plugins/src/lib.rs`<br>`plugins/text/mod.rs`<br>`plugins/web-fetch/mod.rs`<br>`plugins/web-search/mod.rs`<br>`crates/ant3-server/tests/builtin_plugins.rs` | `plugins/` |
 | 可执行插件契约与 SDK | `crates/ant3-plugin-protocol/src/lib.rs`<br>`crates/ant3-plugin-sdk/src/lib.rs`<br>`crates/ant3-plugin-sdk/tests/contract.rs`<br>`examples/plugins/text-inspector/manifest.json`<br>`examples/plugins/http-reader/manifest.json`<br>`examples/plugins/http-reader/test_worker.py`<br>`examples/plugins/workspace-preset/preset.json` | `crates/ant3-plugin-protocol/src/`<br>`crates/ant3-plugin-sdk/src/` |
 | 外部插件与热加载 | `crates/ant3-plugins/src/lib.rs`<br>`crates/ant3-plugins/src/package.rs`<br>`crates/ant3-plugins/src/process.rs`<br>`web/src/features/plugins/plugins.js`<br>`crates/ant3-server/tests/process_plugins.rs` | `crates/ant3-plugins/src/loaders/`<br>`crates/ant3-plugins/src/reload/` |
-| 对等 Agent 共享任务板 | `crates/ant3-platform/src/scheduling/board/mod.rs`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-storage/migrations/sqlite/board.sql`<br>`crates/ant3-platform/src/scheduling/routing.rs`<br>`crates/ant3-platform/src/scheduling/decision.rs`<br>`web/src/features/board/board.js`<br>`crates/ant3-server/tests/board.rs`<br>`crates/ant3-server/tests/routing.rs`<br>`crates/ant3-server/tests/decision.rs` | `crates/ant3-platform/src/collaboration/`<br>`crates/ant3-platform/src/scheduling/` |
+| 对等 Agent 共享任务板 | `crates/ant3-platform/src/scheduling/board/mod.rs`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-storage/migrations/sqlite/board.sql`<br>`crates/ant3-platform/src/scheduling/routing.rs`<br>`crates/ant3-platform/src/scheduling/decision.rs`<br>`web/src/features/board/board.js`<br>`crates/ant3-server/tests/board.rs`<br>`crates/ant3-server/tests/routing.rs`<br>`crates/ant3-server/tests/decision.rs`<br>`crates/ant3-platform/src/scheduling/audit.rs`<br>`crates/ant3-server/tests/audit.rs` | `crates/ant3-platform/src/collaboration/`<br>`crates/ant3-platform/src/scheduling/` |
 | 信息素痕迹场 | `crates/ant3-domain/src/traces.rs`<br>`crates/ant3-platform/src/scheduling/traces.rs`<br>`crates/ant3-storage/migrations/sqlite/traces.sql`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-server/tests/traces.rs`<br>`crates/ant3-server/tests/evaluation.rs` | `crates/ant3-platform/src/scheduling/` |
 | 响应阈值分工与拥挤规避 | `crates/ant3-domain/src/division.rs`<br>`crates/ant3-platform/src/scheduling/division.rs`<br>`crates/ant3-platform/src/scheduling/routing.rs`<br>`crates/ant3-server/tests/division.rs` | `crates/ant3-platform/src/scheduling/` |
 | 显式目标与任务依赖 | `crates/ant3-platform/src/collaboration/coordination.rs` | `crates/ant3-platform/src/collaboration/` |
@@ -193,6 +193,7 @@ crates/
 │   │   │   ├── board/
 │   │   │   │   ├── mod.rs
 │   │   │   │   └── tools.rs
+│   │   │   ├── audit.rs
 │   │   │   ├── decision.rs
 │   │   │   ├── division.rs
 │   │   │   ├── mod.rs
@@ -244,6 +245,7 @@ crates/
 │   │   ├── fixtures/
 │   │   │   └── process-plugin.py
 │   │   ├── artifacts.rs
+│   │   ├── audit.rs
 │   │   ├── autonomy.rs
 │   │   ├── board.rs
 │   │   ├── builtin_plugins.rs

@@ -12,6 +12,7 @@ fn input(title: &str) -> PublishInput {
         title: title.into(),
         instructions: format!("Inspect {title}"),
         acceptance: "Evidence is reported".into(),
+        verification: None,
     }
 }
 fn preset(name: &str) -> Preset {

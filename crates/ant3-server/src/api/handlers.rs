@@ -60,6 +60,12 @@ pub(super) async fn board_traces(
         .ok_or_else(|| fault(400, "root_id_required"))?;
     Ok(Json(app.store.board_traces(root)?))
 }
+pub(super) async fn board_audits(
+    State(app): State<App>,
+    Path(id): Path<String>,
+) -> PResult<Json<Value>> {
+    Ok(Json(app.store.board_audits(&id)?))
+}
 pub(super) async fn preset_experience(State(app): State<App>) -> PResult<Json<Value>> {
     Ok(Json(json!({"experience":app.store.preset_experience()?})))
 }

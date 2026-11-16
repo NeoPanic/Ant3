@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS board_tasks(
  title TEXT NOT NULL,instructions TEXT NOT NULL,acceptance TEXT NOT NULL,
  state TEXT NOT NULL,depth INTEGER NOT NULL,route_state TEXT NOT NULL DEFAULT 'unassigned',
  preset_name TEXT,preset_version TEXT,route_reason TEXT,instance_id TEXT REFERENCES instances(id),
- run_id TEXT REFERENCES runs(id),source_run_id TEXT REFERENCES runs(id),result TEXT,error TEXT,
+ run_id TEXT REFERENCES runs(id),source_run_id TEXT REFERENCES runs(id),result TEXT,error TEXT,verification TEXT,
  created_at INTEGER NOT NULL,finished_at INTEGER
 );
 CREATE INDEX IF NOT EXISTS board_tasks_ready ON board_tasks(state,route_state,created_at);
@@ -24,6 +24,6 @@ CREATE TABLE IF NOT EXISTS board_progress(
 );
 CREATE TABLE IF NOT EXISTS board_reviews(
  task_id TEXT NOT NULL REFERENCES board_tasks(id),run_id TEXT NOT NULL REFERENCES runs(id),
- decision TEXT NOT NULL,feedback TEXT NOT NULL,result TEXT NOT NULL,split_count INTEGER NOT NULL,created_at INTEGER NOT NULL,
+ decision TEXT NOT NULL,feedback TEXT NOT NULL,result TEXT NOT NULL,split_count INTEGER NOT NULL,author_kind TEXT NOT NULL DEFAULT 'operator',created_at INTEGER NOT NULL,
  PRIMARY KEY(task_id,run_id)
 );

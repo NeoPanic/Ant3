@@ -232,7 +232,7 @@ fn shared_file_and_json_snapshots_are_frozen_read_and_cited_by_independent_verif
                 name: "shared file evidence".into(),
                 path: Some("research/shared.md".into()),
                 value: None,
-            },
+    },
             "file-publish",
         )
         .unwrap();

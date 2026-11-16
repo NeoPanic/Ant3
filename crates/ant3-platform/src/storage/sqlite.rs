@@ -26,7 +26,7 @@ impl Store {
             if version < 20 {
                 tx.execute_batch("DROP TABLE IF EXISTS research_verification_policies; DROP TABLE IF EXISTS research_delegation_policies; DROP TABLE IF EXISTS research_members; DROP TABLE IF EXISTS research_jobs;")?;
             }
-            tx.execute_batch("PRAGMA user_version=20;")?;
+            tx.execute_batch("PRAGMA user_version=21;")?;
             Ok(())
         })?;
         Ok(store)

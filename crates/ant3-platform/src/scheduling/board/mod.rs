@@ -8,7 +8,7 @@ use rusqlite::{OptionalExtension, Transaction, TransactionBehavior, params};
 use serde_json::{Value, json};
 pub use tools::tools;
 
-pub use ant3_domain::board::{PublishInput, ReviewDecision, ReviewInput, SplitInput};
+pub use ant3_domain::board::{BoardVerification, PublishInput, ReviewDecision, ReviewInput, SplitInput};
 pub use ant3_domain::traces::TraceInput;
 fn key_valid(key: &str) -> PResult<()> {
     if key.is_empty() || key.len() > 160 {
@@ -49,6 +49,9 @@ pub(crate) fn receipt(
     )?;
     Ok(response)
 }
+pub(crate) fn task_view(tx: &Transaction<'_>, id: &str) -> PResult<Value> {
+    task(tx, id)
+}
 fn task(tx: &Transaction<'_>, id: &str) -> PResult<Value> {
     let body:Option<String>=tx.query_row("SELECT json_object('id',id,'root_id',root_id,'parent_id',parent_id,'title',title,'instructions',instructions,'acceptance',acceptance,'state',state,'depth',depth,'route_state',route_state,'preset_name',preset_name,'preset_version',preset_version,'route_reason',route_reason,'instance_id',instance_id,'run_id',run_id,'source_run_id',source_run_id,'result',json(result),'error',error,'created_at',created_at,'finished_at',finished_at) FROM board_tasks WHERE id=?",[id],|r|r.get(0)).optional()?;
     let mut value: Value =
@@ -61,7 +64,7 @@ fn task(tx: &Transaction<'_>, id: &str) -> PResult<Value> {
         .map(|s| serde_json::from_str(&s))
         .transpose()?
         .unwrap_or(Value::Null);
-    let mut stmt = tx.prepare("SELECT json_object('run_id',run_id,'decision',decision,'feedback',feedback,'created_at',created_at) FROM board_reviews WHERE task_id=? ORDER BY created_at DESC,rowid DESC LIMIT 16")?;
+    let mut stmt = tx.prepare("SELECT json_object('run_id',run_id,'decision',decision,'feedback',feedback,'author_kind',author_kind,'created_at',created_at) FROM board_reviews WHERE task_id=? ORDER BY created_at DESC,rowid DESC LIMIT 16")?;
     let reviews = stmt
         .query_map([id], |r| r.get::<_, String>(0))?
         .map(|r| Ok(serde_json::from_str::<Value>(&r?)?))
@@ -99,6 +102,8 @@ fn task(tx: &Transaction<'_>, id: &str) -> PResult<Value> {
         value["previous_run_id"] = review["run_id"].clone();
     }
     value["reviews"] = json!(reviews);
+    value["verification"] = tx.query_row("SELECT json(verification) FROM board_tasks WHERE id=?",[id],|r|r.get::<_,Option<String>>(0))?.map(|s|serde_json::from_str::<Value>(&s)).transpose()?.unwrap_or(Value::Null);
+    value["audits"] = json!(crate::audit::by_task(tx, id)?);
     value["trace"] = crate::traces::trace_view(tx, value["root_id"].as_str().unwrap(), id)?
         .unwrap_or(Value::Null);
     Ok(value)
@@ -155,6 +160,9 @@ fn insert_task(
     source: Option<&str>,
 ) -> PResult<()> {
     tx.execute("INSERT INTO board_tasks(id,root_id,parent_id,title,instructions,acceptance,state,depth,source_run_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",params![id,root,parent,input.title,input.instructions,input.acceptance,if source.is_some(){"staged"}else{"pending"},depth,source,now()])?;
+    if parent.is_none() && let Some(v)=&input.verification {
+        tx.execute("UPDATE board_tasks SET verification=? WHERE id=?",params![serde_json::to_string(v)?,id])?;
+    }
     event(
         tx,
         "board.task_published",
@@ -515,7 +523,13 @@ impl Store {
                                 let activated=tx.execute("UPDATE board_tasks SET state='pending' WHERE source_run_id=? AND state='staged'",[&run])?;
                                 tx.execute("UPDATE board_tasks SET state='waiting' WHERE id=?",[claimed])?;
                                 event(tx,"board.children_activated",claimed,json!({"source_run_id":run,"count":activated}))?;
-                            } else {settle(tx,claimed,"completed",None)?;}
+                            } else {
+                                settle(tx,claimed,"completed",None)?;
+                                if t["parent_id"].is_null() {
+                                    let fresh=task(tx,claimed)?;
+                                    crate::audit::maybe_start(tx,claimed,&fresh["verification"],fresh["acceptance"].as_str().unwrap(),&fresh["result"])?;
+                                }
+                            }
                         } else {
                             let failed_state=if state=="cancelled"{"cancelled"}else if state=="interrupted"{"interrupted"}else{"failed"};
                             let error=if state=="interrupted"{"interrupted_outcome_unknown"}else{"board_run_failed"};
@@ -579,6 +593,7 @@ impl Store {
                     event(tx,"board.continuation_ready",&parent,json!({"completed_children":done}))?;
                 }
             }
+            crate::audit::reconcile(tx)?;
             crate::lifecycle::reconcile(tx)
         })
     }

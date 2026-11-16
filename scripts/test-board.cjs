@@ -15,13 +15,17 @@ Object.assign(context,{
 });
 vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/board/board.js'),'utf8'),context);
 
-test('发布表单只收集任务，不要求选择 preset 或实例',()=>{
+test('发布表单只收集任务；执行母体不可选，验证器为可选细节',()=>{
+  context.data={presets:[{name:'auditor',version:'1'}]};
   vm.runInContext('boardPublishForm()',context);
   assert(context.form.includes('name="instructions"'));
   assert(context.form.includes('name="acceptance"'));
-  assert(!context.form.includes('<select'));
   assert(!context.form.includes('name="preset"'));
   assert(!context.form.includes('name="instance_id"'));
+  // 可选独立验证折叠在 details 内，默认不启用。
+  assert(context.form.includes('<details><summary>独立验证（可选）'));
+  assert(context.form.includes('value="">不启用（仅人类评审）'));
+  assert(context.form.includes('name="verify_preset"'));
 });
 
 test('空任务板提供发布入口，快照尚无 board 时可正常显示',()=>{
