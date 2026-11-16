@@ -104,16 +104,6 @@ pub async fn messages(args: MessageArgs) -> ClientResult<()> {
     };
     print(args.connection.client()?.execute(command).await?)
 }
-resource!(GoalArgs, GoalAction {
-    Verify {id:String,#[arg(long)] expected_round:i64,#[arg(long)] expected_verification_id:String,#[arg(long)] key:String},
-    List,
-    Show { id: String },
-    Create { #[arg(long)] file: PathBuf, #[arg(long)] key: String },
-    Cancel { id: String },
-    Accept { id: String, #[arg(long)] review: String, #[arg(long,default_value="1")] expected_round:i64,#[arg(long,default_value="0")] expected_context_revision:i64 },
-    /// Repeat the full graph with a reviewer note and fresh managed instances by default.
-    Rework {id:String,#[arg(long)] file:PathBuf,#[arg(long)] key:String},
-});
 resource!(FleetArgs, FleetAction {
     List,
     Show { id: String },
@@ -166,48 +156,6 @@ impl InstanceAction {
             Self::Terminate => "terminate",
         }
     }
-}
-pub async fn goals(args: GoalArgs) -> ClientResult<()> {
-    use GoalAction::*;
-    let command = match args.action {
-        Verify {
-            id,
-            expected_round,
-            expected_verification_id,
-            key,
-        } => Command::VerificationRetry {
-            id,
-            input: ant3_domain::verification::Retry {
-                expected_round,
-                expected_verification_id,
-            },
-            key,
-        },
-        List => Command::GoalsList,
-        Show { id } => Command::GoalsShow { id },
-        Create { file, key } => Command::GoalsCreate {
-            plan: read_json(file)?,
-            key,
-        },
-        Cancel { id } => Command::GoalsCancel { id },
-        Accept {
-            id,
-            review,
-            expected_round,
-            expected_context_revision,
-        } => Command::GoalsAccept {
-            id,
-            review,
-            expected_round,
-            expected_context_revision,
-        },
-        Rework { id, file, key } => Command::GoalsRework {
-            id,
-            input: read_json(file)?,
-            key,
-        },
-    };
-    print(args.connection.client()?.execute(command).await?)
 }
 pub async fn fleets(args: FleetArgs) -> ClientResult<()> {
     use FleetAction::*;
@@ -325,76 +273,4 @@ fn read_json<T: DeserializeOwned>(path: PathBuf) -> ClientResult<T> {
 pub fn print(value: Value) -> ClientResult<()> {
     println!("{}", serde_json::to_string_pretty(&value)?);
     Ok(())
-}
-
-resource!(ArtifactArgs, ArtifactAction {
-    List {#[arg(long)] goal_id:Option<String>,#[arg(long,default_value="0")] after:i64,#[arg(long)] limit:Option<usize>},
-    Show {id:String},
-});
-pub async fn artifacts(args: ArtifactArgs) -> ClientResult<()> {
-    let command = match args.action {
-        ArtifactAction::List {
-            goal_id,
-            after,
-            limit,
-        } => Command::ArtifactsList {
-            goal_id,
-            after,
-            limit,
-        },
-        ArtifactAction::Show { id } => Command::ArtifactsShow { id },
-    };
-    print(args.connection.client()?.execute(command).await?)
-}
-
-resource!(ContextArgs, ContextAction {
-    Show{id:String},
-    History{id:String,entry:String},
-    Publish{id:String,#[arg(long)] file:PathBuf,#[arg(long)] key:String},
-});
-pub async fn context(args: ContextArgs) -> ClientResult<()> {
-    let command = match args.action {
-        ContextAction::Show { id } => Command::ContextRead { id },
-        ContextAction::History { id, entry } => Command::ContextHistory { id, entry },
-        ContextAction::Publish { id, file, key } => Command::ContextPublish {
-            id,
-            input: read_json(file)?,
-            key,
-        },
-    };
-    print(args.connection.client()?.execute(command).await?)
-}
-
-resource!(TaskArgs, TaskAction {
-    Show { id:String, task:String },
-    Claim { id:String, task:String, #[arg(long)] file:PathBuf, #[arg(long)] key:String },
-    Release { id:String, task:String, #[arg(long)] file:PathBuf, #[arg(long)] key:String },
-});
-pub async fn tasks(args: TaskArgs) -> ClientResult<()> {
-    let command = match args.action {
-        TaskAction::Show { id, task } => Command::TasksShow { id, task },
-        TaskAction::Claim {
-            id,
-            task,
-            file,
-            key,
-        } => Command::TasksClaim {
-            id,
-            task,
-            input: read_json(file)?,
-            key,
-        },
-        TaskAction::Release {
-            id,
-            task,
-            file,
-            key,
-        } => Command::TasksRelease {
-            id,
-            task,
-            input: read_json(file)?,
-            key,
-        },
-    };
-    print(args.connection.client()?.execute(command).await?)
 }

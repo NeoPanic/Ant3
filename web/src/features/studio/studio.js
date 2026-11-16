@@ -1,17 +1,8 @@
 'use strict';
 
-const studio={view:'network',selected:null,selectedTask:null,boardRootId:'',goalId:'',goal:null,goalError:'',paused:null,page:0,scope:'live',syncedAt:null,disconnected:false};
+const studio={view:'network',selected:null,selectedTask:null,boardRootId:'',paused:null,page:0,scope:'live',syncedAt:null,disconnected:false};
 const studioStates={busy:'工作中',running:'工作中',ready:'待命',queued:'排队',pending:'等待',staged:'待结算',waiting:'等待子任务',suspended:'休眠',draining:'收尾',terminated:'离场',completed:'完成',failed:'遇到问题',blocked:'上游阻断',interrupted:'结果未知',cancelled:'取消',delegating:'委派中'};
 const studioSpots=[{x:130,y:270},{x:360,y:210},{x:710,y:210},{x:960,y:275},{x:1040,y:465},{x:830,y:605},{x:535,y:625},{x:250,y:600},{x:50,y:465}];
-
-async function studioReadGoal(){
-  if(studio.paused)return;
-  if(!studio.goalId)studio.goalId=(data.goals.find(g=>['running','verifying'].includes(g.state))||data.goals[0])?.id||'';
-  if(!studio.goalId){studio.goal=null;return;}
-  const id=studio.goalId;
-  try{const goal=await api(`/api/v1/goals/${encodeURIComponent(id)}`);if(studio.goalId===id){studio.goal=goal;studio.goalError='';}}
-  catch(error){if(studio.goalId===id)studio.goalError=error.message;}
-}
 
 function studioSyncLabel(){
   const el=$('#studio-sync');
@@ -80,7 +71,7 @@ function studioPage(){
   const snapshot=studio.paused?.data||data,active=snapshot.instances.filter(a=>a.state!=='terminated');
   const busy=snapshot.runs.filter(r=>r.state==='running').length,queued=snapshot.runs.filter(r=>r.state==='queued').length;
   const selected=studio.view==='network'?snapshot.instances.find(a=>a.id===studio.selected):null;
-  const goal=studioBoardGoal(snapshot),task=studio.view==='tasks'?goal?.tasks.find(t=>t.key===studio.selectedTask):null;
+  const goal=studioBoardRoot(snapshot),task=studio.view==='tasks'?goal?.tasks.find(t=>t.key===studio.selectedTask):null;
   return `<div class="studio ${studio.paused?'studio-paused':''} ${document.hidden?'studio-hidden':''}">
     <header class="studio-hud"><div class="studio-station-name"><span class="studio-station-mark" aria-hidden="true">◉</span><h1>夜航工作站</h1></div><div class="studio-tabs" role="group" aria-label="现场视图">${[['network','工作舱'],['tasks','接力'],['architecture','系统']].map(([key,title])=>`<button id="studio-view-${key}" data-action="studio-view" data-id="${key}" aria-pressed="${studio.view===key}" class="${studio.view===key?'active':''}">${title}</button>`).join('')}</div><div class="studio-live"><span id="studio-sync" role="status"></span><button class="studio-icon-button" data-action="studio-pause" title="${studio.paused?'继续实时同步':'暂停画面'}" aria-label="${studio.paused?'继续实时同步':'暂停画面'}">${studio.paused?'▶':'Ⅱ'}</button><button class="studio-icon-button" data-action="studio-fullscreen" title="全屏 / 退出全屏" aria-label="全屏 / 退出全屏">⛶</button></div></header>
     <div class="studio-scene-wrap">${studio.view==='architecture'?studioArchitecture(snapshot):studio.view==='tasks'?studioTasks(snapshot):studioNetwork(snapshot)}${selected||task?`<aside class="studio-inspect" aria-label="${task?'任务':'Agent'}详情"><button class="studio-inspect-close" data-action="studio-dismiss" aria-label="收起详情">×</button>${task?studioTaskDetail(goal,task,snapshot):studioAgentDetail(snapshot,selected.id)}</aside>`:''}</div>
@@ -147,15 +138,15 @@ function studioTaskLayout(tasks){
   return {positions,width:Math.max(860,(Math.max(0,...depth.values())+1)*285),height:Math.max(520,Math.max(0,...rows.values())*235+45)};
 }
 
-function studioBoardGoal(snapshot){
+function studioBoardRoot(snapshot){
   const tasks=snapshot.board?.tasks||[],roots=tasks.filter(t=>!t.parent_id);
-  const root=roots.find(t=>t.id===studio.boardRootId)||roots.find(t=>['pending','running','waiting'].includes(t.state))||roots[0];
+  const root=roots.find(t=>t.id===studio.boardRootId)||roots.find(t=>['pending','running','waiting','staged'].includes(t.state))||roots[0];
   if(!root)return null;
   return {...root,tasks:tasks.filter(t=>t.root_id===root.id||t.id===root.id).map(t=>({...t,key:t.id,display_title:t.title,depends_on:t.parent_id?[t.parent_id]:[]}))};
 }
 
 function studioTasks(snapshot){
-  const g=studioBoardGoal(snapshot),roots=(snapshot.board?.tasks||[]).filter(t=>!t.parent_id);
+  const g=studioBoardRoot(snapshot),roots=(snapshot.board?.tasks||[]).filter(t=>!t.parent_id);
   const selector=`<select id="studio-board-root" aria-label="选择任务" ${studio.paused?'disabled':''}>${roots.length?roots.map(root=>`<option value="${esc(root.id)}" ${root.id===g?.id?'selected':''}>${esc(root.title)}</option>`).join(''):'<option value="">暂无任务</option>'}</select>`;
   let body='';
   if(!g)body='<div class="studio-scene-empty"><span>暂无任务</span><a href="#board">发布任务</a></div>';
@@ -170,9 +161,12 @@ function studioTasks(snapshot){
   return `<section class="studio-stage studio-task-stage" aria-label="任务拆分"><svg class="studio-stage-background" viewBox="0 0 1280 870" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${studioBackdrop()}</svg><div class="studio-scene-controls">${selector}${g?`<a class="studio-small-button" href="#board/${esc(g.id)}" title="查看任务与验收标准">${(g.tasks||[]).filter(t=>t.state==='completed').length} / ${(g.tasks||[]).length} 完成</a>`:''}</div>${body}</section>`;
 }
 
-function studioTaskDetail(goal,t,snapshot){
+function studioTaskDetail(root,t,snapshot){
   const a=snapshot.instances.find(a=>a.id===t.instance_id),waiting=t.state==='pending'?(t.preset_name?'等待认领':'等待选型'):t.state==='waiting'?'等待子任务':studioStates[t.state]||labels[t.state]||t.state;
-  return `${studioPerson(t.state,t.instance_id||t.key)}<h2>${esc(t.display_title||t.key)}</h2><div class="studio-detail-meta">${esc(waiting)} ${esc(a?.preset_name||t.preset_name||'待选型')}</div><p class="studio-full-text">${esc(t.instructions)}</p><div class="studio-inspect-actions">${t.run_id?button('运行详情','run-detail',false,`data-id="${esc(t.run_id)}"`):''}<a class="button" href="#board/${esc(t.id)}">任务详情</a></div>`;
+  const trace=t.trace?`<div class="studio-detail-meta">痕迹 ${esc(boardTraceKinds[t.trace.kind]||t.trace.kind)} 浓度 ${boardTraceStrength(t.trace).toFixed(1)}</div>`:'';
+  const audits=t.audits||[],audit=audits[audits.length-1];
+  const auditSummary=audit?`<div class="studio-detail-meta">独立验证 第 ${esc(audit.attempt)} 次 · ${esc(auditStates[audit.state]||audit.state)}${audit.verdict?` ${esc(audit.verdict.status)}`:''}</div>`:'';
+  return `${studioPerson(t.state,t.instance_id||t.key)}<h2>${esc(t.display_title||t.title||t.key)}</h2><div class="studio-detail-meta">${esc(waiting)} ${esc(a?.preset_name||t.preset_name||'待选型')}</div>${trace}${auditSummary}<p class="studio-full-text">${esc(t.instructions)}</p>${t.acceptance?`<details id="studio-task-acceptance"><summary>验收标准</summary><p class="studio-full-text">${esc(t.acceptance)}</p></details>`:''}<div class="studio-inspect-actions">${t.run_id?button('运行详情','run-detail',false,`data-id="${esc(t.run_id)}"`):''}<a class="button" href="#board/${esc(t.id)}">任务详情</a></div>`;
 }
 
 function studioModule(kind){
@@ -189,7 +183,7 @@ function studioModule(kind){
 }
 
 function studioArchitecture(){
-  const modules=[['target','任务板','board',130,270],['scheduler','控制面 选型 / 生命周期','presets',530,190],['agents','对等 Agent','agents',930,270],['messages','消息','messages',130,565],['storage','存储','artifacts',530,580],['tools','Ant 模型 / 工具','plugins',930,565]];
+  const modules=[['target','任务板','board',130,270],['scheduler','控制面 选型 / 生命周期','presets',530,190],['agents','对等 Agent','agents',930,270],['messages','消息','messages',130,565],['storage','存储','workspaces',530,580],['tools','Ant 模型 / 工具','plugins',930,565]];
   return `<section class="studio-stage studio-architecture" aria-label="系统结构示意"><span class="studio-structure-label">系统剖面</span><svg class="studio-map" viewBox="0 0 1280 870" role="group" aria-label="任务板、控制面选型、对等 Agent 与标准 Ant 的结构关系">${studioBackdrop()}<g class="module-rails"><path d="M240 445 640 365 1040 445M240 445v295l400 15 400-15V445M640 365v390M240 740l800-295"/></g>${modules.map(([kind,title,href,x,y])=>`<foreignObject x="${x}" y="${y}" width="220" height="235"><div xmlns="http://www.w3.org/1999/xhtml" class="studio-machine-wrap"><a class="studio-machine" href="#${href}" title="查看${esc(title)}">${studioModule(kind)}<span>${title}</span></a></div></foreignObject>`).join('')}</svg></section>`;
 }
 
@@ -208,9 +202,8 @@ async function studioAction(action,element){
   if(action==='studio-prev'||action==='studio-next'){studio.page+=action==='studio-next'?1:-1;studio.selected=null;render();}
   if(action==='studio-pause'){
     if(studio.paused){studio.paused=null;render();await refresh(true);}
-    else{studio.paused={data:structuredClone(data),events:structuredClone(events),goal:structuredClone(studio.goal),goalError:studio.goalError,at:studio.syncedAt};render();}
+    else{studio.paused={data:structuredClone(data),events:structuredClone(events),at:studio.syncedAt};render();}
   }
-  if(action==='studio-retry'){studio.goalError='';await studioReadGoal();render();}
   if(action==='studio-fullscreen'){
     try{if(document.fullscreenElement)await document.exitFullscreen();else await $('#content').requestFullscreen();}
     catch{toast('当前窗口不支持全屏。');}
@@ -220,12 +213,8 @@ async function studioAction(action,element){
 document.addEventListener('change',async event=>{
   if(event.target.id==='studio-board-root'){
     if(studio.paused)return;
-    studio.boardRootId=event.target.value;studio.selectedTask=null;render();return;
+    studio.boardRootId=event.target.value;studio.selectedTask=null;render();
   }
-  if(event.target.id!=='studio-goal')return;
-  if(studio.paused)return;
-  studio.goalId=event.target.value;studio.goal=null;studio.goalError='';studio.selectedTask=null;render();
-  await studioReadGoal();render();
 });
 document.addEventListener('visibilitychange',()=>{document.querySelector('.studio')?.classList.toggle('studio-hidden',document.hidden);});
 document.addEventListener('keydown',event=>{

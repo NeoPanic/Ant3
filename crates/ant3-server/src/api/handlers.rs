@@ -1,7 +1,7 @@
 use super::status::capabilities;
 use super::*;
 pub(super) async fn snapshot(State(app): State<App>) -> PResult<Json<Value>> {
-    let mut value = json!({"channels":app.store.channels(None)?["channels"],"artifacts":app.store.recent_artifacts()?,"messages":app.store.recent_messages()?,"builtin_plugins":ant3_platform::organization::packages(),"builtin_plugin_status":ant3_builtin_plugins::status(),"process_plugins":app.store.process_plugins()?,"process_plugin_execution":app.plugins.is_enabled(),"capacity":app.store.capacity()?,"fleets":app.store.fleets()?,"presets":app.store.list("presets")?,"plugins":app.store.list("plugins")?,"instances":app.store.list("instances")?,"runs":app.store.list("runs")?,"goals":app.store.list("goals")?,"capabilities":capabilities(),"models":app.models.describe(),"limits":{"instances":ant3_platform::limits::INSTANCES,"workers":ant3_platform::limits::WORKERS,"runs_displayed":100,"collection_limit":200,"active_goals":32,"tasks_per_goal":ant3_platform::limits::TASKS_PER_GOAL},"version":env!("CARGO_PKG_VERSION")});
+    let mut value = json!({"messages":app.store.recent_messages()?,"builtin_plugins":ant3_platform::organization::packages(),"builtin_plugin_status":ant3_builtin_plugins::status(),"process_plugins":app.store.process_plugins()?,"process_plugin_execution":app.plugins.is_enabled(),"capacity":app.store.capacity()?,"fleets":app.store.fleets()?,"presets":app.store.list("presets")?,"plugins":app.store.list("plugins")?,"instances":app.store.list("instances")?,"runs":app.store.list("runs")?,"capabilities":capabilities(),"models":app.models.describe(),"limits":{"instances":ant3_platform::limits::INSTANCES,"workers":ant3_platform::limits::WORKERS,"runs_displayed":100,"collection_limit":200,"board_tasks_per_root":ant3_platform::limits::BOARD_TASKS_PER_ROOT,"board_split_depth":ant3_platform::limits::BOARD_SPLIT_DEPTH,"board_split_children":ant3_platform::limits::BOARD_SPLIT_CHILDREN},"version":env!("CARGO_PKG_VERSION")});
     value["board"] = board_value(&app)?;
     Ok(Json(value))
 }
@@ -219,59 +219,6 @@ pub(super) async fn events(
 pub(super) async fn run(State(app): State<App>, Path(id): Path<String>) -> PResult<Json<Value>> {
     Ok(Json(app.store.run(&id)?))
 }
-pub(super) async fn goals(State(app): State<App>) -> PResult<Json<Value>> {
-    Ok(Json(json!({"goals":app.store.list("goals")?})))
-}
-pub(super) async fn goal(State(app): State<App>, Path(id): Path<String>) -> PResult<Json<Value>> {
-    Ok(Json(app.store.goal(&id)?))
-}
-pub(super) async fn create_goal(
-    State(app): State<App>,
-    headers: HeaderMap,
-    Json(plan): Json<GoalPlan>,
-) -> PResult<(StatusCode, Json<Value>)> {
-    Ok((
-        StatusCode::ACCEPTED,
-        Json(app.store.create_goal(&plan, key(&headers)?)?),
-    ))
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(super) struct Review {
-    review: String,
-    #[serde(default = "first_round")]
-    expected_round: i64,
-    #[serde(default)]
-    expected_context_revision: i64,
-}
-pub(super) fn first_round() -> i64 {
-    1
-}
-pub(super) async fn accept_goal(
-    State(app): State<App>,
-    Path(id): Path<String>,
-    Json(input): Json<Review>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.accept_goal_context(
-        &id,
-        &input.review,
-        input.expected_round,
-        input.expected_context_revision,
-    )?))
-}
-pub(super) async fn cancel_goal(
-    State(app): State<App>,
-    Path(id): Path<String>,
-) -> PResult<Json<Value>> {
-    let result = app.store.cancel_goal(&id)?;
-    let cancellations = app.cancellations.lock().await;
-    for run in result["run_ids"].as_array().unwrap() {
-        if let Some(token) = cancellations.get(run.as_str().unwrap()) {
-            token.cancel();
-        }
-    }
-    Ok(Json(result))
-}
 
 pub(super) async fn send_message(
     State(app): State<App>,
@@ -314,116 +261,10 @@ pub(super) async fn message_action(
     )?))
 }
 
-pub(super) async fn rework_goal(
-    State(app): State<App>,
-    Path(id): Path<String>,
-    headers: HeaderMap,
-    Json(input): Json<ant3_platform::artifacts::ReworkInput>,
-) -> PResult<(StatusCode, Json<Value>)> {
-    Ok((
-        StatusCode::ACCEPTED,
-        Json(app.store.rework_goal(&id, &input, key(&headers)?)?),
-    ))
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(super) struct ArtifactQuery {
-    goal_id: Option<String>,
-    #[serde(default)]
-    after: i64,
-    limit: Option<usize>,
-}
-pub(super) async fn artifacts(
-    State(app): State<App>,
-    Query(q): Query<ArtifactQuery>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.artifacts(
-        q.goal_id.as_deref(),
-        q.after,
-        q.limit.unwrap_or(50),
-    )?))
-}
-pub(super) async fn artifact(
-    State(app): State<App>,
-    Path(id): Path<String>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.artifact(&id)?))
-}
-
-pub(super) async fn goal_context(
-    State(app): State<App>,
-    Path(id): Path<String>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.goal_context(&id)?))
-}
-pub(super) async fn context_history(
-    State(app): State<App>,
-    Path((id, key)): Path<(String, String)>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.context_history(&id, &key)?))
-}
-pub(super) async fn context_publish(
-    State(app): State<App>,
-    Path(id): Path<String>,
-    headers: HeaderMap,
-    Json(input): Json<ant3_platform::collaboration::ContextInput>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.publish_context(
-        ant3_platform::collaboration::Author::Operator,
-        Some(&id),
-        &input,
-        key(&headers)?,
-    )?))
-}
-
-pub(super) async fn task_show(
-    State(app): State<App>,
-    Path((id, task)): Path<(String, String)>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.task(&id, &task)?))
-}
-pub(super) async fn task_claim(
-    State(app): State<App>,
-    Path((id, task)): Path<(String, String)>,
-    headers: HeaderMap,
-    Json(input): Json<ant3_platform::claims::ClaimInput>,
-) -> PResult<(StatusCode, Json<Value>)> {
-    Ok((
-        StatusCode::ACCEPTED,
-        Json(app.store.claim_task(&id, &task, &input, key(&headers)?)?),
-    ))
-}
-pub(super) async fn task_release(
-    State(app): State<App>,
-    Path((id, task)): Path<(String, String)>,
-    headers: HeaderMap,
-    Json(input): Json<ant3_platform::claims::ReleaseInput>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.release_task(
-        &id,
-        &task,
-        &input,
-        key(&headers)?,
-    )?))
-}
-
-pub(super) async fn retry_verification(
-    State(app): State<App>,
-    Path(id): Path<String>,
-    headers: HeaderMap,
-    Json(input): Json<ant3_platform::verification::Retry>,
-) -> PResult<(StatusCode, Json<Value>)> {
-    Ok((
-        StatusCode::ACCEPTED,
-        Json(app.store.retry_verification(&id, &input, key(&headers)?)?),
-    ))
-}
-
 #[derive(Deserialize, Default)]
 pub(super) struct WorkspaceQuery {
     #[serde(default)]
     path: String,
-    goal_id: Option<String>,
 }
 pub(super) async fn workspace_catalog(State(app): State<App>) -> PResult<Json<Value>> {
     Ok(Json(app.store.workspace_catalog()?))
@@ -442,82 +283,12 @@ pub(super) async fn workspace_file(
 ) -> PResult<Json<Value>> {
     Ok(Json(app.store.workspace_read(&id, &q.path)?))
 }
-pub(super) async fn workspace_artifacts(
-    State(app): State<App>,
-    Query(q): Query<WorkspaceQuery>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.workspace_artifacts(q.goal_id.as_deref())?))
+pub(super) async fn workspace_artifacts(State(app): State<App>) -> PResult<Json<Value>> {
+    Ok(Json(app.store.workspace_artifacts()?))
 }
 pub(super) async fn workspace_artifact(
     State(app): State<App>,
     Path(id): Path<String>,
 ) -> PResult<Json<Value>> {
     Ok(Json(app.store.workspace_artifact(&id)?))
-}
-pub(super) async fn channels(
-    State(app): State<App>,
-    Query(q): Query<WorkspaceQuery>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.channels(q.goal_id.as_deref())?))
-}
-pub(super) async fn channel_show(
-    State(app): State<App>,
-    Path(id): Path<String>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.channel(
-        ant3_platform::channels::Actor::Operator,
-        &id,
-    )?))
-}
-pub(super) async fn channel_create(
-    State(app): State<App>,
-    headers: HeaderMap,
-    Json(input): Json<ant3_platform::channels::CreateChannel>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.create_channel(&input, key(&headers)?)?))
-}
-pub(super) async fn channel_post(
-    State(app): State<App>,
-    Path(id): Path<String>,
-    headers: HeaderMap,
-    Json(input): Json<ant3_platform::channels::ChannelPost>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.post_channel(
-        ant3_platform::channels::Actor::Operator,
-        &id,
-        &input,
-        key(&headers)?,
-    )?))
-}
-pub(super) async fn channel_members(
-    State(app): State<App>,
-    Path(id): Path<String>,
-    headers: HeaderMap,
-    Json(input): Json<ant3_platform::channels::ChannelMembers>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.set_channel_members(
-        &id,
-        &input,
-        key(&headers)?,
-    )?))
-}
-pub(super) async fn channel_subscription(
-    State(app): State<App>,
-    Path(id): Path<String>,
-    headers: HeaderMap,
-    Json(input): Json<ant3_platform::channels::ChannelSubscription>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.subscribe_channel(
-        ant3_platform::channels::Actor::Operator,
-        &id,
-        &input,
-        key(&headers)?,
-    )?))
-}
-
-pub(super) async fn goal_autonomy(
-    State(app): State<App>,
-    Path(id): Path<String>,
-) -> PResult<Json<Value>> {
-    Ok(Json(app.store.goal_autonomy(&id)?))
 }

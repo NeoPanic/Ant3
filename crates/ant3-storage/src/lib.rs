@@ -18,16 +18,14 @@ impl Database {
         let connection = Connection::open(path)?;
         connection.busy_timeout(std::time::Duration::from_secs(5))?;
         let version: i64 = connection.query_row("PRAGMA user_version", [], |r| r.get(0))?;
-        if version > 21 {
+        if version > 22 {
             return Err(fault(500, "database_version_unsupported"));
         }
         connection.execute_batch(include_str!("../migrations/sqlite/schema.sql"))?;
-        connection.execute_batch(include_str!("../migrations/sqlite/channels.sql"))?;
-        connection.execute_batch(include_str!("../migrations/sqlite/autonomy.sql"))?;
         connection.execute_batch(include_str!("../migrations/sqlite/board.sql"))?;
         connection.execute_batch(include_str!("../migrations/sqlite/routing.sql"))?;
         connection.execute_batch(include_str!("../migrations/sqlite/traces.sql"))?;
-        if (16..21).contains(&version) {
+        if (16..22).contains(&version) {
             // Legacy board_reviews predates reviewer attribution.
             let has: bool = connection.query_row(
                 "SELECT EXISTS(SELECT 1 FROM pragma_table_info('board_reviews') WHERE name='author_kind')",

@@ -4,8 +4,6 @@ use crate::*;
 pub struct MessageInput {
     pub text: String,
     #[serde(default)]
-    pub goal_id: Option<String>,
-    #[serde(default)]
     pub correlation_id: Option<String>,
     #[serde(default)]
     pub causation_id: Option<String>,

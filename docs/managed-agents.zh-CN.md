@@ -22,7 +22,7 @@ Ant 是包含模型 / 工具循环、会话和回执的标准运行件；Preset 
 | --- | --- | --- |
 | Ant 内核 | 单次模型/工具循环、会话、观察与回执、取消 | 团队规划、实例数量、跨 Agent 任务所有权 |
 | 控制面 | Preset 发布与动态选型、容量、Agent 池与实例生命周期、能力绑定 | 将选型模型变成指挥其他 Agent 的永久 leader |
-| 组织服务 | 共享任务板、原子认领、任务来源与结果；Goal 流程中的消息/频道、共享事实、产物与验收 | 直接读写模型私有推理、跳过平台状态校验 |
+| 组织服务 | 共享任务板、原子认领、任务来源与结果；板根内的消息、痕迹、工作区快照与验收 | 直接读写模型私有推理、跳过平台状态校验 |
 | 调度与执行 | 持久队列、执行容量、所有权、等待/恢复 | 将进程或 Worker 身份等同于 Agent 身份 |
 | 插件宿主 | 包校验、版本快照、装配、调用、健康与撤销 | 允许外部代码自行声明平台权限 |
 | 入口适配器 | HTTP、CLI、MCP、Web 的命令与查询映射 | 各自创建数据库、执行循环或独立状态 |
@@ -37,7 +37,7 @@ Ant 是包含模型 / 工具循环、会话和回执的标准运行件；Preset 
 | --- | --- | --- |
 | 部分可观测决策、ReAct 式观察/行动循环 | 模型只掌握有限历史和工具观察，必须区分事实、推测与结果 | Observation、证据引用、工具回执、终止条件；不能用自述的成功代替工具证据 |
 | Actor 模型 | Agent 具有独立身份、局部状态，通过消息协作 | 每个会话的有效写入者、持久 Inbox、消息 envelope、监督与唤醒；Agent 不等于常驻进程 |
-| 共享黑板与组织协作协议 | 让多个 Agent 围绕共同目标发布证据与贡献 | 共享目标/任务/产物的版本、可见范围、认领规则、冲突裁决；无需共享所有私有思考历史 |
+| 共享任务板与组织协作协议 | 让多个 Agent 围绕共同任务发布证据与贡献 | 共享任务/结果的版本、可见范围、认领规则、冲突裁决；无需共享所有私有思考历史 |
 | 状态机与持久执行 | 把意图、认领、执行、回执和结算连接起来 | 转移前置条件、事务边界、幂等键、检查点、恢复路径、结果未知的处置 |
 | 分布式系统的租约与 fencing | Worker 断连后可能仍在运行，旧所有者不能继续提交有效状态 | 单调 generation、存储写入校验、执行端凭证或隔离；仅有超时或心跳缺失不足以证明旧进程已停止 |
 | 最小权限与能力委派 | 工具调用与 Agent 消息不能自行扩大权限 | Principal、scope、凭证引用、预算上限；子任务的有效权限不得超过委派者和目标 Agent 权限的交集 |
@@ -71,7 +71,7 @@ Ant 是包含模型 / 工具循环、会话和回执的标准运行件；Preset 
 | 负反馈：冲突裁决、振荡抑制 | 拥挤与路径放弃 | 计划中 |
 | 预算作为能量与选择压力 | 能量约束驱动高效觅食 | 计划中，随预算账本设计 |
 
-显式 Goal 依赖图是确定性编排脚手架，供需要固定分工的场景使用，不代表涌现方向。任务分配算法始终是可替换策略；涌现机制以策略与痕迹场实现，不改变平台强制的状态、权限与证据契约。
+任务分配算法始终是可替换策略；涌现机制以策略与痕迹场实现，不改变平台强制的状态、权限与证据契约。
 
 ## 4. 目标架构
 
@@ -112,10 +112,8 @@ flowchart TB
 | AgentInstance | PresetVersion 的独立实例，含唯一 ID、实例参数、工作区、身份、生命周期与派生来源；不可变母体快照不与兄弟实例共享可变会话 |
 | PluginPackage / PluginVersion / PluginBinding | 外部插件包、内容寻址的不可变版本，以及某 Preset/实例获准使用的能力和配置绑定 |
 | Worker / WorkerSlot | 执行容量与所有者身份；一个 Worker 可执行多个 Agent 的不同会话，不能把 Worker ID 当作 Agent ID |
-| Goal | 用户意图、验收标准、根预算、截止时间及最终状态 |
-| WorkItem | 可认领的工作单元，含依赖、认领者、generation、允许的尝试与产物要求；与运行请求中的 profile 选择键分离 |
 | BoardTask | 发布时无实例绑定的任务，包含要求、验收标准、根任务和拆分来源；选型、实例启动和认领分别留痕 |
-| Session / Run / Attempt | 会话历史、单次输入执行、某 WorkItem 的一次尝试；调度重试不能覆盖旧 Run 结果 |
+| Session / Run | 会话历史与单次输入执行；调度重试不能覆盖旧 Run 结果 |
 | Message / Inbox / Outbox | 消息内容、待消费状态、待可靠发送状态；统一 message_id、causation_id、correlation_id、作用域与权限 |
 | Artifact / Contribution / Review | 版本化输出、某次尝试的提交、基于指定版本和标准的验收证据 |
 | Principal / Grant / BudgetReservation | 谁在操作、获准做什么、执行前预留的额度；密钥本体不进入消息或日志 |
@@ -124,11 +122,11 @@ flowchart TB
 目标系统遵循以下不变量；具体部署支持的约束由其执行后端和能力声明确定：
 
 1. 同一会话只有一个有效写入所有者；旧 Worker 的 generation 不能写入新所有者状态。存储 fencing 不会撤销已经发出的外部请求，外部效果还需执行端的幂等、凭证撤销或隔离。
-2. WorkItem 的认领、Attempt 创建、预算预留和相关 Outbox 记录在可证明的事务边界内提交；跨存储操作通过可恢复协议衔接。
+2. BoardTask 的认领、Run 创建、预算预留和相关 Outbox 记录在可证明的事务边界内提交；跨存储操作通过可恢复协议衔接。
 3. 消息默认至少一次投递，消费者以稳定键去重。应用命令另有作用域内幂等键与内容指纹，不把不同入口的同一请求当作不同任务。
 4. 宿主身份从认证上下文取得；不能信任客户端填入 `InboundEvent.payload.context` 的 principal、权限或预算。Source 适配层负责显式映射与保留字段过滤。
-5. 共享上下文保存版本化事实、证据与产物引用；Agent 私有会话不自动广播，任务数据和检索文本不获得指令权限。
-6. 模型提出“完成”只会提交待验收贡献；Goal 成功需要满足验收标准的 Review，以及已持久化的整合产物。
+5. 共享任务板与工作区快照保存版本化事实、证据与产物引用；Agent 私有会话不自动广播，任务数据和检索文本不获得指令权限。
+6. 模型提出“完成”只会提交待验收结果；根任务成功需要满足验收标准的人类评审或独立验证，以及已持久化的整合结果。
 7. 预算预留在调用前原子检查，调用后按供应商 usage 对账；缺失 usage 标记未知并保守处理。费用硬上限需要明确提供商限价、单次输出限制及进行中请求的结算边界，不能仅靠事后累计。
 8. 取消停止新增工作并向子任务传播，已开始的操作进入收尾。无法证实外部结果时保留 outcome-unknown，不能把它展示为已回滚或可安全重试。
 9. 发布任务无需实例或 Preset 身份。启动实例不构成认领，任务所有权必须经过原子认领；同一任务同时至多有一个有效执行者。
@@ -136,37 +134,35 @@ flowchart TB
 
 ## 6. 状态与协作闭环
 
-WorkItem 主路径：
+BoardTask 主路径：
 
 ```mermaid
 stateDiagram-v2
-    [*] --> queued
-    queued --> claimed: 事务认领与预算预留
-    claimed --> running: 所有权确认
-    running --> waiting: 等待依赖/消息/审批
-    waiting --> queued: 唤醒条件满足
-    running --> review_pending: 提交贡献
-    review_pending --> completed: 验证与整合通过
-    review_pending --> queued: 有界返工
-    running --> outcome_unknown: 无法确认外部效果
+    [*] --> staged: 拆分接纳，等待来源结算
+    staged --> pending: 来源 Run 成功
+    [*] --> pending: 根任务发布
+    pending --> running: 选型、启动实例并原子认领
+    running --> waiting: 拆分子任务
+    waiting --> pending: 子任务完成，重新可认领整合
+    running --> completed: 执行成功
+    completed --> pending: 评审退回，有界返工
+    completed --> [*]: 评审通过归档
+    running --> interrupted: 无法确认外部效果
     running --> failed: 确定失败且不能继续
-    queued --> cancelled: 取消
+    pending --> cancelled: 取消
     waiting --> cancelled: 取消
-    running --> cancelling: 停止新增动作
-    cancelling --> cancelled: 已确认收尾
-    cancelling --> outcome_unknown: 收尾结果不明
-    claimed --> queued: 确认未开始且释放所有权
+    running --> cancelled: 协作收尾
 ```
 
-图展示主路径；实施前还需转移表，定义各状态的超时、取消、权限撤销与预算耗尽行为。例如 review_pending 的取消必须处理已存在的贡献，不能抹去历史。Task 状态与 Attempt/Run 状态分别保存：WorkItem 被唤醒重排队，旧 Attempt 的结算事实仍然存在。
+图展示主路径；实施前还需转移表，定义各状态的超时、取消、权限撤销与预算耗尽行为。例如待评审任务的取消必须处理已存在的结果，不能抹去历史。任务状态与 Run 状态分别保存：任务被退回重排队，旧 Run 的结算事实仍然存在。
 
 默认任务流：用户发布工作 → 任务板持久接纳 → 控制面按任务与能力目录选型 → 启动 Preset 实例 → Agent 原子认领 → 工具行动或拆分子任务 → 子任务回板触发新一轮选型 → 收齐子任务结果后，原任务重新可认领 → 普通实例整合结果。
 
-已有自主调研保留固定规划 / 研究 / 汇总模板，显式 Goal 保留候选实例和依赖图；它们是兼容用例。新任务板不要求这些角色，后续整合也不要求原实例继续执行。拆分需要最大深度、最大子任务数和总任务数限制；启用费用治理时还需限定总预算，防止循环拆分和消息风暴。
+任务板不要求固定规划 / 研究 / 汇总角色，后续整合也不要求原实例继续执行。拆分需要最大深度、最大子任务数和总任务数限制；启用费用治理时还需限定总预算，防止循环拆分和消息风暴。
 
-上面的状态图描述包含预算、验证和验收的目标契约。新任务板当前保存认领、Run、拆分与结果，尚未接入 Goal 的独立验证和人工验收；任务 `completed` 表示已知执行成功，不代表验收标准已经由独立评审证明。具体状态与接口见[共享任务板](task-board.zh-CN.md)。
+上面的状态图描述包含预算的目标契约。任务板当前保存认领、Run、拆分与结果，根任务支持独立验证与人工评审；任务 `completed` 表示已知执行成功，不代表验收标准已经自动证明。具体状态与接口见[共享任务板](task-board.zh-CN.md)。
 
-等待应当是持久状态：记录等待条件、释放 Worker，唤醒时生成后续 Attempt 和输入事件。保持一个异步 future 挂起无法代替持久等待协议，会占用执行容量且无法独立处理进程重启。
+等待应当是持久状态：记录等待条件、释放 Worker，唤醒时生成后续执行尝试和输入事件。保持一个异步 future 挂起无法代替持久等待协议，会占用执行容量且无法独立处理进程重启。
 
 恢复至少区分三种情况：尚未开始的工作可重新认领；有完整回执的操作复用证据；已开始且结果未知的操作先对账或等待人工裁决。中断结算只是恢复协议的一步：宿主先证明旧运行已停止，再结算中断记录，之后显式创建续行事件。恢复记录与自动断点续跑需要分别定义。
 
@@ -174,7 +170,7 @@ stateDiagram-v2
 
 ### 7.1 Preset 是可发布的母体定义
 
-母体 Agent 用 `AgentPreset` 表达，是用户可维护的定义；`PresetVersion` 是校验后发布的不可变版本。定义包含主要功能、适用范围、预期目标/验收模板、系统指令、模型引用、插件依赖、工具与资源权限、默认预算以及实例参数 schema。Preset 与实例是定义和运行的关系；任务拆分来源保存在任务记录中。兼容调研模板里的 `parent_instance_id` 不定义平台通用的 Agent 权限等级。
+母体 Agent 用 `AgentPreset` 表达，是用户可维护的定义；`PresetVersion` 是校验后发布的不可变版本。定义包含主要功能、适用范围、预期目标/验收模板、系统指令、模型引用、插件依赖、工具与资源权限、默认预算以及实例参数 schema。Preset 与实例是定义和运行的关系；任务拆分来源保存在任务记录中，不定义平台通用的 Agent 权限等级。
 
 Preset 可以基于一个已发布版本衍生：发布时解析继承与参数，生成完整快照与依赖锁，保留 `extends` 来源以便比较。采用固定版本单继承，禁止循环；衍生版本只能在发布者获准的权限内调整能力。升级母体不自动改写既有实例的版本。实例化默认不复制母体作者或父实例的私有会话、凭证和外部操作身份；需要种子上下文时，必须显式提供获准的数据快照及来源。
 
@@ -204,7 +200,7 @@ spec:
     additionalProperties: false
   permissions:
     workspace: private
-    shared_resources: [goal-evidence]
+    shared_resources: [board-evidence]
     delegation:
       allowed: false
   limits:
@@ -216,7 +212,7 @@ spec:
     ttl_seconds: 86400
 ```
 
-默认目标是可参数化的任务意图，实例创建不会自动宣告正在处理某个 Goal。调用者可以只创建待命实例，也可以同时绑定现有 `goal_id` 和初始任务。平台将实例参数、实际目标与最终配置快照记录下来；具体目标的验收标准可以比母体模板更严格。
+默认目标是可参数化的任务意图，实例创建不会自动宣告正在处理某项任务。调用者可以只创建待命实例，由任务板选型与认领绑定实际工作。平台将实例参数、实际目标与最终配置快照记录下来；具体任务的验收标准可以比母体模板更严格。
 
 ### 7.2 控制面对外提供 N 实例启动 API
 
@@ -230,13 +226,12 @@ Content-Type: application/json
   "count": 20,
   "mode": "finite",
   "parameters": {"topic": "给定资料的观点比较"},
-  "goal_id": "goal-example",
   "allocation": "shared-work-queue",
   "lifecycle": {"ttl_seconds": 3600}
 }
 ```
 
-响应为 202，返回 `operation_id`、`fleet_id`、期望实例数、操作状态和查询链接。实例列表分页读取，创建进度通过平台事件观察；不能在一次请求中阻塞到 N 个模型调用完成。绑定同一 Goal 默认表示实例从共享任务队列认领各自工作，不代表向 20 个实例广播同一任务。
+响应为 202，返回 `operation_id`、`fleet_id`、期望实例数、操作状态和查询链接。实例列表分页读取，创建进度通过平台事件观察；不能在一次请求中阻塞到 N 个模型调用完成。批量创建表示实例从共享任务板认领各自工作，不代表向 20 个实例广播同一任务。
 
 控制面先校验 Preset 与插件锁、参数、调用者权限、实例数配额和预算范围，持久化 SpawnOperation/AgentFleet 与实例槽位，再由协调循环逐步创建实例。幂等键约束请求作用域与内容指纹，`(fleet_id, slot, generation)` 唯一键避免重试时重复创建。大批量创建按有界批次推进，API 必须暴露部分就绪、失败原因和当前数量。
 
@@ -246,7 +241,7 @@ Content-Type: application/json
 
 ### 7.3 实例生命周期由控制面协调
 
-实例同时保存 desired state、observed state、generation 和状态原因。生命周期与单次 Run/WorkItem 状态分离，建议至少包含 provisioning、ready、busy、suspended、draining、stopped、failed、terminated；ready/busy 是 Worker 反馈的观测状态，用户不能通过 PATCH 任意填写。
+实例同时保存 desired state、observed state、generation 和状态原因。生命周期与单次 Run/任务状态分离，建议至少包含 provisioning、ready、busy、suspended、draining、stopped、failed、terminated；ready/busy 是 Worker 反馈的观测状态，用户不能通过 PATCH 任意填写。
 
 - `suspend`：暂停派发，当前运行按声明策略收尾，保留工作区、会话与 Inbox；恢复后继续消费授权消息。
 - `stop/start`：释放/重新建立执行资源，保留持久身份与历史；重启先处理旧运行所有权及未知结果。
@@ -257,7 +252,7 @@ Content-Type: application/json
 
 ### 7.4 运行中 Agent 的衍生
 
-Agent 可通过获准的组织插件调用 `agents.spawn`，引用允许的 PresetVersion 并请求 N 个子实例。请求仍进入相同控制面路径，模型不能直接启动进程、修改实例数据库或获得管理员凭证。记录根 Goal、父实例、父 Operation 和谱系；总实例配额、最大派生深度、预算、TTL 与委派 scope 逐层收窄，循环引用和超额请求在创建前拒绝。
+Agent 可通过获准的组织插件调用 `agents.spawn`，引用允许的 PresetVersion 并请求 N 个子实例。请求仍进入相同控制面路径，模型不能直接启动进程、修改实例数据库或获得管理员凭证。记录板根任务、父实例、父 Operation 和谱系；总实例配额、最大派生深度、预算、TTL 与委派 scope 逐层收窄，循环引用和超额请求在创建前拒绝。
 
 父实例终止时如何处理子实例由预先授权的 `cascade` 或 `detach` 策略决定，detach 需要新的明确责任者和预算归属。子实例创建必须有明确的任务来源和授权，不引入脱离任务的自动繁殖。
 
@@ -342,7 +337,7 @@ permissions:
 
 ## 10. 统一入口与协议映射
 
-应用命令至少包含 PublishPreset、SpawnFleet、ScaleFleet、TransitionInstance、InstallPlugin、ActivatePlugin、RolloutBindings、CreateGoal、SubmitMessage、CancelGoal、ResolveApproval、RetryWorkItem，以及 Get/List/Watch 查询。创建/扩缩容/插件切换都是可追踪 Operation，执行不占用一个长时间同步请求。
+应用命令至少包含 PublishPreset、SpawnFleet、ScaleFleet、TransitionInstance、InstallPlugin、ActivatePlugin、RolloutBindings、PublishBoardTask、SubmitMessage、CancelBoardTask、ReviewBoardTask、ResolveApproval，以及 Get/List/Watch 查询。创建/扩缩容/插件切换都是可追踪 Operation，执行不占用一个长时间同步请求。
 
 | 操作 | HTTP 目标接口 | CLI 目标命令 | MCP 目标工具 | Web |
 | --- | --- | --- | --- | --- |
@@ -354,12 +349,12 @@ permissions:
 | 实例生命周期动作 | `POST /v1/agent-instances/{id}/actions` | `agents suspend/resume/stop/start/terminate ID` | `agents_transition` | 暂停、恢复、终止与操作进度 |
 | 安装/发布插件 | `POST /v1/plugins` | `plugins install ./plugin` | `plugins_install` | 来源、版本、能力、权限审查 |
 | 切换插件绑定 | `POST /v1/plugin-rollouts` | `plugins rollout --fleet ID --lock bindings.lock` | `plugins_rollout` | 分批切换、排空、回滚 |
-| 提交目标 | `POST /v1/goals` | `goals create -f goal.yaml` | `goals_create` | 目标输入与验收标准 |
-| 查看目标 | `GET /v1/goals/{id}` | `goals inspect ID` | `goals_get` | 目标详情 |
-| 观察事件 | `GET /v1/events?after=CURSOR&goal_id=ID`（SSE） | `goals watch ID` | `events_list`，可选订阅资源 | 时间线、任务图 |
-| 给实例发消息 | `POST /v1/agent-instances/{id}/messages` | `agents message ID` | `agents_message` | 会话/频道页 |
-| 取消目标 | `POST /v1/goals/{id}/cancel` | `goals cancel ID` | `goals_cancel` | 取消与收尾状态 |
-| 读取产物 | `GET /v1/artifacts/{id}` | `artifacts show ID` | `artifacts_get` / resource | 预览、下载、版本 |
+| 发布任务 | `POST /board/tasks` | `board publish -f board-task.json` | 任务板工具（规划中） | 任务输入与验收标准 |
+| 查看任务 | `GET /board/tasks/{id}` | `board show ID` | 任务板工具（规划中） | 任务详情与拆分树 |
+| 观察事件 | `GET /v1/events?after=CURSOR`（SSE） | `events --after 0` | `events_list`，可选订阅资源 | 时间线、任务图 |
+| 给实例发消息 | `POST /v1/agent-instances/{id}/messages` | `messages send ID` | `messages_send` | 协作消息页 |
+| 取消任务 | `POST /board/tasks/{id}/cancel` | `board cancel ID` | 任务板工具（规划中） | 取消与收尾状态 |
+| 读取工作区快照 | `GET /v1/workspace-artifacts/{id}` | 暂未提供 | 暂未提供 | 预览、下载、来源 |
 
 安装插件、发布母体、扩缩容与运行任务分别授权。MCP 客户端获得普通任务权限时不能顺带获得插件进程启动或平台管理权限。客户端可查询 `GET /v1/operations/{id}` 并通过持久事件追踪操作结果。
 
@@ -375,7 +370,7 @@ MCP Server 的 stdio 与 Streamable HTTP 传输映射到同一应用服务。std
 
 确定性演示与真实模型使用同一控制面、调度和证据链路，但界面必须明确区分：演示验证执行契约，真实模型执行研究或行动。模型配置限定三类协议，密钥从环境变量或受保护配置读取。可执行启动命令见[使用指南](getting-started.zh-CN.md)。
 
-Web 面向桌面操作，按 **场景 → 协作 → 运行 → 配置** 分层。默认从任务板发布工作，观察选型、启动、认领、拆分和结果；显式 Goal 作为另一流程入口。详情按需下钻到实例、Run、工具回执和事件。Goal 的频道、共享发现、产物和验证单独展示，避免把尚未连接的能力混入任务板。Agent 池表达同一母体实例的供应与生命周期。
+Web 面向桌面操作，按 **场景 → 协作 → 运行 → 配置** 分层。默认从任务板发布工作，观察选型、启动、认领、拆分和结果。详情按需下钻到实例、Run、工具回执和事件。同板根的消息、工作区快照与独立验证在对应页面展示。Agent 池表达同一母体实例的供应与生命周期。
 
 首个体验应覆盖目标提交、并行执行、证据交接、验证与验收，并可检查取消和重启后的状态。界面区分操作已接纳、正在执行、等待依赖、待验收和结果未知，提供来源 Run 与不可变产物链接。API、CLI、MCP 与 Web 使用相同对象 ID，不能为演示维护另一套业务状态。
 
@@ -410,11 +405,9 @@ ant3/
 │   │       ├── presets/               # 母体、版本、继承、参数与发布规则
 │   │       ├── agents/                # 实例、实例组、谱系与生命周期状态
 │   │       ├── operations/            # 批量创建、扩缩容、升级等异步操作
-│   │       ├── goals/                 # Goal、WorkItem、依赖、Attempt、验收状态
-│   │       ├── collaboration/         # 消息、频道、委派、贡献、Review
-│   │       │   ├── context.rs / revisions.rs # 共享黑板、CAS 与不可变修订
+│   │       ├── board/                 # BoardTask、拆分来源、认领与评审状态
+│   │       ├── collaboration/         # 消息、贡献、Review
 │   │       │   └── provenance.rs / snapshots.rs # 来源与证据、派发/验收版本
-│   │       ├── artifacts/             # 产物版本、内容摘要、证据与可见性
 │   │       ├── plugins/               # 包版本、能力声明、绑定锁与 rollout 状态
 │   │       ├── identity/              # Principal、Grant、scope 与凭证引用
 │   │       ├── budgets/               # 额度、预留、用量结算与未知用量
@@ -427,19 +420,13 @@ ant3/
 │   │       │   ├── presets.rs / spawn.rs / lineage.rs
 │   │       │   └── reconciler.rs / lifecycle.rs / rollout.rs
 │   │       ├── scheduling/            # 队列、公平性、容量、租约、续租、背压
-│   │       ├── collaboration/         # 分派、路由、委派、认领与整合用例
+│   │       │   └── board/             # 选型、认领、拆分、痕迹场与独立验证
+│   │       ├── collaboration/         # 消息交接与板根招募用例
 │   │       │   ├── messaging.rs / inbox.rs / outbox.rs
-│   │       │   ├── context.rs / snapshots.rs # 共享发现、修订、派发与验收固定版本
-│   │       │   ├── claims.rs / attempts.rs # 候选池、认领代次、执行尝试与未开始释放
-│   │       │   ├── verification/       # 独立会话、冻结证据、结构化结论与有界返工
-│   │       │   │   ├── mod.rs / tools.rs
-│   │       │   ├── delegation/         # 批准角色、递归额度、计划接纳、展开与原实例续作
-│   │       │   │   ├── policy.rs / plans.rs / lineage.rs
-│   │       │   │   └── expansion.rs / continuation.rs
 │   │       │   └── contributions.rs
 │   │       ├── workspaces/            # 实例目录、UTF-8 文件和不可变文件/JSON 快照
 │   │       │   └── mod.rs / tools.rs
-│   │       ├── limits.rs             # 本地实例、Worker、任务及委派技术容量
+│   │       ├── limits.rs             # 本地实例、Worker、任务及拆分技术容量
 │   │       ├── wakeups/               # Inbox、依赖、定时器、审批唤醒
 │   │       ├── recovery/              # 所有权确认、结果对账、显式续行
 │   │       ├── authorization/         # 各入口共用的授权与能力收窄
@@ -489,7 +476,7 @@ ant3/
 │   │       ├── mcp.rs                 # 对外 MCP Server，复用 HTTP client
 │   │       ├── bootstrap/             # 配置、存储、插件、Worker 与服务装配
 │   │       ├── api/v1/                # presets / fleets / instances / operations
-│   │       │                          # plugins / goals / messages / artifacts
+│   │       │                          # plugins / board / messages / workspaces
 │   │       ├── auth/                  # token/会话校验与 Principal 映射
 │   │       ├── events/                # SSE、游标、断线补读与快照接口
 │   │       └── web/                   # 嵌入资源、路由回退、首启登录引导
@@ -501,7 +488,7 @@ ant3/
 │   │   └── src/
 │   │       ├── main.rs / config.rs
 │   │       ├── local/                 # up/down、doctor、数据目录、服务发现
-│   │       ├── commands/              # presets / agents / plugins / goals / artifacts
+│   │       ├── commands/              # presets / agents / plugins / board / messages
 │   │       └── output/                # 人类输出、JSON、watch 与退出码
 ├── plugins/                           # 编译内置的第一方插件集合
 │   ├── Cargo.toml / src/              # 注册表、配置与共享网络限制
@@ -520,12 +507,10 @@ ant3/
 │       │   ├── presets/               # 定义、继承、版本、实例化表单
 │       │   ├── agents/                # 实例组扩缩容、生命周期、谱系、实例详情
 │       │   ├── plugins/               # 目录、授权、版本、热加载、rollout
-│       │   ├── goals/                 # 任务图、时间线、返工与验收
+│       │   ├── board/                 # 任务树、痕迹场、评审与返工
+│       │   ├── studio/                # 工作现场：实例状态、消息与接力视图
 │       │   ├── messages/              # Inbox/Outbox、封套、消费 Run 与未知处置
-│       │   ├── channels/              # 成员、订阅、分组讨论与唤醒记录
-│       │   ├── autonomy/              # 请求意图、来源 Run、激活与任务图变更
-│       │   ├── workspaces/            # 实例目录、文本预览、快照来源与下载
-│       │   └── artifacts/             # 预览、来源、版本比较与下载
+│       │   └── workspaces/            # 实例目录、文本预览、快照来源与下载
 │       ├── api/                       # OpenAPI 类型客户端、SSE 与游标恢复
 │       └── components/                # 状态、操作进度、权限/预算与错误展示
 ├── schemas/
@@ -548,7 +533,7 @@ ant3/
 │   │   │   └── worker.py / manifest.json / test_worker.py / README.md
 │   │   └── workspace-preset/         # 工作区工具绑定、文件/JSON 交接示例
 │   │       └── preset.json / README.md
-│   ├── managed-agents/goals/          # Goal、协作示例、离线资料、验收定义
+│   ├── managed-agents/board/          # 任务板协作示例、离线资料、验收定义
 │   └── clients/                       # API curl、MCP 配置与 CLI 等价操作
 ├── tests/
 │   ├── contracts/                     # Preset、插件 RPC、三类模型协议、存储端口
@@ -566,7 +551,7 @@ ant3/
     ├── README.md / getting-started.zh-CN.md / runtime-guide.zh-CN.md
     ├── status.zh-CN.md                # 当前可用能力、限制与验证范围
     ├── implementation-status.json / capabilities.zh-CN.md
-    ├── autonomy.zh-CN.md / channels.zh-CN.md / workspaces.zh-CN.md
+    ├── task-board.zh-CN.md / traces.zh-CN.md / workspaces.zh-CN.md
     ├── getting-started/               # 安装、demo、三类模型配置、真实模型运行
     ├── concepts/                      # 母体/实例/Worker/会话/插件/组织模型
     ├── guides/                        # 批量启动、衍生、扩缩容、插件开发/热加载

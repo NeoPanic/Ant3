@@ -232,7 +232,7 @@ impl Store {
             let fingerprint=serde_json::to_string(input)?;
             if let Some(value)=replay(tx,"publish",key,&fingerprint)? {return Ok(value);}
             let active:usize=tx.query_row("SELECT count(*) FROM board_tasks t WHERE parent_id IS NULL AND (state IN ('pending','running','waiting') OR (state='completed' AND NOT EXISTS(SELECT 1 FROM board_reviews v WHERE v.task_id=t.id AND v.run_id=t.run_id AND v.decision='accepted')))",[],|r|r.get(0))?;
-            if active>=crate::limits::TASKS_PER_GOAL {return Err(fault(409,"board_root_limit"));}
+            if active>=crate::limits::BOARD_TASKS_PER_ROOT {return Err(fault(409,"board_root_limit"));}
             let id=id("task");insert_task(tx,&id,&id,None,input,0,None)?;
             receipt(tx,"publish",key,&fingerprint,task(tx,&id)?)
         })
@@ -376,7 +376,7 @@ impl Store {
             let tasks=ids.iter().skip(offset).take(limit).map(|id|task(tx,id).map(preview)).collect::<PResult<Vec<_>>>()?;
             let next=offset.saturating_add(tasks.len());
             let target=preview(task(tx,s["target_task_id"].as_str().unwrap())?);
-            Ok(json!({"scope":s,"target_task":target,"tasks":tasks,"total":ids.len(),"view":if neighborhood {"neighborhood"}else{"all"},"next_offset":if next<ids.len(){Some(next)}else{None},"max_tasks":crate::limits::TASKS_PER_GOAL,"max_split_children":crate::limits::DELEGATION_CHILDREN,"max_depth":crate::limits::DELEGATION_DEPTH}))
+            Ok(json!({"scope":s,"target_task":target,"tasks":tasks,"total":ids.len(),"view":if neighborhood {"neighborhood"}else{"all"},"next_offset":if next<ids.len(){Some(next)}else{None},"max_tasks":crate::limits::BOARD_TASKS_PER_ROOT,"max_split_children":crate::limits::BOARD_SPLIT_CHILDREN,"max_depth":crate::limits::BOARD_SPLIT_DEPTH}))
         })
     }
     pub fn read_board_result(
@@ -459,7 +459,7 @@ impl Store {
     }
     pub fn split_board_task(&self, run: &str, input: &SplitInput, key: &str) -> PResult<Value> {
         key_valid(key)?;
-        if input.tasks.is_empty() || input.tasks.len() > crate::limits::DELEGATION_CHILDREN {
+        if input.tasks.is_empty() || input.tasks.len() > crate::limits::BOARD_SPLIT_CHILDREN {
             return Err(fault(400, "invalid_board_split"));
         }
         for task in &input.tasks {
@@ -473,11 +473,11 @@ impl Store {
             let t=task(tx,parent)?;
             if t["state"]!="running"||t["run_id"]!=run {return Err(fault(409,"board_claim_not_owned"));}
             let depth=t["depth"].as_u64().unwrap() as usize;
-            if depth>=crate::limits::DELEGATION_DEPTH {return Err(fault(409,"board_depth_limit"));}
+            if depth>=crate::limits::BOARD_SPLIT_DEPTH {return Err(fault(409,"board_depth_limit"));}
             let existing:bool=tx.query_row("SELECT (SELECT count(*) FROM board_tasks WHERE parent_id=?) > coalesce((SELECT split_count FROM board_reviews WHERE task_id=? AND decision='changes_requested' ORDER BY created_at DESC,rowid DESC LIMIT 1),0)",params![parent,parent],|r|r.get(0))?;
             if existing {return Err(fault(409,"board_task_already_split"));}
             let count:usize=tx.query_row("SELECT count(*) FROM board_tasks WHERE root_id=?",[s["root_id"].as_str().unwrap()],|r|r.get(0))?;
-            if count+input.tasks.len()>crate::limits::TASKS_PER_GOAL {return Err(fault(409,"board_task_limit"));}
+            if count+input.tasks.len()>crate::limits::BOARD_TASKS_PER_ROOT {return Err(fault(409,"board_task_limit"));}
             let mut children=vec![];
             for input in &input.tasks {
                 let child=id("task");

@@ -107,7 +107,7 @@ impl Router {
                 continue;
             }
             let bindings = crate::presets::bindings(&snapshot);
-            // Goal-scoped tools require a legacy Goal and cannot run in a board session.
+            // Only board-compatible organization packages can run in a board session.
             if bindings
                 .iter()
                 .any(|p| p["kind"] == "organization" || (!processes && p["kind"] == "process"))
@@ -204,7 +204,7 @@ impl Router {
                 let ancestor = store.board_task(&id)?;
                 context.push(json!({"title":ancestor["title"],"instructions":ancestor["instructions"],"acceptance":ancestor["acceptance"]}));
                 parent = ancestor["parent_id"].as_str().map(str::to_owned);
-                if context.len() >= crate::limits::DELEGATION_DEPTH {
+                if context.len() >= crate::limits::BOARD_SPLIT_DEPTH {
                     break;
                 }
             }

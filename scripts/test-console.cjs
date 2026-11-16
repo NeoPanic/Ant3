@@ -42,12 +42,12 @@ test('总览优先显示忙碌实例，不将已终止实例列入未终止列�
     instances:[{id:'old',preset_name:'已终止身份',state:'terminated',snapshot:{protocol:'demo'}},
       {id:'ready',preset_name:'就绪身份',state:'ready',snapshot:{protocol:'demo'}},
       {id:'busy',preset_name:'忙碌身份',state:'busy',snapshot:{protocol:'demo'}}],
-    goals:[{state:'awaiting-review'}],runs:[],presets:[],models:[],limits:{workers:8}
+    board:{tasks:[{id:'root',root_id:'root',title:'待评审任务',state:'completed',review_state:'pending'}]},runs:[],presets:[],models:[],limits:{workers:8}
   }`,context);
   const html=vm.runInContext('overview()',context);
   assert(!html.includes('已终止身份'));
   assert(html.indexOf('忙碌身份')<html.indexOf('就绪身份'));
-  assert(html.includes('待验收目标'));
+  assert(html.includes('待评审任务'));
 });
 
 test('插件目录只显示内置能力，不提供安装入口，并明确未配置状态',()=>{
@@ -71,13 +71,10 @@ test('详情中的插件授权也服从全局执行开关',()=>{
 });
 
 test('离开页面或关闭后，过期的产物与文件请求不再打开弹窗',async()=>{
-  for(const [file,call] of [['artifacts.js',"artifactDetail('id')"],['workspaces.js',"workspaceOpen('id')"],['workspaces.js',"workspaceFile('id','file.txt')"],['workspaces.js',"workspaceArtifactDetail('id')"]]){
+  for(const call of ["workspaceOpen('id')","workspaceFile('id','file.txt')","workspaceArtifactDetail('id')"]){
     const context=consoleContext();
     context.document={addEventListener(){}};
-    vm.runInContext(readFileSync(resolve(__dirname,'../'+({
-      'artifacts.js':'web/src/features/artifacts/artifacts.js',
-      'workspaces.js':'web/src/features/workspaces/workspaces.js'
-    }[file])),'utf8'),context);
+    vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/workspaces/workspaces.js'),'utf8'),context);
     vm.runInContext(`let finish;api=()=>new Promise(resolve=>{finish=resolve});
       openModal=()=>{throw new Error('stale dialog opened')};`,context);
     const pending=vm.runInContext(call,context);

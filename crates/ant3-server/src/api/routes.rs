@@ -125,18 +125,6 @@ pub fn router(app: App) -> Router {
             }),
         )
         .route(
-            "/goals.js",
-            get(|| async {
-                (
-                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
-                    include_str!(concat!(
-                        env!("CARGO_MANIFEST_DIR"),
-                        "/../../web/src/features/goals/goals.js"
-                    )),
-                )
-            }),
-        )
-        .route(
             "/mark.svg",
             get(|| async {
                 (
@@ -196,76 +184,6 @@ pub fn router(app: App) -> Router {
         .route("/api/v1/agent-instances/{id}/session", get(session))
         .route("/api/v1/runs/{id}", get(run))
         .route("/api/v1/runs/{id}/cancel", post(cancel))
-        .route("/api/v1/goals", get(goals).post(create_goal))
-        .route("/api/v1/goals/{id}", get(goal))
-        .route(
-            "/verification.js",
-            get(|| async {
-                (
-                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
-                    include_str!(concat!(
-                        env!("CARGO_MANIFEST_DIR"),
-                        "/../../web/src/features/goals/verification.js"
-                    )),
-                )
-            }),
-        )
-        .route(
-            "/tasks.js",
-            get(|| async {
-                (
-                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
-                    include_str!(concat!(
-                        env!("CARGO_MANIFEST_DIR"),
-                        "/../../web/src/features/goals/tasks.js"
-                    )),
-                )
-            }),
-        )
-        .route("/api/v1/goals/{id}/tasks/{task}", get(task_show))
-        .route("/api/v1/goals/{id}/tasks/{task}/claim", post(task_claim))
-        .route(
-            "/api/v1/goals/{id}/tasks/{task}/release",
-            post(task_release),
-        )
-        .route("/api/v1/goals/{id}/cancel", post(cancel_goal))
-        .route("/api/v1/goals/{id}/accept", post(accept_goal))
-        .route(
-            "/api/v1/goals/{id}/verification/retry",
-            post(retry_verification),
-        )
-        .route(
-            "/api/v1/goals/{id}/context",
-            get(goal_context).post(context_publish),
-        )
-        .route("/api/v1/goals/{id}/context/{key}", get(context_history))
-        .route(
-            "/collaboration.js",
-            get(|| async {
-                (
-                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
-                    include_str!(concat!(
-                        env!("CARGO_MANIFEST_DIR"),
-                        "/../../web/src/features/collaboration/context.js"
-                    )),
-                )
-            }),
-        )
-        .route("/api/v1/goals/{id}/rework", post(rework_goal))
-        .route("/api/v1/artifacts", get(artifacts))
-        .route("/api/v1/artifacts/{id}", get(artifact))
-        .route(
-            "/artifacts.js",
-            get(|| async {
-                (
-                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
-                    include_str!(concat!(
-                        env!("CARGO_MANIFEST_DIR"),
-                        "/../../web/src/features/artifacts/artifacts.js"
-                    )),
-                )
-            }),
-        )
         .route("/api/v1/workspaces", get(workspace_catalog))
         .route(
             "/api/v1/agent-instances/{id}/workspace",
@@ -277,27 +195,6 @@ pub fn router(app: App) -> Router {
         )
         .route("/api/v1/workspace-artifacts", get(workspace_artifacts))
         .route("/api/v1/workspace-artifacts/{id}", get(workspace_artifact))
-        .route("/api/v1/channels", get(channels).post(channel_create))
-        .route("/api/v1/channels/{id}", get(channel_show))
-        .route("/api/v1/channels/{id}/posts", post(channel_post))
-        .route("/api/v1/channels/{id}/members", post(channel_members))
-        .route(
-            "/api/v1/channels/{id}/subscription",
-            post(channel_subscription),
-        )
-        .route(
-            "/autonomy.js",
-            get(|| async {
-                (
-                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
-                    include_str!(concat!(
-                        env!("CARGO_MANIFEST_DIR"),
-                        "/../../web/src/features/autonomy/autonomy.js"
-                    )),
-                )
-            }),
-        )
-        .route("/api/v1/goals/{id}/autonomy", get(goal_autonomy))
         .route(
             "/workspaces.js",
             get(|| async {
@@ -306,18 +203,6 @@ pub fn router(app: App) -> Router {
                     include_str!(concat!(
                         env!("CARGO_MANIFEST_DIR"),
                         "/../../web/src/features/workspaces/workspaces.js"
-                    )),
-                )
-            }),
-        )
-        .route(
-            "/channels.js",
-            get(|| async {
-                (
-                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
-                    include_str!(concat!(
-                        env!("CARGO_MANIFEST_DIR"),
-                        "/../../web/src/features/channels/channels.js"
                     )),
                 )
             }),

@@ -97,25 +97,22 @@ Ant³ 支持 **OpenAI-compatible Chat Completions**、**OpenAI Responses**、**A
 | 生命周期 | 独立实例；Agent 池供应、扩缩容、退休与 TTL。 |
 | 共享任务板 | 发布无绑定任务；选型、启动实例、原子认领、拆分、失败重排队。 |
 | 群体协调 | 信息素痕迹、响应阈值分工、拥挤规避、招募、局部感知。 |
-| 显式脚手架 | Goal 依赖图、候选池认领、有界动态委派（用户/Agent 主动发起，非固定流水线）。 |
-| 协作 | 点对点消息、Goal 频道、订阅、共享版本化上下文。 |
+| 协作 | 点对点消息与板根招募；不可变工作区快照交接。 |
 | 交付物 | 私有工作区、不可变文本/文件/JSON 快照、同级证据交接。 |
 | 评审 | 独立验证、证据关联返工、评审轮次、人类验收。 |
 | 扩展 | 提示词包与本地进程工具插件，固定版本与健康检查。 |
 | 入口 | 桌面 Web、HTTP API、CLI、对外 MCP stdio 共享持久本地状态。 |
 
-根任务完成后等待人类评审：通过归档，或附意见退回继续。自动独立验证尚未接入任务板本身。
+根任务完成后等待评审：可选独立验证由全新实例审计冻结结果；人类通过归档，或附意见退回继续。
 
 <details>
-<summary>更多控制台视图：工作现场、协作与产物</summary>
+<summary>更多控制台视图：工作现场、总览与工作区</summary>
 
 ![Agent 工作现场](docs/images/agent-workstation.png)
 
 ![控制台总览](docs/images/console-overview.png)
 
 队员动画反映记录的执行状态：工作、等待或休眠。
-
-![团队协作](docs/images/team-collaboration.png)
 
 ![工作区文件与共享证据](docs/images/workspace-artifacts.png)
 
@@ -196,7 +193,7 @@ let agent = Ant::new(Registry::default(), Limits::default());
 
 ## 状态与边界
 
-Ant³ 是**面向可信环境的 pre-1.0 本地平台**。本地默认：256 实例、8 执行槽、每 Goal 64 任务——这是配置限制，非实测容量声明。尚未提供：分布式调度、托管部署、强多租户隔离、费用硬预算、远程 MCP 插件加载。精确边界见[当前状态](docs/status.zh-CN.md)与[能力/源码索引](docs/capabilities.zh-CN.md)。
+Ant³ 是**面向可信环境的 pre-1.0 本地平台**。本地默认：256 实例、8 执行槽、每板根 64 任务——这是配置限制，非实测容量声明。尚未提供：分布式调度、托管部署、强多租户隔离、费用硬预算、远程 MCP 插件加载。精确边界见[当前状态](docs/status.zh-CN.md)与[能力/源码索引](docs/capabilities.zh-CN.md)。
 
 显示名为 **Ant³**，仓库为 **Ant3**，技术标识用 `ant3`（CLI、Cargo 包、协议、`.ant3/` 数据目录）。**³** 表达协作闭环：**认领 → 贡献 → 接力**。[品牌资产](docs/brand/README.md) · [升级指南](docs/upgrade-ant3.zh-CN.md)。
 

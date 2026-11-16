@@ -27,7 +27,6 @@ fn seed(store: &Store, bound: bool, count: usize, key: &str) -> Vec<String> {
 fn input(text: &str) -> MessageInput {
     MessageInput {
         text: text.into(),
-        goal_id: None,
         correlation_id: None,
         causation_id: None,
     }
@@ -219,12 +218,6 @@ fn agent_sender_capability_scope_context_quota_and_retries_are_host_owned() {
         code(s.send_message(Sender::AgentRun(r), &outside[0], &input("x"), "outside")),
         "message_recipient_out_of_scope"
     );
-    let mut forged = input("x");
-    forged.goal_id = Some("forged".into());
-    assert_eq!(
-        code(s.send_message(Sender::AgentRun(r), &a[1], &forged, "forged")),
-        "agent_message_context_is_host_owned"
-    );
     for i in 0..8 {
         s.send_message(Sender::AgentRun(r), &a[1], &input("x"), &i.to_string())
             .unwrap();
@@ -374,32 +367,87 @@ async fn responses_worker_sends_as_current_run_and_recipient_consumes_durable_en
     use std::{collections::HashMap, sync::Arc, time::Duration};
     use tokio::sync::Mutex;
     let s = Store::memory().unwrap();
-    let a = seed(&s, true, 2, "batch");
-    // Both have the capability but the recipient is a Demo instance in this immutable fixture.
+    // The source joins the recipient's board root so the point-to-point handoff
+    // stays in scope; the host binds sender identity to the current Run.
+    s.publish_definition(json!({"name":"messenger","version":"1","purpose":"work","objective":"evidence","instructions":"process task data","protocol":"demo","plugins":[{"id":"platform.messaging","version":"1.0.0"}]})).unwrap();
     s.publish_definition(json!({"name":"source","version":"1","extends":{"name":"messenger","version":"1"},"protocol":"openai-responses"})).unwrap();
-    let source = s
+    let batch = s
         .spawn(
             &Spawn {
+                preset_name: "messenger".into(),
+                preset_version: "1".into(),
+                count: 2,
+            },
+            "batch-recipients",
+        )
+        .unwrap();
+    let fleet_id = batch["fleet_id"].as_str().unwrap().to_owned();
+    let source = s
+        .create_fleet(
+            &fleets::FleetPlan {
                 preset_name: "source".into(),
                 preset_version: "1".into(),
                 count: 1,
+                mode: "finite".into(),
+                ttl_seconds: None,
+                parameters: Default::default(),
             },
             "source",
         )
-        .unwrap()["instance_ids"][0]
+        .unwrap()["fleet_id"]
         .as_str()
         .unwrap()
         .to_owned();
-    // An active Goal authorizes the cross-fleet handoff without trusting model-provided identity.
-    s.create_goal(&serde_json::from_value(json!({"title":"handoff","objective":"cooperate","acceptance":"evidence","tasks":[{"key":"source","instance_id":source,"instructions":"send","depends_on":[]},{"key":"target","instance_id":a[1],"instructions":"wait","depends_on":["source"]}]})).unwrap(),"goal").unwrap();
-    s.reconcile_goals().unwrap();
-    let target = a[1].clone();
-    let service=Router::new().route("/responses",post(move |Json(body):Json<Value>|{let target=target.clone();async move {
+    let a: Vec<String> = batch["instance_ids"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap().to_owned())
+        .collect();
+    // Sender and recipient join the same board root: cross-fleet handoff is
+    // scoped to shared board work now that Goal teams are gone.
+    let root = s
+        .publish_board_task(
+            &ant3_platform::board::PublishInput {
+                title: "handoff".into(),
+                instructions: "exchange evidence".into(),
+                acceptance: "handoff consumed".into(),
+                verification: None,
+            },
+            "handoff-root",
+        )
+        .unwrap();
+    let root_id = root["id"].as_str().unwrap();
+    s.reconcile_fleets().unwrap();
+    let source_agent: String = s
+        .list("instances")
+        .unwrap()
+        .into_iter()
+        .find(|i| i["fleet_id"] == source)
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    // The source's real Run joins the root; the worker executes it and the
+    // model sends the handoff. The recipient joins on message consumption.
+    let src_run = s
+        .enqueue(&source_agent, &RunInput { text: "send the handoff".into() }, "handoff-src")
+        .unwrap();
+    s.transaction(|tx| {
+        tx.execute(
+            "INSERT INTO board_agents(instance_id,root_id,task_id,run_id,created_at) VALUES(?,?,?,?,0)",
+            rusqlite::params![source_agent, root_id, root_id, src_run["id"].as_str().unwrap()],
+        )?;
+        Ok(())
+    })
+    .unwrap();
+    let target = a[0].clone();
+    let service=Router::new().route("/responses",post(move |Json(body):Json<Value>|{let target=target.clone();let fleet_id=fleet_id.to_owned();async move {
         if body["input"].as_array().unwrap().iter().any(|i|i["type"]=="function_call_output") {
             Json(json!({"status":"completed","output":[{"type":"message","content":[{"type":"output_text","text":"sent durable handoff"}]}]}))
         }else {
             let tool=body["tools"].as_array().unwrap().iter().find(|t|t["description"].as_str().unwrap().starts_with("Send task data")).unwrap();
-            Json(json!({"status":"completed","output":[{"type":"function_call","call_id":"send-1","name":tool["name"],"arguments":json!({"recipient_id":target,"text":"检查交接凭据","key":"handoff"}).to_string()}]}))
+            Json(json!({"status":"completed","output":[{"type":"function_call","call_id":"send-1","name":tool["name"],"arguments":json!({"recipient_id":target,"text":"检查交接凭据","key":format!("handoff-{fleet_id}")}).to_string()}]}))
         }
     }}));
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -439,14 +487,20 @@ async fn responses_worker_sends_as_current_run_and_recipient_consumes_durable_en
     stop.cancel();
     worker.await.unwrap();
     server.abort();
-    assert_eq!(message["sender_instance_id"], source);
-    assert_eq!(message["recipient_id"], a[1]);
+    let sender_fleet = s
+        .list("instances")
+        .unwrap()
+        .into_iter()
+        .find(|i| i["fleet_id"] == source)
+        .unwrap();
+    assert_eq!(message["sender_instance_id"], sender_fleet["id"]);
+    assert_eq!(message["recipient_id"], a[0]);
     assert_eq!(message["sender_kind"], "agent");
     assert_eq!(
         s.run(message["source_run_id"].as_str().unwrap()).unwrap()["state"],
         "completed"
     );
-    let history = s.load(&a[1]).await.unwrap();
+    let history = s.load(&a[0]).await.unwrap();
     assert!(
         serde_json::to_string(&history)
             .unwrap()

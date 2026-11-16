@@ -19,14 +19,70 @@ impl Store {
         let version = database.previous_version();
         let store = Self(database);
         store.transaction(|tx| {
-            tx.execute("INSERT OR IGNORE INTO goal_rounds(goal_id,number,state,review,created_at,finished_at) SELECT id,1,state,review,created_at,finished_at FROM goals",[])?;
-            crate::artifacts::backfill(tx)?;
-            if version < 10 { crate::claims::backfill(tx)?; }
             // The fixed research template was removed; retire its tables on legacy databases.
             if version < 20 {
                 tx.execute_batch("DROP TABLE IF EXISTS research_verification_policies; DROP TABLE IF EXISTS research_delegation_policies; DROP TABLE IF EXISTS research_members; DROP TABLE IF EXISTS research_jobs;")?;
             }
-            tx.execute_batch("PRAGMA user_version=21;")?;
+            // The explicit Goal DAG subsystem was removed; the shared task board is the
+            // only coordination path. Retire its tables child-first so foreign keys hold.
+            if version < 22 {
+                tx.execute_batch(
+                    "DROP TABLE IF EXISTS workspace_verification_reads;
+                    DROP TABLE IF EXISTS verification_reads;
+                    DROP TABLE IF EXISTS goal_verifications;
+                    DROP TABLE IF EXISTS verification_policies;
+                    DROP TABLE IF EXISTS goal_rework_scopes;
+                    DROP TABLE IF EXISTS goal_rework_allocations;
+                    DROP TABLE IF EXISTS task_delegations;
+                    DROP TABLE IF EXISTS task_delegation_scopes;
+                    DROP TABLE IF EXISTS task_attempts;
+                    DROP TABLE IF EXISTS task_claim_policies;
+                    DROP TABLE IF EXISTS goal_context_reviews;
+                    DROP TABLE IF EXISTS goal_context_snapshots;
+                    DROP TABLE IF EXISTS goal_context;
+                    DROP TABLE IF EXISTS channel_notifications;
+                    DROP TABLE IF EXISTS channel_posts;
+                    DROP TABLE IF EXISTS channel_members;
+                    DROP TABLE IF EXISTS goal_team_channels;
+                    DROP TABLE IF EXISTS channels;
+                    DROP TABLE IF EXISTS autonomy_intents;
+                    DROP TABLE IF EXISTS artifacts;
+                    DROP TABLE IF EXISTS goal_rounds;
+                    DROP TABLE IF EXISTS work_items;
+                    DROP TABLE IF EXISTS goals;",
+                )?;
+                // Surviving tables lose their Goal linkage columns; rebuild them so
+                // no foreign key keeps pointing at the retired goals table.
+                let has: bool = tx.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM pragma_table_info('messages') WHERE name='goal_id')",
+                    [],
+                    |r| r.get(0),
+                )?;
+                if has {
+                    tx.execute_batch(
+                        "CREATE TABLE messages_new(seq INTEGER PRIMARY KEY AUTOINCREMENT,id TEXT NOT NULL UNIQUE,sender_kind TEXT NOT NULL,sender_instance_id TEXT REFERENCES instances(id),source_run_id TEXT REFERENCES runs(id),recipient_id TEXT NOT NULL REFERENCES instances(id),text TEXT NOT NULL,correlation_id TEXT NOT NULL,causation_id TEXT REFERENCES messages_new(id),depth INTEGER NOT NULL,created_at INTEGER NOT NULL);
+                        INSERT INTO messages_new SELECT seq,id,sender_kind,sender_instance_id,source_run_id,recipient_id,text,correlation_id,causation_id,depth,created_at FROM messages ORDER BY seq;
+                        DROP TABLE messages; ALTER TABLE messages_new RENAME TO messages;
+                        CREATE INDEX IF NOT EXISTS messages_correlation ON messages(correlation_id,seq);
+                        CREATE INDEX IF NOT EXISTS messages_recipient ON messages(recipient_id,seq);
+                        CREATE INDEX IF NOT EXISTS messages_sender ON messages(sender_instance_id,seq);
+                        CREATE INDEX IF NOT EXISTS messages_source_run ON messages(source_run_id);",
+                    )?;
+                }
+                let has: bool = tx.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM pragma_table_info('workspace_artifacts') WHERE name='goal_id')",
+                    [],
+                    |r| r.get(0),
+                )?;
+                if has {
+                    tx.execute_batch(
+                        "CREATE TABLE workspace_artifacts_new(id TEXT PRIMARY KEY,instance_id TEXT NOT NULL REFERENCES instances(id),run_id TEXT NOT NULL REFERENCES runs(id),kind TEXT NOT NULL,name TEXT NOT NULL,path TEXT,media_type TEXT NOT NULL,content TEXT NOT NULL,digest TEXT NOT NULL,bytes INTEGER NOT NULL,created_at INTEGER NOT NULL);
+                        INSERT INTO workspace_artifacts_new SELECT id,instance_id,run_id,kind,name,path,media_type,content,digest,bytes,created_at FROM workspace_artifacts;
+                        DROP TABLE workspace_artifacts; ALTER TABLE workspace_artifacts_new RENAME TO workspace_artifacts;",
+                    )?;
+                }
+            }
+            tx.execute_batch("PRAGMA user_version=22;")?;
             Ok(())
         })?;
         Ok(store)
@@ -344,6 +400,13 @@ impl Store {
             Ok(())
         })
     }
+    pub fn run(&self, id: &str) -> PResult<Value> {
+        let body: String = self.lock()?.query_row(
+            "SELECT json_object('id',id,'instance_id',instance_id,'state',state,'input',input,'report',json(report),'created_at',created_at,'started_at',started_at,'finished_at',finished_at) FROM runs WHERE id=?",
+            [id], |r| r.get(0),
+        ).optional()?.ok_or_else(|| fault(404, "run_not_found"))?;
+        Ok(serde_json::from_str(&body)?)
+    }
     pub fn instance_exists(&self, agent: &str) -> PResult<bool> {
         Ok(self.lock()?.query_row(
             "SELECT EXISTS(SELECT 1 FROM instances WHERE id=?)",
@@ -373,9 +436,6 @@ impl Store {
             }
             "runs" => {
                 "SELECT json_object('id',id,'instance_id',instance_id,'state',state,'input',input,'report',json(report),'created_at',created_at,'started_at',started_at,'finished_at',finished_at) FROM runs ORDER BY created_at DESC,rowid DESC LIMIT 100"
-            }
-            "goals" => {
-                "SELECT json_object('id',g.id,'title',g.title,'objective',g.objective,'state',g.state,'created_at',g.created_at,'finished_at',g.finished_at,'task_count',count(w.key),'completed_count',sum(w.state='completed')) FROM goals g JOIN work_items w ON w.goal_id=g.id GROUP BY g.id ORDER BY g.created_at DESC,g.rowid DESC LIMIT 100"
             }
             _ => return Err(fault(404, "collection_not_found")),
         };

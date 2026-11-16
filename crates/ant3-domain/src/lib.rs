@@ -119,76 +119,6 @@ pub struct RunInput {
     pub text: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct GoalPlan {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub verification: Option<crate::verification::Policy>,
-    pub title: String,
-    pub objective: String,
-    pub acceptance: String,
-    pub tasks: Vec<TaskPlan>,
-}
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TaskPlan {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub delegation: Option<crate::delegation::Policy>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub candidates: Vec<String>,
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub manual_claim: bool,
-    pub key: String,
-    pub instance_id: String,
-    pub instructions: String,
-    #[serde(default)]
-    pub depends_on: Vec<String>,
-}
-impl GoalPlan {
-    pub fn validate(&self) -> PResult<()> {
-        if self.title.trim().is_empty()
-            || self.title.len() > 200
-            || self.objective.trim().is_empty()
-            || self.objective.len() > 8000
-            || self.acceptance.trim().is_empty()
-            || self.acceptance.len() > 8000
-            || self.tasks.is_empty()
-            || self.tasks.len() > crate::limits::TASKS_PER_GOAL
-        {
-            return Err(fault(400, "invalid_goal"));
-        }
-        let mut seen = std::collections::HashSet::new();
-        for task in &self.tasks {
-            let mut dependencies = std::collections::HashSet::new();
-            if !valid_name(&task.key)
-                || !valid_name(&task.instance_id)
-                || task.candidates.len() > 15
-                || task
-                    .candidates
-                    .iter()
-                    .any(|c| !valid_name(c) || c == &task.instance_id)
-                || task
-                    .candidates
-                    .iter()
-                    .collect::<std::collections::HashSet<_>>()
-                    .len()
-                    != task.candidates.len()
-                || seen.contains(&task.key)
-                || task.instructions.trim().is_empty()
-                || task.instructions.len() > 8000
-                || task
-                    .depends_on
-                    .iter()
-                    .any(|dep| !seen.contains(dep) || !dependencies.insert(dep))
-            {
-                return Err(fault(400, "invalid_task_graph"));
-            }
-            seen.insert(task.key.clone());
-        }
-        Ok(())
-    }
-}
-
 pub fn outcome_unknown(value: &Value) -> bool {
     match value {
         Value::Object(map) => map.iter().any(|(key, value)| {
@@ -207,17 +137,12 @@ pub fn outcome_unknown(value: &Value) -> bool {
     }
 }
 
-pub mod artifacts;
 pub mod board;
-pub mod claims;
-pub mod collaboration;
-pub mod delegation;
 pub mod division;
 pub mod fleets;
 pub mod limits;
 pub mod messaging;
 pub mod traces;
-pub mod verification;
 
 #[cfg(test)]
 mod tests {

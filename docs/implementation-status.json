@@ -111,12 +111,8 @@
     "name": "受限 Agent 派生",
     "phase": "P2",
     "status": "partial",
-    "detail": "Agent 按批准母体/参数派生子任务，宿主绑定父任务、Run 和实例；最多 6 层、单次 8 项、每根 48 个后代，Goal 共 64 项。没有任意子树授权、迁移或分布式租约。",
-    "source": [
-      "crates/ant3-platform/src/collaboration/delegation/mod.rs",
-      "crates/ant3-platform/src/collaboration/delegation/tools.rs",
-      "crates/ant3-server/tests/delegation.rs"
-    ],
+    "detail": "Agent 按批准母体/参数派生子任务，宿主绑定父任务、Run 和实例；最多 6 层、单次 8 项、每根 48 个后代，板根共 64 项。没有任意子树授权、迁移或分布式租约。",
+    "source": [],
     "target": [
       "crates/ant3-domain/src/agents/"
     ],
@@ -245,7 +241,7 @@
     "name": "对等 Agent 共享任务板",
     "phase": "P2",
     "status": "implemented",
-    "detail": "任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。任务视图已接入信息素痕迹浓度；Agent 读取默认局部邻域（scope=all 可退出）；根任务可选独立验证已接入：全新验证器实例审计冻结结果，通过自动归档（验证器署名）、失败有界返工、unknown 不通过、预算耗尽交回人类；尚未接入 Goal 频道与文件产物，确定失败与未认领任务在有界重试预算（默认 2 次）内自动重排队、新实例接手，预算耗尽才阻塞上游；结果未知不自动重试。没有分布式租约或费用硬预算。",
+    "detail": "任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。任务视图已接入信息素痕迹浓度；Agent 读取默认局部邻域（scope=all 可退出）；根任务可选独立验证已接入：全新验证器实例审计冻结结果，通过自动归档（验证器署名）、失败有界返工、unknown 不通过、预算耗尽交回人类；消息招募与同根快照交接已接通；深度产物整合为后续方向，确定失败与未认领任务在有界重试预算（默认 2 次）内自动重排队、新实例接手，预算耗尽才阻塞上游；结果未知不自动重试。没有分布式租约或费用硬预算。",
     "source": [
       "crates/ant3-platform/src/scheduling/board/mod.rs",
       "crates/ant3-platform/src/scheduling/board/tools.rs",
@@ -308,75 +304,16 @@
     "scope": "current"
   },
   {
-    "id": "goal-graph",
-    "name": "显式目标与任务依赖",
-    "phase": "P2",
-    "status": "implemented",
-    "detail": "持久依赖图最多 64 项任务，传递上游输出与 Run ID，支持取消、候选池及人工验收；可自动选择就绪候选或等待人工认领。显式依赖图作为脚手架；群体路径经任务板自组织。",
-    "source": [
-      "crates/ant3-platform/src/collaboration/coordination.rs"
-    ],
-    "target": [
-      "crates/ant3-platform/src/collaboration/"
-    ],
-    "verification": "native-tests-and-browser",
-    "scope": "current",
-    "path": "control-group"
-  },
-  {
-    "id": "delegation",
-    "name": "动态委派与任务自主",
-    "phase": "P2",
-    "status": "partial",
-    "detail": "Goal 内 Agent 按批准母体递归委派子任务，原实例在子任务来源成功后续作；可读取任务、追加或请求接续，验证器按证据选择局部返工，独立验证按冻结清单执行。没有已运行节点重写、任意子树迁移或通用自主修复。",
-    "source": [
-      "crates/ant3-platform/src/collaboration/delegation/mod.rs",
-      "crates/ant3-platform/src/collaboration/delegation/tools.rs",
-      "crates/ant3-server/tests/delegation.rs",
-      "crates/ant3-platform/src/collaboration/autonomy/mod.rs",
-      "crates/ant3-platform/src/collaboration/autonomy/tools.rs",
-      "web/src/features/autonomy/autonomy.js",
-      "crates/ant3-server/tests/autonomy.rs"
-    ],
-    "target": [
-      "plugins/organization/",
-      "crates/ant3-platform/src/collaboration/"
-    ],
-    "verification": "native-tests-and-browser",
-    "scope": "current",
-    "path": "control-group"
-  },
-  {
-    "id": "task-claims",
-    "name": "候选池认领与执行尝试",
-    "phase": "P2",
-    "status": "partial",
-    "detail": "任务最多 16 位候选；认领、Run 和 Attempt 同事务，记录 generation 与幂等回执，每轮最多 8 次尝试，仅未开始可释放。platform.tasks.board/claim 提供任务板及下一任务请求；没有分布式租约、执行后对账或预算预留。",
-    "source": [
-      "crates/ant3-platform/src/collaboration/claims.rs",
-      "crates/ant3-platform/src/collaboration/coordination.rs",
-      "web/src/features/goals/tasks.js",
-      "crates/ant3-server/tests/claims.rs",
-      "crates/ant3-platform/src/collaboration/autonomy/mod.rs"
-    ],
-    "target": [
-      "crates/ant3-domain/src/goals/",
-      "crates/ant3-platform/src/collaboration/"
-    ],
-    "verification": "native-tests-and-browser",
-    "scope": "current",
-    "path": "emergence"
-  },
-  {
     "id": "messaging",
     "name": "可靠协作消息",
     "phase": "P2",
     "status": "partial",
-    "detail": "持久 Outbox/Inbox、稳定消息 ID、幂等去重、投递与消费分离、暂停积压和未知结果人工处置；Agent 使用 platform.messaging 交接，四入口共用。没有远程投递或 Grant 授权。",
+    "detail": "持久 Outbox/Inbox、稳定消息 ID、幂等去重、投递与消费分离、暂停积压和未知结果人工处置；Agent 使用 platform.messaging 直接交接。作用域=同 fleet 或同板根；板上 Agent 可向任意活跃同伴发起交接，消息接受时把发送者板根传播给收件人（招募台账 board_peer_roots），回复保持在作用域内。没有远程投递或 Grant 授权。",
     "source": [
       "crates/ant3-platform/src/collaboration/messaging/mod.rs",
       "crates/ant3-platform/src/collaboration/messaging/tools.rs",
       "web/src/features/messages/messages.js",
+      "crates/ant3-server/tests/messaging.rs",
       "crates/ant3-server/tests/messaging.rs"
     ],
     "target": [
@@ -388,53 +325,12 @@
     "path": "emergence"
   },
   {
-    "id": "channels",
-    "name": "协作频道与订阅唤醒",
-    "phase": "P2",
-    "status": "partial",
-    "scope": "current",
-    "detail": "同 Goal 成员分组、持久发言、显式订阅与消息唤醒；参与者自动进入团队讨论，订阅默认关，显式移除不补回，通知回复不再广播。没有跨机器投递、全文分页或自动冲突裁决。",
-    "source": [
-      "crates/ant3-platform/src/collaboration/channels/mod.rs",
-      "crates/ant3-platform/src/collaboration/channels/tools.rs",
-      "web/src/features/channels/channels.js",
-      "crates/ant3-server/tests/channels.rs"
-    ],
-    "target": [
-      "crates/ant3-platform/src/collaboration/channels/",
-      "crates/ant3-storage/src/inbox_outbox/"
-    ],
-    "verification": "native-tests-and-browser",
-    "path": "emergence"
-  },
-  {
-    "id": "shared-context",
-    "name": "共享上下文与版本化黑板",
-    "phase": "P2",
-    "status": "partial",
-    "detail": "Goal 内发现、决策和疑问支持宿主身份、CAS 修订/撤回、来源及产物引用、派发快照与验收版本绑定；四入口可读写。没有黑板自动冲突裁决。",
-    "source": [
-      "crates/ant3-platform/src/collaboration/context/mod.rs",
-      "crates/ant3-platform/src/collaboration/context/tools.rs",
-      "crates/ant3-platform/src/control/organization.rs",
-      "web/src/features/collaboration/context.js",
-      "crates/ant3-server/tests/collaboration.rs"
-    ],
-    "target": [
-      "crates/ant3-domain/src/collaboration/",
-      "crates/ant3-platform/src/collaboration/"
-    ],
-    "verification": "native-tests-and-browser",
-    "scope": "current",
-    "path": "emergence"
-  },
-  {
     "id": "workspaces",
     "name": "实例工作区与文件/JSON交接",
     "phase": "P2",
     "status": "partial",
     "scope": "current",
-    "detail": "实例独立目录、UTF-8 文件读写、文件/JSON 不可变快照、同 Goal 共享读取与 Web 预览/下载；保留来源状态和摘要，成功来源可进入独立验证。没有 OS 沙箱或通用代码执行环境。",
+    "detail": "实例独立目录、UTF-8 文件读写、文件/JSON 不可变快照；同板根（邀请或招募）同伴可读取快照作为 stigmergy 交接，私有文件仍隔离；Web 预览/下载保留来源状态和摘要。没有 OS 沙箱或通用代码执行环境。",
     "source": [
       "crates/ant3-platform/src/workspaces/mod.rs",
       "crates/ant3-platform/src/workspaces/tools.rs",
@@ -449,52 +345,18 @@
     "path": "emergence"
   },
   {
-    "id": "artifacts",
-    "name": "产物、验证与返工",
-    "phase": "P2",
-    "status": "partial",
-    "detail": "文本贡献、文件/JSON 快照保存版本、摘要与来源；当前成功任务证据进入冻结验证清单，支持有界自动返工、人工局部返工及按失败产物定位任务和下游。给定证据与抓取回执不构成外部事实认证。任务板根任务的独立验证由板上审计器提供（冻结结果+新鲜实例+结构化裁决）。",
-    "source": [
-      "crates/ant3-platform/src/workspaces/artifacts.rs",
-      "crates/ant3-platform/src/collaboration/coordination.rs",
-      "web/src/features/artifacts/artifacts.js",
-      "crates/ant3-server/tests/artifacts.rs",
-      "crates/ant3-platform/src/collaboration/verification/mod.rs",
-      "crates/ant3-platform/src/collaboration/verification/tools.rs",
-      "web/src/features/goals/verification.js",
-      "crates/ant3-server/tests/verification.rs",
-      "crates/ant3-platform/src/workspaces/mod.rs",
-      "crates/ant3-platform/src/workspaces/tools.rs",
-      "web/src/features/workspaces/workspaces.js",
-      "crates/ant3-server/tests/workspaces.rs"
-    ],
-    "target": [
-      "crates/ant3-domain/src/artifacts/",
-      "plugins/verification/"
-    ],
-    "verification": "native-tests-and-browser",
-    "scope": "current",
-    "path": "verification"
-  },
-  {
     "id": "web",
     "name": "Web 执行证据检查",
     "phase": "P1",
     "status": "implemented",
-    "detail": "桌面导航按场景、协作、运行、配置分层；独立赛博工作站以卡通队员姿态展示实例状态、消息光点、任务依赖与委派和系统设备岛，详情点击展开，支持全屏、暂停与轮询同步。展示团队任务、频道、共享区、文件产物、验证返工，以及实例、Run、请求快照、回执和事件。详情、下载、候选认领与自主操作共用后端状态。任务板展示信息素痕迹浓度徽章与根任务痕迹场面板（按强度排序、沉积次数、半衰期），随轮询刷新；能力页按涌现路径分类展示进度。",
+    "detail": "桌面导航按场景、运行、配置分层；独立赛博工作站以卡通队员姿态展示实例状态、消息光点、板任务依赖与系统设备岛，详情点击展开，支持全屏、暂停与轮询同步。展示任务板、消息、文件工作区、审计与评审，以及实例、Run、请求快照、回执和事件。详情、下载与操作共用后端状态。任务板展示信息素痕迹浓度徽章与根任务痕迹场面板（按强度排序、沉积次数、半衰期），随轮询刷新；能力页按涌现路径分类展示进度。",
     "source": [
       "web/src/app/app.js",
       "web/src/features/studio/studio.js",
       "web/src/features/studio/studio.css",
-      "web/src/features/goals/goals.js",
       "web/src/features/agents/fleets.js",
       "web/src/features/messages/messages.js",
-      "web/src/features/artifacts/artifacts.js",
-      "web/src/features/collaboration/context.js",
-      "web/src/features/goals/tasks.js",
-      "web/src/features/channels/channels.js",
-      "web/src/features/workspaces/workspaces.js",
-      "web/src/features/autonomy/autonomy.js"
+      "web/src/features/workspaces/workspaces.js"
     ],
     "target": [
       "web/src/features/"

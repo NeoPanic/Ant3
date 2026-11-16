@@ -16,12 +16,8 @@ const iconPaths = {
   overview:'<path d="m12 3 9 5v8l-9 5-9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8M7.5 5.5l9 5"/>',
   agents:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   fleets:'<path d="M4 5h16v14H4zM8 2v6m8-6v6M8 12h8m-8 4h4"/>',
-  artifacts:'<path d="M5 3h10l4 4v14H5zM14 3v5h5M8 12h8m-8 4h8"/>',
-  research:'<circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="m7 9 4 6m6-6-4 6M9 6h6"/>',
   messages:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/>',
-  channels:'<path d="M5 4h14v12H9l-4 4V4Z"/><path d="M8 8h8M8 12h5"/>',
   workspaces:'<path d="M3 7h7l2 2h9v11H3V7ZM3 7V4h7l2 3"/><path d="M7 13h10M7 16h6"/>',
-  goals:'<rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M12 8v4H5v4m7-4h7v4"/>',
   presets:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',
   runs:'<path d="m9 5 11 7-11 7Z"/><path d="M4 5v14"/>',
   plugins:'<path d="M9 3v5m6-5v5M6 8h12v3a6 6 0 0 1-12 0ZM12 17v4"/>',
@@ -64,15 +60,13 @@ async function api(path, body, method = 'POST', key = null) {
     const code=value.error?.code || value.rejection || `HTTP ${response.status}`;
     const messages={process_plugins_disabled:'请使用 --allow-process-plugins 启动 daemon 后重试。',plugin_disabled:'插件版本已禁用，请选择其他版本或重新检查并启用。',plugin_digest_mismatch:'文件内容与 manifest 摘要不一致，修正包内容后重试。',plugin_cache_tampered:'缓存文件已变化，平台已拒绝执行。',invalid_plugin_manifest:'请检查 manifest 协议、工具 schema、相对路径与文件摘要。',plugin_source_unreadable:'无法读取服务器上的包目录，请填写绝对路径。',plugin_kind_conflict:'此 ID 已被另一种插件占用，请更换命名空间。',invalid_fleet_plan:'请检查Agent 池数量、策略与 TTL。',fleet_revision_conflict:'Agent 池已被其他操作修改，请关闭表单并刷新后重试。',fleet_operation_in_progress:'已有操作正在协调，完成后可再次扩缩容。',fleet_terminal:'Agent 池已进入终止流程，无法恢复或扩缩容。',invalid_fleet_action:'请检查目标数量与操作参数。',invalid_ttl:'TTL 须为 1 秒至 30 天之间的整数。',unauthorized:'访问令牌无效或会话已过期，请重新登录。',preset_version_immutable:'这个母体版本已发布，请更换版本号。',plugin_version_immutable:'这个插件版本已安装，请更换版本号。',instance_not_ready:'实例当前无法接收任务，请刷新并选择就绪实例。',instance_quota_exceeded:'容量已满，请减少数量，或缩容/终止Agent 池以释放预留。',invalid_transition_or_instance_busy:'实例状态已变化或仍在执行，请刷新后重试。',idempotency_conflict:'上次请求的内容已更改，请关闭后重新打开表单提交。',invalid_preset:'名称和版本号须为 1–80 个英文字母、数字、点、下划线或连字符。',invalid_prompt_bundle:'请检查插件 ID、版本号和必填内容。'};
     Object.assign(messages,{invalid_preset_definition:'母体定义包含未知字段或字段类型不正确。',parent_preset_not_found:'父级母体版本不存在，请刷新目录后重新选择。',invalid_preset_parent:'父级引用无效；母体不能继承自身。',preset_inheritance_depth_or_cycle:'继承链超过 16 层或包含循环，请选择更上层的母体。',duplicate_plugin_binding:'同一插件 ID 只能绑定一个版本，请取消重复选择。',ambiguous_plugin_bindings:'不能同时提交 plugin 和 plugins。',too_many_plugin_bindings:'每个母体最多绑定 16 个插件。',preset_capability_limit:'能力锁超过 64 个工具或插件指令超过 64,000 UTF-8 字节，请减少绑定。',invalid_parameters_schema:'参数 schema 不受支持或超出结构上限。',parameters_schema_must_be_closed_object:'参数 schema 根须为 object，且 additionalProperties=false。',unknown_default_parameter:'默认值中存在未声明的参数。',invalid_default_parameter:'默认值的类型或范围不符合参数 schema。',invalid_parameter_names:'参数最多 32 个；名称限英文字母、数字、点、下划线和连字符。',unknown_template_parameter:'模板引用了未声明的参数，请添加同名参数或修改模板。',template_parameter_must_be_required_or_defaulted:'模板引用的参数必须设为必填或提供默认值。',invalid_parameter_template:'模板须使用配对的 {{参数名}}，不支持表达式。',parameters_schema_required:'填写默认值前须声明参数 schema。',parameters_not_declared:'该母体未声明参数，不能传入参数值。',invalid_instance_parameters:'参数缺失、类型不正确或超出 schema 范围，请检查必填、类型和枚举值。',parameters_too_large:'合并默认值后的参数不能超过 16 KiB 序列化内容。',preset_snapshot_too_large:'完整母体与能力快照超过 1 MiB，请减少绑定或 schema 内容。',preset_field_required:'独立定义必须填写用途、目标和系统指令。',preset_protocol_required:'请选择模型协议，或选择可继承的父级母体。',preset_field_cannot_be_null:'除旧版 plugin 外，母体字段不能为 null；省略字段表示继承。'});
-    Object.assign(messages,{task_generation_conflict:'认领代次已变化，请保留输入并关闭后重新核对。',task_already_claimed:'任务已被领取，请刷新检查当前执行者。',task_candidate_not_allowed:'该实例不在此任务批准的候选池中。',task_not_ready:'任务依赖尚未就绪，暂时不能领取。',task_already_started:'Worker 已开始或结算该尝试，无法释放或重放。',task_attempt_limit:'每轮最多 8 次认领尝试，已达上限。',goal_not_running:'目标已经停止运行，无法继续认领。',context_revision_conflict:'记录已被其他参与者更新。输入已保留；读取最新版本并合并后重试。验收冲突请关闭后重新核对。',context_goal_read_only:'目标已结算，共享上下文只能读取。',context_capacity_exceeded:'共享区已达 32 个键、128 次修订或 24 KiB 内容上限。',context_unsettled_evidence:'有共享记录来自尚未成功结算的运行，请检查来源或明确撤回后再验收。',context_evidence_scope:'证据须来自同一目标的成功产物，且内容摘要有效。',invalid_shared_context:'请核对记录键、标题、内容、版本和证据数量。',goal_unknown_outcome:'旧贡献含未知工具效果，请先调查原始运行；平台不会从返工入口重试。',artifact_integrity_failed:'产物内容与固定摘要不匹配，已拒绝验收。',invalid_goal_rework:'请填写修改要求并核对轮次；最多 3 轮。',goal_round_conflict:'评审轮次已变化，请关闭并刷新后重试。',goal_artifact_validation_failed:'有产物未通过非空或大小检查，请查看贡献后要求修改。',goal_artifacts_missing:'当前轮次产物尚未发布，请刷新后重试。',artifact_not_found:'产物不存在，请刷新来源目标。'});
-    Object.assign(messages,{invalid_message:'消息不能为空，最多 8,000 个 UTF-8 字节；请检查关联 ID。',message_recipient_terminal:'接收实例已停止接收消息，请选择其他身份。',message_backlog_full:'消息积压已达上限；请等待消费或丢弃待处理消息。',message_action_state_conflict:'状态已变化，无法执行此处置；请刷新消息详情。',invalid_message_action:'请填写处置说明，最多 2,000 个 UTF-8 字节。',message_goal_scope_invalid:'接收实例不属于正在运行或待验收的目标。',message_causal_context_conflict:'关联 ID 或目标与前置消息不一致。',message_hop_limit:'消息因果链已达 8 层，请检查是否存在回复循环。',message_correlation_quota_exceeded:'该关联链已达 128 条消息上限。',causation_message_not_found:'前置消息不存在，请核对完整 ID。',message_not_found:'消息不存在，请刷新列表。'});
-    Object.assign(messages,{invalid_goal:'请填写目标名称、共同目标、验收标准及 1–64 项任务；检查 UTF-8 字节上限。',invalid_task_graph:'任务 key 必须唯一，依赖只能引用前面的任务，且不能重复。',goal_quota_exceeded:'运行中或待验收目标已达 32 个，请先验收或取消已有目标。',goal_instance_terminated:'计划包含已终止的实例，请重新选择执行实例。',goal_not_reviewable:'目标尚未完成或已经结算，请刷新后核对状态。',goal_not_cancellable:'目标已经结算，无法再取消。',invalid_goal_review:'请填写验收结论，最多 8,000 个 UTF-8 字节。',goal_not_found:'没有找到该目标，请返回目标列表。'});
+    Object.assign(messages,{invalid_message:'消息不能为空，最多 8,000 个 UTF-8 字节；请检查关联 ID。',message_recipient_terminal:'接收实例已停止接收消息，请选择其他身份。',message_backlog_full:'消息积压已达上限；请等待消费或丢弃待处理消息。',message_action_state_conflict:'状态已变化，无法执行此处置；请刷新消息详情。',invalid_message_action:'请填写处置说明，最多 2,000 个 UTF-8 字节。',message_recipient_out_of_scope:'接收实例不在同一板根任务范围内，无法接收该消息。',message_causal_context_conflict:'关联 ID 与前置消息不一致。',message_hop_limit:'消息因果链已达 8 层，请检查是否存在回复循环。',message_correlation_quota_exceeded:'该关联链已达 128 条消息上限。',causation_message_not_found:'前置消息不存在，请核对完整 ID。',message_not_found:'消息不存在，请刷新列表。'});
     Object.assign(messages,{invalid_board_review:'退回修改必须填写评审意见，最多 8,000 个 UTF-8 字节。',board_review_result_changed:'成果已变化，请刷新任务后评审最新结果。',board_result_already_reviewed:'本轮结果已经评审，请刷新任务。',board_review_root_required:'请在根任务汇总结果后进行评审。',invalid_board_task:'请填写任务名称、内容和验收标准；名称最多 200、内容和验收标准各 8,000 个 UTF-8 字节。',board_root_limit:'活动任务已达上限，请等待已有任务完成或取消后再发布。',board_task_not_found:'任务不存在，请返回任务板刷新。',board_root_not_active:'这项任务已结束，无法继续操作。'});
     throw new Error(messages[code] || `操作未完成（${code}），请检查配置后重试。`);
   }
   return value;
 }
-function page() { return boardId()?'board':channelId()?'channels':fleetId()?'fleets':goalId()?'goals':['board','studio','overview','channels','workspaces','agents','fleets','goals','artifacts','messages','presets','runs','plugins','capabilities','events'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'board'; }
+function page() { return boardId()?'board':fleetId()?'fleets':['board','studio','overview','workspaces','agents','fleets','messages','presets','runs','plugins','capabilities','events'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'board'; }
 function head(title, buttons = '') { return `<div class="page-head"><div><h1>${title}</h1></div>${buttons?`<div class="head-actions">${buttons}</div>`:''}</div>`; }
 function button(label, action, primary = false, extra = '') { return `<button type="button" class="button ${primary ? 'primary' : ''}" data-action="${action}" ${extra}>${label}</button>`; }
 function empty(title, text, action = '') { return `<div class="empty"><b>${title}</b><p>${text}</p>${action}</div>`; }
@@ -89,10 +83,10 @@ function runsTable(list) { return list.length ? table(['RUN / 运行','Agent','�
 function activity(list) { return list.length ? `<div class="activity">${list.map(e=>`<div class="activity-item"><span class="event-dot"></span><div><div class="activity-kind mono">${esc(e.kind)}</div><div class="activity-meta mono">${esc(short(e.subject))} #${e.seq}</div></div><span class="activity-time">${time(e.at)}</span></div>`).join('')}</div>` : empty('暂无事件','操作控制台后，持久事件将出现在这里。'); }
 function overview() {
   const active = data.instances.filter(a=>a.state !== 'terminated'), busy = data.instances.filter(a=>a.state === 'busy'), complete = data.runs.filter(r=>r.state === 'completed');
-  const review=data.goals.filter(g=>g.state==='awaiting-review'),failed=data.runs.filter(r=>['failed','interrupted'].includes(r.state));
+  const review=(data.board?.tasks||[]).filter(t=>!t.parent_id&&t.review_state==='pending'),failed=data.runs.filter(r=>['failed','interrupted'].includes(r.state));
   const stats = [
     ['执行中实例',busy.length,`/ ${active.length} 个未终止`,'agents','检查实例与运行状态'],
-    ['待验收目标',review.length,'项','goals','核对结果与验收标准'],
+    ['待评审任务',review.length,'项','board','核对结果与验收标准'],
     ['失败 / 结果未知',failed.length,'次','runs','最近 100 条运行'],
     ['已完成运行',complete.length,'次','runs','最近 100 条运行']
   ];
@@ -104,7 +98,7 @@ function overview() {
 function progressPage() {
   if(!data.capabilities.length)return head('实现进度')+empty('尚未读取到能力清单','请刷新页面；持续为空时检查平台 API 的能力清单。');
   const counts = status => data.capabilities.filter(c=>c.status===status).length;
-  const pathMeta=[['emergence','涌现机制','北极星目标路径：stigmergy 痕迹、分工、自组织认领与整合'],['foundation','运行底座','支撑个体执行与持久状态'],['verification','证据与验证','可信交付与返工'],['control-group','显式编排脚手架','显式 DAG 与动态委派，确定性协作路径'],['support','支撑能力','入口、可视化与生态'],['governance','治理与规模化','预算、授权、隔离与远程，按需推进']];
+  const pathMeta=[['emergence','涌现机制','北极星目标路径：stigmergy 痕迹、分工、自组织认领与整合'],['foundation','运行底座','支撑个体执行与持久状态'],['verification','证据与验证','可信交付与返工'],['support','支撑能力','入口、可视化与生态'],['governance','治理与规模化','预算、授权、隔离与远程，按需推进']];
   const item=c=>`<article class="progress-item"><div class="progress-title"><h3>${esc(c.name)}</h3>${badge(c.status)}</div><p>${esc(c.detail)}</p><details><summary>验证与代码位置</summary><dl class="detail-kv">${c.scope?`<dt>范围</dt><dd>${esc(({current:'本轮重点',extension:'后续扩展',deferred:'暂缓'})[c.scope]||c.scope)}</dd>`:''}<dt>验证</dt><dd>${esc(({pending:'本轮待验证','native-tests-and-browser':'原生测试与 Web 联调'})[c.verification]||c.verification||'未记录')}</dd><dt>当前代码</dt><dd>${c.source.length?c.source.map(path=>`<code class="wrap">${esc(path)}</code>`).join('<br>'):'尚无实现模块'}</dd><dt>规划目录</dt><dd>${c.target.map(path=>`<code class="wrap">${esc(path)}</code>`).join('<br>')}</dd></dl></details></article>`;
   return head('实现进度')+
     `<div class="progress-summary">${['implemented','partial','planned'].map(status=>`<span>${labels[status]} <strong>${counts(status)}</strong> 项</span>`).join('')}</div>`+
@@ -112,7 +106,7 @@ function progressPage() {
 }
 function render() {
   if (!data || composing) return;
-  const p=page(), names={overview:'总览',artifacts:'协作产物',agents:'Agent 实例',fleets:'Agent 池',channels:'协作频道',workspaces:'文件工作区',goals:'协作目标',messages:'协作消息',presets:'母体 Presets',runs:'执行记录',plugins:'插件与能力',capabilities:'实现进度',events:'事件日志'};
+  const p=page(), names={overview:'总览',agents:'Agent 实例',fleets:'Agent 池',workspaces:'文件工作区',messages:'协作消息',presets:'母体 Presets',runs:'执行记录',plugins:'插件与能力',capabilities:'实现进度',events:'事件日志'};
   names.studio='Agent 工作现场';names.board='共享任务板';
   $('#nav-count').textContent=data.instances.filter(a=>a.state!=='terminated').length;
   document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.dataset.page===p);if(a.dataset.page===p)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
@@ -121,11 +115,8 @@ function render() {
   if(p==='board') html=`<div class="board-page">${boardPage()}</div>`;
   if(p==='studio') html=studioPage();
   if(p==='overview') html=overview();
-  if(p==='channels') html=channelsPage();
   if(p==='workspaces') html=workspacePage();
   if(p==='messages') html=messagesPage();
-  if(p==='goals') html=goalsPage();
-  if(p==='artifacts') html=artifactsPage();
   if(p==='fleets') html=fleetsPage();
   if(p==='agents') html=head('Agent 实例', button('批量创建','spawn',true))+filterBar('agents')+panel('实例目录',`<div id="directory-results">${directory('agents')}</div>`,badge('neutral',`共 ${data.instances.length} 个实例`));
   if(p==='presets') html=head('母体 Presets', button('发布母体','preset-form',true))+panel('母体版本',data.presets.length?table(['母体 / 版本','用途与目标','模型协议','操作'],data.presets.map(p=>`<tr><td><div class="primary-text">${esc(p.name)}</div><div class="secondary-text mono">${esc(p.version)}</div></td><td><div class="primary-text">${esc(p.definition.purpose)}</div><details class="table-detail"><summary>查看目标</summary><p class="record-text">${esc(p.definition.objective)}</p></details></td><td><span class="protocol">${esc(p.definition.protocol)}</span></td><td><button class="text-button" data-action="preset-detail" data-id="${esc(p.name)}" data-version="${esc(p.version)}">查看定义</button><button class="text-button" data-action="spawn" data-id="${esc(p.name)}" data-version="${esc(p.version)}">创建实例</button></td></tr>`)):empty('尚无母体版本','点击“发布母体”，填写用途、目标和模型协议。'),`<span class="board-count">${data.presets.length} 个版本</span>`);
@@ -161,11 +152,6 @@ async function readState() {
   try {
     data=await api('/api/v1/snapshot'); authenticated=true;
     if(boardId())await boardReadDetail();
-    if(channelId()) {try {selectedChannel=await api(`/api/v1/channels/${encodeURIComponent(channelId())}`);}catch(error){selectedChannel={id:channelId(),loadError:error.message};}}
-    if(goalId()) {
-      try {selectedGoal=await api(`/api/v1/goals/${encodeURIComponent(goalId())}`);}
-      catch(error) {selectedGoal={id:goalId(),loadError:error.message};}
-    }
     if(fleetId()) {
       try {selectedFleet=await api(`/api/v1/agent-fleets/${encodeURIComponent(fleetId())}`);}
       catch(error) {selectedFleet={id:fleetId(),loadError:error.message};}
@@ -189,15 +175,15 @@ function openModal(title, html) {
   $('#modal-error').hidden=true;$('#modal-title').textContent=title;$('#modal-body').innerHTML=html;
   $('#modal').classList.toggle('inspector',Boolean($('#modal-body .inspector-summary')));
   const formKind=$('#modal-body form')?.dataset.form;
-  $('#modal').classList.toggle('wide-form',['preset','goal','spawn'].includes(formKind));
-  $('#modal').classList.toggle('confirmation',['terminate','drain','run-cancel','board-cancel','goal-cancel','process-state','message-action'].includes(formKind));
+  $('#modal').classList.toggle('wide-form',['preset','spawn'].includes(formKind));
+  $('#modal').classList.toggle('confirmation',['terminate','drain','run-cancel','board-cancel','process-state','message-action'].includes(formKind));
   $('#modal').setAttribute('role',$('#modal [data-form="terminate"], #modal [data-form="drain"]')?'alertdialog':'dialog');
   $('#modal-body').querySelectorAll('input[pattern]').forEach(input=>{input.maxLength=80;input.title='最多 80 个英文字母、数字、点、下划线或连字符';});
   if(!$('#modal').open)$('#modal').showModal();
   const focus=$('#modal form input:not(:disabled), #modal form select:not(:disabled), #modal form textarea')||$('#modal [data-action="close"]');
   focus.focus({preventScroll:true});$('#modal').scrollTop=0;
 }
-const fieldLabels={id:'标识',name:'名称',version:'版本',text:'文本',input:'输入',output:'输出',content:'内容',body:'内容',kind:'类型',state:'状态',status:'状态',error:'错误',code:'错误码',message:'说明',seq:'序号',sequence:'序号',at:'时间',created_at:'创建时间',started_at:'开始时间',finished_at:'结束时间',subject:'关联对象',data:'记录内容',arguments:'调用参数',call:'工具调用',calls:'工具调用',observations:'工具回执',changed:'有变更',run_id:'运行标识',instance_id:'实例标识',recipient_id:'接收实例',sender_instance_id:'发送实例',source_run_id:'来源运行',correlation_id:'关联标识',causation_id:'前置消息',goal_id:'目标标识',purpose:'用途',objective:'目标',instructions:'指令',protocol:'协议',model:'模型',tools:'工具',parameters:'参数',properties:'字段',required:'必填字段',type:'类型',description:'说明',additionalProperties:'允许额外字段',enum:'可选值',minimum:'最小值',maximum:'最大值',minLength:'最短长度',maxLength:'最长长度',minItems:'最少项目',maxItems:'最多项目',items:'项目规则',schema:'参数规则',defaults:'默认值',actual:'实际参数',revision:'修订',turns:'会话记录',events:'事件',requests:'模型请求',report:'运行回执',snapshot:'固定配置',definition:'定义',publication:'发布定义',extends:'继承来源',lineage:'继承链',plugin_snapshot:'插件快照',plugin_snapshots:'插件快照',plugins:'插件',digest:'内容摘要',manifest:'插件契约',runtime:'运行方式',files:'文件',mutates:'声明有副作用',parallel_safe:'允许并行',input_schema:'输入规则',output_schema:'输出规则',acceptance:'验收标准',review:'验收记录',tasks:'任务',depends_on:'上游依赖',key:'键',value:'值',usage:'模型用量',input_tokens:'输入 Token',output_tokens:'输出 Token',generation_ms:'模型生成耗时（ms）',execution_ms:'执行耗时（ms）',model_metadata:'模型信息',model_request:'模型请求',system:'系统指令',sender_kind:'发送方类型',delivery_state:'投递状态',inbox_state:'消费状态',resolution:'处置说明',resolved_at:'处置时间',received_at:'入 Inbox 时间',ack_at:'派发确认时间',depth:'因果深度',continuation:'供应商续接记录'};
+const fieldLabels={id:'标识',name:'名称',version:'版本',text:'文本',input:'输入',output:'输出',content:'内容',body:'内容',kind:'类型',state:'状态',status:'状态',error:'错误',code:'错误码',message:'说明',seq:'序号',sequence:'序号',at:'时间',created_at:'创建时间',started_at:'开始时间',finished_at:'结束时间',subject:'关联对象',data:'记录内容',arguments:'调用参数',call:'工具调用',calls:'工具调用',observations:'工具回执',changed:'有变更',run_id:'运行标识',instance_id:'实例标识',recipient_id:'接收实例',sender_instance_id:'发送实例',source_run_id:'来源运行',correlation_id:'关联标识',causation_id:'前置消息',purpose:'用途',objective:'目标',instructions:'指令',protocol:'协议',model:'模型',tools:'工具',parameters:'参数',properties:'字段',required:'必填字段',type:'类型',description:'说明',additionalProperties:'允许额外字段',enum:'可选值',minimum:'最小值',maximum:'最大值',minLength:'最短长度',maxLength:'最长长度',minItems:'最少项目',maxItems:'最多项目',items:'项目规则',schema:'参数规则',defaults:'默认值',actual:'实际参数',revision:'修订',turns:'会话记录',events:'事件',requests:'模型请求',report:'运行回执',snapshot:'固定配置',definition:'定义',publication:'发布定义',extends:'继承来源',lineage:'继承链',plugin_snapshot:'插件快照',plugin_snapshots:'插件快照',plugins:'插件',digest:'内容摘要',manifest:'插件契约',runtime:'运行方式',files:'文件',mutates:'声明有副作用',parallel_safe:'允许并行',input_schema:'输入规则',output_schema:'输出规则',acceptance:'验收标准',review:'验收记录',tasks:'任务',parent_id:'拆分来源',root_id:'根任务',key:'键',value:'值',usage:'模型用量',input_tokens:'输入 Token',output_tokens:'输出 Token',generation_ms:'模型生成耗时（ms）',execution_ms:'执行耗时（ms）',model_metadata:'模型信息',model_request:'模型请求',system:'系统指令',sender_kind:'发送方类型',delivery_state:'投递状态',inbox_state:'消费状态',resolution:'处置说明',resolved_at:'处置时间',received_at:'入 Inbox 时间',ack_at:'派发确认时间',depth:'因果深度',continuation:'供应商续接记录'};
 function valueText(value) {
   if(value===null||value===undefined)return '未设置';
   if(typeof value==='boolean')return value?'是':'否';
@@ -279,7 +265,7 @@ function reportView(report) {
 function runOutput(r) {
   const error=r.report?.error,pending=['queued','running'].includes(r.state);
   const result=error?`<div class="execution-error" role="status"><strong>本次执行未完成</strong><p>${esc(error.message||error.code)}</p><code>${esc(error.code)}</code></div>`:pending?`<div class="execution-pending">${icon('runs')}<div><strong>${r.state==='queued'?'任务已进入队列':'Agent 正在执行'}</strong><p>点击“刷新详情”检查最新结果；关闭面板不会中断任务。</p></div></div>`:`<div class="output">${esc(r.report?.output??(r.state==='cancelled'?'运行已取消，暂无输出。':'此运行未提供文本输出。'))}</div>`;
-  return `<div class="output-section"><h3>执行结果</h3>${result}</div>${r.shared_context?`<details class="raw-data" id="run-context"><summary>派发时共享上下文 版本 ${r.shared_context.revision}</summary>${contextView(r.shared_context)}</details>`:''}<details class="raw-data" ${pending?'open':''}><summary>用户输入</summary><div class="output">${esc(r.task_input??r.input)}</div></details>`;
+  return `<div class="output-section"><h3>执行结果</h3>${result}</div><details class="raw-data" ${pending?'open':''}><summary>用户输入</summary><div class="output">${esc(r.task_input??r.input)}</div></details>`;
 }
 async function handleAction(action, element) {
   if(action==='navigation-toggle') {
@@ -289,36 +275,19 @@ async function handleAction(action, element) {
     return;
   }
   if(await studioAction(action,element))return;
-  if(await collaborationAction(action,element))return;
-  if(await artifactAction(action,element))return;
   if(await processAction(action,element))return;
   const id=element.dataset.id;
   if(action==='fleet-nav') {$('#modal').close();location.hash=`fleet/${id}`;return;}
   if(action==='fleet-scale'||action==='fleet-stop')return fleetActionForm(id,action==='fleet-stop');
-  if(action==='goal-form')return goalForm();
-  if(action==='goal-review')return goalReview(id);
-  if(action==='goal-rework')return goalRework(id);
-  if(action==='goal-cancel')return goalCancel(id);
-  if(action==='goal-add-task'||action==='goal-remove-task') {
-    const fields=$('#goal-task-fields'),count=fields.children.length;
-    if(action==='goal-add-task'&&count<data.limits.tasks_per_goal){fields.insertAdjacentHTML('beforeend',taskFields(count));fields.lastElementChild.querySelector('select').focus();}
-    if(action==='goal-remove-task'&&count>1){fields.lastElementChild.remove();fields.lastElementChild.querySelector('select').focus();}
-    $('#modal [data-action="goal-add-task"]').disabled=fields.children.length>=data.limits.tasks_per_goal;
-    $('#modal [data-action="goal-remove-task"]').disabled=fields.children.length<=1;
-    return;
-  }
   if(action==='copy') {
     try {await navigator.clipboard.writeText(element.dataset.value);element.textContent='已复制';setTimeout(()=>{if(element.isConnected)element.textContent='复制';},1800);}
     catch {throw new Error('浏览器未允许复制，请选中 ID 后手动复制。');}return;
   }
   if(action==='goto-agents') {location.hash='agents';return;}
   if(action==='clear-filters') {filters[page()]={query:'',state:'all'};render();$('#directory-search')?.focus();return;}
-  if(action==='verification-retry')return verificationRetry(id);
   if(await workspaceAction(action,element))return;
   if(await boardAction(action,element))return;
-  if(await channelAction(action,element))return;
   if(await messageAction(action,element))return;
-  if(await taskClaimAction(action,element))return;
   if(action==='close') {if(!$('#modal form[aria-busy="true"]'))$('#modal').close();return;}
   if(action==='capabilities') {location.hash='capabilities';return;}
   if(action==='spawn') return spawnForm(id,element.dataset.version);
@@ -359,7 +328,7 @@ document.addEventListener('click',async event=>{
   try {await handleAction(element.dataset.action,element);} catch(error){
     if($('#modal').open){$('#modal-error').textContent=error.message;$('#modal-error').hidden=false;}
     else toast(error.message);
-  } finally {if(!['goal-add-task','goal-remove-task'].includes(element.dataset.action))element.disabled=false;element.removeAttribute('aria-busy');}
+  } finally {element.disabled=false;element.removeAttribute('aria-busy');}
 });
 document.addEventListener('invalid',event=>{
   const field=event.target,form=field.form;
@@ -411,26 +380,13 @@ document.addEventListener('submit',async event=>{
     }
     if(form.dataset.form==='message-send') {
       if(new TextEncoder().encode(values.text).length>8000)throw new Error('消息超过 8,000 个 UTF-8 字节。');
-      const input={text:values.text};for(const field of ['goal_id','correlation_id','causation_id'])if(values[field])input[field]=values[field];
+      const input={text:values.text};for(const field of ['correlation_id','causation_id'])if(values[field])input[field]=values[field];
       result=await api(`/api/v1/agent-instances/${encodeURIComponent(values.recipient_id)}/messages`,input,'POST',form.dataset.commandKey);location.hash='messages';
     }
     if(form.dataset.form==='message-action') {
       if(new TextEncoder().encode(values.note).length>2000)throw new Error('处置说明超过 2,000 个 UTF-8 字节。');
       result=await api(`/api/v1/messages/${encodeURIComponent(form.dataset.id)}/actions`,{action:form.dataset.operation,note:values.note},'POST',form.dataset.commandKey);
     }
-    if(form.dataset.form.startsWith('channel-'))result=await channelSubmit(form);
-    if(form.dataset.form==='goal') {result=await api('/api/v1/goals',goalPlanFromForm(form),'POST',form.dataset.commandKey);location.hash=`goal/${result.id}`;}
-    if(form.dataset.form==='task-claim')result=await api(`/api/v1/goals/${encodeURIComponent(form.dataset.id)}/tasks/${encodeURIComponent(form.dataset.task)}/claim`,{expected_round:Number(form.dataset.round),expected_generation:Number(form.dataset.generation),instance_id:values.instance_id},'POST',form.dataset.commandKey);
-    if(form.dataset.form==='task-release'){if(new TextEncoder().encode(values.note).length>2000)throw new Error('释放原因最多 2,000 个 UTF-8 字节。');result=await api(`/api/v1/goals/${encodeURIComponent(form.dataset.id)}/tasks/${encodeURIComponent(form.dataset.task)}/release`,{expected_round:Number(form.dataset.round),expected_generation:Number(form.dataset.generation),note:values.note},'POST',form.dataset.commandKey);}
-    if(form.dataset.form==='verification-retry')result=await api(`/api/v1/goals/${encodeURIComponent(form.dataset.id)}/verification/retry`,{expected_round:Number(form.dataset.round),expected_verification_id:form.dataset.verification},'POST',form.dataset.commandKey);
-    if(form.dataset.form==='goal-review') {result=await api(`/api/v1/goals/${encodeURIComponent(form.dataset.id)}/accept`,{review:values.review,expected_round:Number(form.dataset.round),expected_context_revision:Number(form.dataset.contextRevision)});}
-    if(form.dataset.form==='context-publish'){
-      const input={key:values.entry_key,expected_revision:Number(form.dataset.revision),title:values.title,body:values.body,kind:values.kind,status:values.status,artifact_ids:new FormData(form).getAll('artifact_id')};
-      if(new TextEncoder().encode(input.title).length>200||new TextEncoder().encode(input.body).length>4000)throw new Error('标题最多 200、内容最多 4,000 个 UTF-8 字节。');
-      result=await api(`/api/v1/goals/${encodeURIComponent(form.dataset.id)}/context`,input,'POST',form.dataset.commandKey);
-    }
-    if(form.dataset.form==='goal-rework'){if(form.elements.rework_mode.value==='selected'&&!reworkSelection(form).length)throw new Error('请至少选择一项任务。');if(new TextEncoder().encode(values.note).length>8000)throw new Error('修改要求最多 8,000 个 UTF-8 字节。');result=await api(`/api/v1/goals/${encodeURIComponent(form.dataset.id)}/rework`,{note:values.note,expected_round:Number(form.dataset.round),task_keys:reworkSelection(form)},'POST',form.dataset.commandKey);}
-    if(form.dataset.form==='goal-cancel') {result=await api(`/api/v1/goals/${encodeURIComponent(form.dataset.id)}/cancel`,{});}
     if(form.dataset.form==='drain') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/actions`,{action:'drain'});}
     if(form.dataset.form==='terminate') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/actions`,{action:'terminate'});}
     if(form.dataset.form==='spawn') {const preset=JSON.parse(values.preset);result=await api('/api/v1/agent-fleets',{preset_name:preset.name,preset_version:preset.version,count:Number(values.count),mode:values.mode,parameters:instanceParameters(form),ttl_seconds:values.ttl_minutes?Number(values.ttl_minutes)*60:null},'POST',form.dataset.commandKey);location.hash=`fleet/${result.fleet_id}`;}
@@ -444,7 +400,7 @@ document.addEventListener('submit',async event=>{
     if(form.dataset.form==='board-cancel'){toast('取消请求已保存。');return;}
     if(form.dataset.form==='board-review'){toast(result.review_state==='accepted'?'评审通过，任务已归档。':'评审意见已保存，任务重新等待选型。');return;}
     if(form.dataset.form==='run'&&data.runs.some(r=>r.id===result.id)){await runDetail(result.id);}
-    toast(form.dataset.form.startsWith('channel-')?'频道设置已保存。':form.dataset.form==='verification-retry'?'重新验证已接纳，正在创建独立实例。':form.dataset.form==='task-claim'?'认领已接纳，执行尝试与 Run 已保存。':form.dataset.form==='task-release'?'认领已释放，任务等待人工重新领取。':form.dataset.form==='context-publish'?'共享记录已保存，参与实例可读取新版本。':form.dataset.form==='goal-rework'?'返工已接纳，正在创建独立新团队；旧产物已保留。':form.dataset.form==='message-send'?'消息已接纳；投递与消费状态见协作消息页。':form.dataset.form==='message-action'?'处置记录已保存。':form.dataset.form==='process-state'?(result.state==='disabled'?'插件版本已禁用，新的调用将被拒绝。':'健康检查通过，插件版本已启用。'):result?.operation_id ? '操作已接纳，协调进度见Agent 池详情。' : result?.count ? `已创建 ${result.count} 个独立实例` : form.dataset.form==='goal'?'目标已接纳，将按依赖派发任务。':form.dataset.form==='goal-review'?'验收结论已保存。':form.dataset.form==='goal-cancel'?'取消请求已保存，已开始的运行将协作收尾。':form.dataset.form==='run'?'任务已接纳，可在执行详情中检查结果。':form.dataset.form==='drain'?'排空请求已保存，活动任务结算后终止。':form.dataset.form==='terminate'?'实例已终止，历史记录已保留。':'版本已保存');
+    toast(form.dataset.form==='message-send'?'消息已接纳；投递与消费状态见协作消息页。':form.dataset.form==='message-action'?'处置记录已保存。':form.dataset.form==='process-state'?(result.state==='disabled'?'插件版本已禁用，新的调用将被拒绝。':'健康检查通过，插件版本已启用。'):result?.operation_id ? '操作已接纳，协调进度见Agent 池详情。' : result?.count ? `已创建 ${result.count} 个独立实例` : form.dataset.form==='run'?'任务已接纳，可在执行详情中检查结果。':form.dataset.form==='drain'?'排空请求已保存，活动任务结算后终止。':form.dataset.form==='terminate'?'实例已终止，历史记录已保留。':'版本已保存');
   }catch(error){const target=form.querySelector('#form-error');if(target){target.textContent=error.message;target.tabIndex=-1;target.focus();}}
   finally {submit.disabled=false;submit.textContent=label;form.removeAttribute('aria-busy');}
 });
@@ -472,6 +428,6 @@ $('#login-dialog').addEventListener('cancel',event=>event.preventDefault());
 $('.skip-link').addEventListener('click',event=>{event.preventDefault();$('#content').focus();});
 function closeNavigation(){ $('#shell').classList.remove('navigation-open');$('#navigation-toggle').setAttribute('aria-expanded','false'); }
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&$('#shell').classList.contains('navigation-open')){closeNavigation();$('#navigation-toggle').focus();}});
-window.addEventListener('hashchange',()=>{inspectionRequest++;if($('#modal').open&&!$('#modal form[aria-busy="true"]'))$('#modal').close();closeNavigation();render();if(boardId()||goalId()||fleetId()||channelId())refresh(true);$('#content').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});});
+window.addEventListener('hashchange',()=>{inspectionRequest++;if($('#modal').open&&!$('#modal form[aria-busy="true"]'))$('#modal').close();closeNavigation();render();if(boardId()||fleetId())refresh(true);$('#content').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});});
 refresh();setInterval(()=>{if(authenticated&&!document.hidden)refresh();},1500);
 window.addEventListener('focus',()=>{if(authenticated)refresh();});

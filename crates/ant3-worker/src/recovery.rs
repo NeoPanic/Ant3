@@ -15,9 +15,6 @@ pub async fn recover(store: &Store) -> PResult<()> {
     }
     store.recover_startup()?;
     store.reconcile_fleets()?;
-    store.reconcile_channels()?;
     store.reconcile_messages()?;
-    store.reconcile_autonomy()?;
-    store.reconcile_board()?;
-    store.reconcile_goals()
+    store.reconcile_board()
 }

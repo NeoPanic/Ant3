@@ -1,5 +1,4 @@
 //! Per-instance local files and immutable, attributable shared file/JSON snapshots.
-pub mod artifacts;
 mod tools;
 use crate::{
     domain::*,
@@ -12,7 +11,7 @@ use sha2::{Digest, Sha256};
 use std::path::{Component, Path, PathBuf};
 pub use tools::{package, tools};
 const MAX_BYTES: usize = 1_048_576;
-const META: &str = "json_object('id',a.id,'instance_id',a.instance_id,'run_id',a.run_id,'goal_id',a.goal_id,'kind',a.kind,'name',a.name,'path',a.path,'media_type',a.media_type,'digest',a.digest,'bytes',a.bytes,'created_at',a.created_at,'source_state',r.state)";
+const META: &str = "json_object('id',a.id,'instance_id',a.instance_id,'run_id',a.run_id,'kind',a.kind,'name',a.name,'path',a.path,'media_type',a.media_type,'digest',a.digest,'bytes',a.bytes,'created_at',a.created_at,'source_state',r.state)";
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct WriteInput {
@@ -96,7 +95,7 @@ fn read_file(path: &Path) -> PResult<String> {
     }
     Ok(content)
 }
-fn scope(tx: &Transaction<'_>, run: &str) -> PResult<(String, Option<String>)> {
+fn scope(tx: &Transaction<'_>, run: &str) -> PResult<String> {
     let row:Option<(String,String)>=tx.query_row("SELECT i.id,i.snapshot FROM runs r JOIN instances i ON i.id=r.instance_id WHERE r.id=? AND r.state='running' AND r.cancel_requested=0 AND i.state='busy'",[run],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
     let (instance, snapshot) = row.ok_or_else(|| fault(403, "workspace_run_not_authorized"))?;
     if !crate::presets::bindings(&serde_json::from_str(&snapshot)?)
@@ -105,18 +104,7 @@ fn scope(tx: &Transaction<'_>, run: &str) -> PResult<(String, Option<String>)> {
     {
         return Err(fault(403, "workspace_capability_required"));
     }
-    let goal: Option<String> = tx
-        .query_row(
-            "SELECT goal_id FROM work_items WHERE run_id=?",
-            [run],
-            |r| r.get(0),
-        )
-        .optional()?;
-    let goal = match goal {
-        Some(goal) => Some(goal),
-        None => crate::channels::notification_goal(tx, run)?,
-    };
-    Ok((instance, goal))
+    Ok(instance)
 }
 fn prior(tx: &Transaction<'_>, run: &str, key: &str, fingerprint: &str) -> PResult<Option<Value>> {
     if key.is_empty() || key.len() > 160 {
@@ -192,11 +180,11 @@ impl Store {
         )
     }
     pub fn run_workspace_files(&self, run: &str, path: &str) -> PResult<Value> {
-        let (instance, _) = self.transaction(|tx| scope(tx, run))?;
+        let instance = self.transaction(|tx| scope(tx, run))?;
         self.workspace_files(&instance, path)
     }
     pub fn run_workspace_read(&self, run: &str, path: &str) -> PResult<Value> {
-        let (instance, _) = self.transaction(|tx| scope(tx, run))?;
+        let instance = self.transaction(|tx| scope(tx, run))?;
         self.workspace_read(&instance, path)
     }
     pub fn workspace_write(&self, run: &str, input: &WriteInput, key: &str) -> PResult<Value> {
@@ -204,10 +192,10 @@ impl Store {
             return Err(fault(400, "invalid_workspace_write"));
         }
         let fingerprint = format!("write:{}", serde_json::to_string(input)?);
-        let (instance, _) = self.transaction(|tx| scope(tx, run))?;
+        let instance = self.transaction(|tx| scope(tx, run))?;
         let root = instance_root(self, &instance)?;
         self.transaction(|tx|{
-            let (instance,_)=scope(tx,run)?;if let Some(v)=prior(tx,run,key,&fingerprint)?{return Ok(v);}
+            let instance=scope(tx,run)?;if let Some(v)=prior(tx,run,key,&fingerprint)?{return Ok(v);}
             let path=resolved(&root,&input.path)?;std::fs::create_dir_all(path.parent().unwrap()).map_err(io)?;
             // Repeating a write after a crash restores the same bytes; no append/delete command exists.
             std::fs::write(&path,input.content.as_bytes()).map_err(io)?;
@@ -228,7 +216,7 @@ impl Store {
             return Err(fault(400, "invalid_workspace_publication"));
         }
         let fingerprint = format!("publish:{}", serde_json::to_string(input)?);
-        let (instance, _) = self.transaction(|tx| scope(tx, run))?;
+        let instance = self.transaction(|tx| scope(tx, run))?;
         // Prior receipt wins even if the live file was subsequently edited.
         if let Some(old) = self.transaction(|tx| prior(tx, run, key, &fingerprint))? {
             return Ok(old);
@@ -251,15 +239,15 @@ impl Store {
             return Err(fault(400, "workspace_artifact_too_large"));
         }
         self.transaction(|tx|{
-            let (instance,goal)=scope(tx,run)?;if let Some(old)=prior(tx,run,key,&fingerprint)?{return Ok(old);}
-            let id=id("fileartifact");tx.execute("INSERT INTO workspace_artifacts(id,instance_id,run_id,goal_id,kind,name,path,media_type,content,digest,bytes,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",params![id,instance,run,goal,kind,input.name,input.path,media,content,digest(&content),content.len(),now()])?;
-            let value=artifact_in(tx,&id,false)?;receipt(tx,run,key,&fingerprint,&value)?;event(tx,"workspace.artifact_published",&id,json!({"run_id":run,"instance_id":instance,"goal_id":goal,"kind":kind,"name":input.name}))?;Ok(value)
+            let instance=scope(tx,run)?;if let Some(old)=prior(tx,run,key,&fingerprint)?{return Ok(old);}
+            let id=id("fileartifact");tx.execute("INSERT INTO workspace_artifacts(id,instance_id,run_id,kind,name,path,media_type,content,digest,bytes,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",params![id,instance,run,kind,input.name,input.path,media,content,digest(&content),content.len(),now()])?;
+            let value=artifact_in(tx,&id,false)?;receipt(tx,run,key,&fingerprint,&value)?;event(tx,"workspace.artifact_published",&id,json!({"run_id":run,"instance_id":instance,"kind":kind,"name":input.name}))?;Ok(value)
         })
     }
-    pub fn workspace_artifacts(&self, goal: Option<&str>) -> PResult<Value> {
+    pub fn workspace_artifacts(&self) -> PResult<Value> {
         self.transaction(|tx|{
-        let mut stmt=tx.prepare(&format!("SELECT {META} FROM workspace_artifacts a JOIN runs r ON r.id=a.run_id WHERE (? IS NULL OR a.goal_id=?) ORDER BY a.created_at DESC,a.id LIMIT 200"))?;
-        let items=stmt.query_map(params![goal,goal],|r|r.get::<_,String>(0))?.map(|r|Ok(serde_json::from_str::<Value>(&r?)?)).collect::<PResult<Vec<_>>>()?;Ok(json!({"artifacts":items}))
+        let mut stmt=tx.prepare(&format!("SELECT {META} FROM workspace_artifacts a JOIN runs r ON r.id=a.run_id ORDER BY a.created_at DESC,a.id LIMIT 200"))?;
+        let items=stmt.query_map([],|r|r.get::<_,String>(0))?.map(|r|Ok(serde_json::from_str::<Value>(&r?)?)).collect::<PResult<Vec<_>>>()?;Ok(json!({"artifacts":items}))
     })
     }
     pub fn workspace_artifact(&self, id: &str) -> PResult<Value> {
@@ -267,19 +255,28 @@ impl Store {
     }
     pub fn run_workspace_artifacts(&self, run: &str) -> PResult<Value> {
         self.transaction(|tx|{
-        let (instance,goal)=scope(tx,run)?;
-        let mut stmt=tx.prepare(&format!("SELECT {META} FROM workspace_artifacts a JOIN runs r ON r.id=a.run_id WHERE a.instance_id=? OR (? IS NOT NULL AND a.goal_id=?) ORDER BY a.created_at DESC LIMIT 100"))?;
-        let items=stmt.query_map(params![instance,goal,goal],|r|r.get::<_,String>(0))?.map(|r|Ok(serde_json::from_str::<Value>(&r?)?)).collect::<PResult<Vec<_>>>()?;Ok(json!({"artifacts":items,"untrusted_evidence":true}))
+        let instance=scope(tx,run)?;
+        let mut stmt=tx.prepare(&format!("SELECT {META} FROM workspace_artifacts a JOIN runs r ON r.id=a.run_id WHERE a.instance_id=? ORDER BY a.created_at DESC LIMIT 100"))?;
+        let items=stmt.query_map(params![instance],|r|r.get::<_,String>(0))?.map(|r|Ok(serde_json::from_str::<Value>(&r?)?)).collect::<PResult<Vec<_>>>()?;Ok(json!({"artifacts":items,"untrusted_evidence":true}))
     })
     }
     pub fn read_workspace_artifact(&self, run: &str, id: &str) -> PResult<Value> {
         self.transaction(|tx| {
-            let (instance, goal) = scope(tx, run)?;
+            let instance = scope(tx, run)?;
             let v = artifact_in(tx, id, true)?;
-            if v["instance_id"] != instance
-                && !(goal.is_some() && v["goal_id"].as_str() == goal.as_deref())
-            {
-                return Err(fault(403, "workspace_artifact_out_of_scope"));
+            if v["instance_id"] != instance {
+                // Immutable snapshots are the stigmergy handoff: peers sharing
+                // a board root (invitation or recruitment) may read them.
+                let shared:bool=tx.query_row(
+                    "SELECT EXISTS(
+                       SELECT 1 FROM (SELECT root_id FROM board_agents WHERE instance_id=? UNION SELECT root_id FROM board_peer_roots WHERE instance_id=?) a
+                       JOIN (SELECT root_id FROM board_agents WHERE instance_id=? UNION SELECT root_id FROM board_peer_roots WHERE instance_id=?) b ON a.root_id=b.root_id)",
+                    params![&instance,&instance,v["instance_id"].as_str().unwrap(),v["instance_id"].as_str().unwrap()],
+                    |r|r.get(0),
+                )?;
+                if !shared {
+                    return Err(fault(403, "workspace_artifact_out_of_scope"));
+                }
             }
             Ok(v)
         })
@@ -297,47 +294,4 @@ fn artifact_in(tx: &Transaction<'_>, id: &str, body: bool) -> PResult<Value> {
         }
     }
     Ok(value)
-}
-
-/// Freeze only publications authored by the current successful task Runs, excluding older rounds.
-pub(crate) fn verification_manifest(
-    tx: &Transaction<'_>,
-    goal: &str,
-    runs: &[String],
-) -> PResult<Vec<Value>> {
-    let mut stmt = tx.prepare(&format!(
-        "SELECT {META},w.key FROM workspace_artifacts a JOIN runs r ON r.id=a.run_id JOIN work_items w ON w.run_id=a.run_id AND w.goal_id=a.goal_id WHERE a.goal_id=? AND r.state='completed' AND r.cancel_requested=0 ORDER BY w.position,a.created_at,a.id"
-    ))?;
-    let rows = stmt
-        .query_map([goal], |r| {
-            Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
-    let mut result = Vec::new();
-    for (body, key) in rows {
-        let mut artifact: Value = serde_json::from_str(&body)?;
-        if !runs.iter().any(|run| artifact["run_id"] == *run) {
-            continue;
-        }
-        artifact["workspace"] = json!(true);
-        artifact["task_key"] = json!(key);
-        artifact["checks"] = json!([{"rule":"snapshot_size","passed":artifact["bytes"].as_u64().is_some_and(|n|n<=MAX_BYTES as u64),"scope":"UTF-8 file or structured JSON snapshot; semantic quality requires review"}]);
-        result.push(artifact);
-    }
-    Ok(result)
-}
-
-pub(crate) fn evidence_content(tx: &Transaction<'_>, id: &str) -> PResult<(String, String)> {
-    let (content, saved): (String, String) = tx
-        .query_row(
-            "SELECT content,digest FROM workspace_artifacts WHERE id=?",
-            [id],
-            |r| Ok((r.get(0)?, r.get(1)?)),
-        )
-        .optional()?
-        .ok_or_else(|| fault(404, "workspace_artifact_not_found"))?;
-    if digest(&content) != saved {
-        return Err(fault(409, "artifact_integrity_failed"));
-    }
-    Ok((content, saved))
 }

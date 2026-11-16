@@ -59,3 +59,10 @@ CREATE TABLE IF NOT EXISTS board_verification_reads(
  end_pos INTEGER NOT NULL,
  PRIMARY KEY(verification_id,start_pos,end_pos)
 );
+CREATE TABLE IF NOT EXISTS board_peer_roots(
+ instance_id TEXT NOT NULL REFERENCES instances(id),
+ root_id TEXT NOT NULL REFERENCES board_tasks(id),
+ via_message TEXT NOT NULL REFERENCES messages(id),
+ created_at INTEGER NOT NULL,
+ PRIMARY KEY(instance_id,root_id)
+);

@@ -8,7 +8,7 @@ use std::sync::Arc;
 fn spec() -> ToolSpec {
     ToolSpec {
         name:"platform.messaging.send".into(),
-        description:"Send task data to an existing Agent in this fleet or active shared Goal. Admission is not consumption. Recipient will run when ready; do not send acknowledgement-only reply loops. Reuse key and identical content after uncertain transport outcomes.".into(),
+        description:"Send task data to an existing Agent in this fleet or engaged on the same shared board root. Admission is not consumption. Recipient will run when ready; do not send acknowledgement-only reply loops. Reuse key and identical content after uncertain transport outcomes.".into(),
         parameters:json!({"type":"object","properties":{"recipient_id":{"type":"string"},"text":{"type":"string","minLength":1,"maxLength":8000},"key":{"type":"string","minLength":1,"maxLength":160}},"required":["recipient_id","text","key"],"additionalProperties":false}),
         mutates:true,
     }
@@ -65,7 +65,6 @@ impl Tool for SendTool {
                 &input.recipient_id,
                 &MessageInput {
                     text: input.text,
-                    goal_id: None,
                     correlation_id: None,
                     causation_id: None,
                 },

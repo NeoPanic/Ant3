@@ -30,15 +30,8 @@
 | [共享任务板](task-board.zh-CN.md) | 无实例绑定发布、Preset 选型、原子认领与拆分 |
 | [信息素痕迹场](traces.zh-CN.md) | 浓度、增强、蒸发与有界 Agent 信号 |
 | [涌现评估基线](evaluation.zh-CN.md) | 单/多 Agent 同任务对照与信息复用指标 |
-| [Goal 任务领取](task-claims.zh-CN.md) | 兼容候选池、所有权和执行尝试 |
-| [Goal 自主协作](autonomy.zh-CN.md) | 兼容后续工作追加和接续约束 |
-| [动态委派](dynamic-delegation.zh-CN.md) | 角色、父子任务和续作 |
-| [共享上下文](shared-context.zh-CN.md) | 发现、决策、来源与修订 |
-| [协作频道](channels.zh-CN.md) | 成员可见性、订阅与唤醒 |
 | [点对点消息](messaging.zh-CN.md) | 投递、派发、消费和恢复 |
-| [文件工作区](workspaces.zh-CN.md) | 私有文件与跨 Agent 快照共享 |
-| [协作产物](artifacts.zh-CN.md) | 不可变产物、轮次与验收 |
-| [独立验证](verification.zh-CN.md) | 固定证据、验证报告与局部修复 |
+| [文件工作区](workspaces.zh-CN.md) | 私有文件与同板根快照共享 |
 | [进程插件](process-plugins.zh-CN.md) | 包格式、安装、绑定与执行契约 |
 
 插件示例：[文本统计](../examples/plugins/text-inspector/)、[HTTP 读取](../examples/plugins/http-reader/)、[文件交接母体](../examples/plugins/workspace-preset/)。

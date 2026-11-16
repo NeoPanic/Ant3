@@ -43,7 +43,7 @@ CLI 共用 `--port`、`--data-dir` 配置，输出 JSON：
 ./target/debug/ant3 board review TASK_ID --file review.json --key review-1
 ```
 
-任务板尚未添加 MCP 工具；已有 MCP 入口继续使用其已声明的 Goal 和调研操作。
+任务板尚未添加 MCP 工具；已有 MCP 入口提供实例、Run、消息、母体与插件操作。
 
 请求示例见 [board-task.json](../examples/clients/board-task.json)：
 
@@ -82,7 +82,7 @@ cargo run --locked -p ant3-cli -- up
 
 未单独配置时，优先复用已配置的 Responses、OpenAI-compatible 或 Anthropic 服务。没有可用模型时显示未配置，不会回退到演示路由。启动不自动发布 Preset，需先在母体页发布适合任务的母体。
 
-候选目录只包含能够使用默认参数实例化、执行模型已配置且所需进程插件允许运行的 Preset。旧组织插件依赖 Goal 上下文，当前不进入任务板选型目录。任务板的 `read`、`claim`、`split`、`result`、`progress` 工具由运行时统一注入，无需在 Preset 中额外绑定。
+候选目录只包含能够使用默认参数实例化、执行模型已配置且所需进程插件允许运行的 Preset。任务板的 `read`、`claim`、`split`、`result`、`progress` 工具由运行时统一注入，无需在 Preset 中额外绑定。
 
 启动为空白工作区，不自动发布通用 Preset。人类发布专业 Preset 后，后续任务可进入该类型的选型范围。选型输入包含祖先材料与人类评审意见，Agent 通过任务板读取旧成果。
 
@@ -118,9 +118,7 @@ cargo run --locked -p ant3-cli -- up
 
 取消停止新增派发，并处理任务范围内的待运行与活动 Run。已发生的工具副作用无法通过取消撤销；中断结果未知时不自动重试外部动作。
 
-当前为单 daemon、本地 Worker 的任务板。已有 Goal 的频道、共享上下文、文件产物和独立验证仍属另一套流程契约。`completed` 表示已知执行成功，根任务的 `review_state=pending` 表示待人类评审，`accepted` 才归档；子任务成功后可直接参与父任务整合。尚无分布式租约、跨机器调度、团队费用硬预算或通用公平性保证。
-
-兼容用例分别见[Goal 候选池认领](task-claims.zh-CN.md)和[Goal 内追加与接续](autonomy.zh-CN.md)。这些用例继续保存各自的状态与接口，任务板无需依赖它们的预设角色。
+当前为单 daemon、本地 Worker 的任务板。同板根成员通过[点对点消息](messaging.zh-CN.md)与[工作区快照](workspaces.zh-CN.md)交接证据。`completed` 表示已知执行成功，根任务的 `review_state=pending` 表示待人类评审，`accepted` 才归档；子任务成功后可直接参与父任务整合。尚无分布式租约、跨机器调度、团队费用硬预算或通用公平性保证。
 
 ## 人类评审与返工
 

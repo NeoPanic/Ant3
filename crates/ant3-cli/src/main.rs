@@ -13,11 +13,6 @@ struct Cli {
 enum Command {
     /// Publish and inspect shared tasks; the control plane selects Presets dynamically.
     Board(cli::BoardArgs),
-    /// Manage shared goals through the running daemon's authenticated HTTP API.
-    Goals(cli::GoalArgs),
-    Artifacts(cli::ArtifactArgs),
-    Context(cli::ContextArgs),
-    Tasks(cli::TaskArgs),
     Messages(cli::MessageArgs),
     /// Manage durable fleets and asynchronous operation receipts.
     Fleets(cli::FleetArgs),
@@ -82,10 +77,6 @@ async fn main() -> ant3_client::ClientResult<()> {
     match Cli::parse().command {
         Command::Board(args) => cli::board(args).await?,
         Command::Messages(args) => cli::messages(args).await?,
-        Command::Goals(args) => cli::goals(args).await?,
-        Command::Artifacts(args) => cli::artifacts(args).await?,
-        Command::Context(args) => cli::context(args).await?,
-        Command::Tasks(args) => cli::tasks(args).await?,
         Command::Fleets(args) => cli::fleets(args).await?,
         Command::Instances(args) => cli::instances(args).await?,
         Command::Runs(args) => cli::runs(args).await?,

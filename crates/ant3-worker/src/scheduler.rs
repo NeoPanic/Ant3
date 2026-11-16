@@ -69,17 +69,8 @@ pub async fn worker_loop_with_router(
                 }
             }
         }
-        if let Err(error) = store.reconcile_channels() {
-            eprintln!("channel reconciliation: {}", error.1);
-        }
         if let Err(error) = store.reconcile_messages() {
             eprintln!("Message reconciliation failed: {error}");
-        }
-        if let Err(error) = store.reconcile_autonomy() {
-            eprintln!("task autonomy reconciliation: {}", error.1);
-        }
-        if let Err(error) = store.reconcile_goals() {
-            eprintln!("Goal coordination failed: {error}");
         }
         if let Err(error) = store.reconcile_board() {
             eprintln!("Task board reconciliation failed: {error}");

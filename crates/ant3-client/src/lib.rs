@@ -34,53 +34,6 @@ pub enum Command {
         input: ant3_domain::board::ReviewInput,
         key: String,
     },
-    VerificationRetry {
-        id: String,
-        input: ant3_domain::verification::Retry,
-        key: String,
-    },
-    TasksShow {
-        id: String,
-        task: String,
-    },
-    TasksClaim {
-        id: String,
-        task: String,
-        input: ant3_domain::claims::ClaimInput,
-        key: String,
-    },
-    TasksRelease {
-        id: String,
-        task: String,
-        input: ant3_domain::claims::ReleaseInput,
-        key: String,
-    },
-    ContextRead {
-        id: String,
-    },
-    ContextHistory {
-        id: String,
-        entry: String,
-    },
-    ContextPublish {
-        id: String,
-        input: ant3_domain::collaboration::ContextInput,
-        key: String,
-    },
-    ArtifactsList {
-        goal_id: Option<String>,
-        #[serde(default)]
-        after: i64,
-        limit: Option<usize>,
-    },
-    ArtifactsShow {
-        id: String,
-    },
-    GoalsRework {
-        id: String,
-        input: ant3_domain::artifacts::ReworkInput,
-        key: String,
-    },
     MessagesList {
         #[serde(default)]
         after: i64,
@@ -163,25 +116,6 @@ pub enum Command {
     RunsCancel {
         id: String,
     },
-    GoalsList,
-    GoalsCreate {
-        plan: ant3_domain::GoalPlan,
-        key: String,
-    },
-    GoalsShow {
-        id: String,
-    },
-    GoalsCancel {
-        id: String,
-    },
-    GoalsAccept {
-        id: String,
-        review: String,
-        #[serde(default = "first_round")]
-        expected_round: i64,
-        #[serde(default)]
-        expected_context_revision: i64,
-    },
     EventsList {
         #[serde(default)]
         after: u64,
@@ -191,12 +125,7 @@ impl Command {
     pub fn read_only(&self) -> bool {
         matches!(
             self,
-            Self::TasksShow { .. }
-                | Self::ContextRead { .. }
-                | Self::ContextHistory { .. }
-                | Self::ArtifactsList { .. }
-                | Self::ArtifactsShow { .. }
-                | Self::BoardList
+            Self::BoardList
                 | Self::BoardShow { .. }
                 | Self::MessagesList { .. }
                 | Self::MessagesShow { .. }
@@ -210,8 +139,6 @@ impl Command {
                 | Self::InstancesList
                 | Self::InstancesSession { .. }
                 | Self::RunsShow { .. }
-                | Self::GoalsList
-                | Self::GoalsShow { .. }
                 | Self::EventsList { .. }
         )
     }
@@ -301,83 +228,6 @@ impl PlatformClient {
             BoardReview { id, input, key } => (
                 Method::POST,
                 format!("/board/tasks/{}/review", segment(&id)?),
-                Some(serde_json::to_value(input)?),
-                Some(key),
-            ),
-            VerificationRetry { id, input, key } => (
-                Method::POST,
-                object("goals", &id, "/verification/retry")?,
-                Some(serde_json::to_value(input)?),
-                Some(key),
-            ),
-            TasksShow { id, task } => (
-                Method::GET,
-                object("goals", &id, &format!("/tasks/{}", segment(&task)?))?,
-                None,
-                None,
-            ),
-            TasksClaim {
-                id,
-                task,
-                input,
-                key,
-            } => (
-                Method::POST,
-                object("goals", &id, &format!("/tasks/{}/claim", segment(&task)?))?,
-                Some(serde_json::to_value(input)?),
-                Some(key),
-            ),
-            TasksRelease {
-                id,
-                task,
-                input,
-                key,
-            } => (
-                Method::POST,
-                object("goals", &id, &format!("/tasks/{}/release", segment(&task)?))?,
-                Some(serde_json::to_value(input)?),
-                Some(key),
-            ),
-            ContextRead { id } => (Method::GET, object("goals", &id, "/context")?, None, None),
-            ContextHistory { id, entry } => (
-                Method::GET,
-                object("goals", &id, &format!("/context/{}", segment(&entry)?))?,
-                None,
-                None,
-            ),
-            ContextPublish { id, input, key } => (
-                Method::POST,
-                object("goals", &id, "/context")?,
-                Some(serde_json::to_value(input)?),
-                Some(key),
-            ),
-            ArtifactsList {
-                goal_id,
-                after,
-                limit,
-            } => {
-                let mut url = reqwest::Url::parse("http://localhost/artifacts")?;
-                {
-                    let mut pairs = url.query_pairs_mut();
-                    pairs.append_pair("after", &after.to_string());
-                    if let Some(goal) = goal_id {
-                        pairs.append_pair("goal_id", &goal);
-                    }
-                    if let Some(limit) = limit {
-                        pairs.append_pair("limit", &limit.to_string());
-                    }
-                }
-                (
-                    Method::GET,
-                    format!("/artifacts?{}", url.query().unwrap_or_default()),
-                    None,
-                    None,
-                )
-            }
-            ArtifactsShow { id } => (Method::GET, object("artifacts", &id, "")?, None, None),
-            GoalsRework { id, input, key } => (
-                Method::POST,
-                object("goals", &id, "/rework")?,
                 Some(serde_json::to_value(input)?),
                 Some(key),
             ),
@@ -534,33 +384,6 @@ impl PlatformClient {
                 Some(json!({})),
                 None,
             ),
-            GoalsList => (Method::GET, "/goals".into(), None, None),
-            GoalsCreate { plan, key } => (
-                Method::POST,
-                "/goals".into(),
-                Some(serde_json::to_value(plan)?),
-                Some(key),
-            ),
-            GoalsShow { id } => (Method::GET, object("goals", &id, "")?, None, None),
-            GoalsCancel { id } => (
-                Method::POST,
-                object("goals", &id, "/cancel")?,
-                Some(json!({})),
-                None,
-            ),
-            GoalsAccept {
-                id,
-                review,
-                expected_round,
-                expected_context_revision,
-            } => (
-                Method::POST,
-                object("goals", &id, "/accept")?,
-                Some(
-                    json!({"review":review,"expected_round":expected_round,"expected_context_revision":expected_context_revision}),
-                ),
-                None,
-            ),
             EventsList { after } => (Method::GET, format!("/events?after={after}"), None, None),
         };
         self.request(method, &path, body, key.as_deref()).await
@@ -579,8 +402,4 @@ fn segment(value: &str) -> ClientResult<&str> {
     } else {
         Ok(value)
     }
-}
-
-fn first_round() -> i64 {
-    1
 }

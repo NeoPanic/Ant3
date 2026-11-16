@@ -97,25 +97,22 @@ The control plane selects Presets, provisions instances, and enforces capacity, 
 | Lifecycle | Independent instances; Agent pools for provisioning, scaling, retirement, and TTL. |
 | Shared task board | Publish unassigned tasks; select Presets, provision instances, claim atomically, split, requeue on failure. |
 | Swarm coordination | Pheromone traces, response-threshold division of labor, crowding avoidance, recruitment, local perception. |
-| Explicit scaffolding | Goal dependency graphs, candidate-based claiming, bounded dynamic delegation (user/agent-initiated, not fixed pipelines). |
-| Collaboration | Direct messages, Goal channels, subscriptions, shared versioned context. |
+| Collaboration | Direct messages with board-root recruitment; immutable workspace snapshot handoffs. |
 | Deliverables | Private workspaces, immutable text/file/JSON snapshots, peer evidence handoffs. |
 | Review | Independent verification, evidence-linked repair, review rounds, human acceptance. |
 | Extension | Prompt packages and local process Tool plugins with pinned versions and health checks. |
 | Access | Desktop Web, HTTP API, CLI, and outward MCP stdio share persistent local state. |
 
-Completed root results await human review: accept to archive, or request changes to resume with feedback. Automatic independent verification is not yet wired into the board itself.
+Completed root results await review: optional independent verification audits the frozen result with a fresh instance; humans accept to archive or request changes to resume with feedback.
 
 <details>
-<summary>More console views: workstation, collaboration, and artifacts</summary>
+<summary>More console views: workstation, overview, and workspaces</summary>
 
 ![Agent workstation](docs/images/agent-workstation.png)
 
 ![Console overview](docs/images/console-overview.png)
 
 Crew animations reflect recorded execution states: working, waiting, or sleeping.
-
-![Team collaboration](docs/images/team-collaboration.png)
 
 ![Workspace files and shared evidence](docs/images/workspace-artifacts.png)
 
@@ -196,7 +193,7 @@ The [offline example](examples/quickstart.rs) runs a model → tool → model cy
 
 ## Status & boundaries
 
-Ant³ is a **pre-1.0 local platform for trusted environments**. Local defaults: 256 instances, 8 execution slots, 64 tasks per Goal — configured limits, not measured capacity claims. Not yet provided: distributed scheduling, hosted deployment, strong multi-tenant isolation, hard cost budgets, and remote MCP plugin loading. See [current status](docs/status.zh-CN.md) and the [capability/source index](docs/capabilities.zh-CN.md) for precise boundaries.
+Ant³ is a **pre-1.0 local platform for trusted environments**. Local defaults: 256 instances, 8 execution slots, 64 tasks per board root — configured limits, not measured capacity claims. Not yet provided: distributed scheduling, hosted deployment, strong multi-tenant isolation, hard cost budgets, and remote MCP plugin loading. See [current status](docs/status.zh-CN.md) and the [capability/source index](docs/capabilities.zh-CN.md) for precise boundaries.
 
 The display name is **Ant³**, the repository is **Ant3**, and technical identifiers use `ant3` (CLI, Cargo packages, protocols, `.ant3/` data directory). **³** expresses the collaboration loop: **claim → contribute → continue**. [Brand assets](docs/brand/README.md) · [upgrade guide](docs/upgrade-ant3.zh-CN.md).
 

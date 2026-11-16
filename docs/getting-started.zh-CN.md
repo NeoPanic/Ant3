@@ -1,6 +1,6 @@
 # Ant³ 本地平台使用指南
 
-Ant³ 在本地管理 Preset、实例、任务和工具执行。默认流程从共享任务板发布工作开始：控制面动态选择 Preset 并启动实例，Agent 自行认领、执行或拆分。已有 Agent 池、单实例 Run 和显式 Goal 继续可用。入口共用同一个 daemon 与持久状态；运行时 crate `ant3` 也可独立使用。
+Ant³ 在本地管理 Preset、实例、任务和工具执行。默认流程从共享任务板发布工作开始：控制面动态选择 Preset 并启动实例，Agent 自行认领、执行或拆分。已有 Agent 池与单实例 Run 继续可用。入口共用同一个 daemon 与持久状态；运行时 crate `ant3` 也可独立使用。
 
 ## 启动与登录
 
@@ -67,12 +67,11 @@ cargo run --locked -p ant3-cli -- up \
 | Agent 实例 | 独立身份、配置快照和持久会话，同一时刻最多一个已接纳 Run |
 | 任务板任务 | 发布时无实例绑定，控制面选型后由 Agent 认领，记录拆分来源与结果 |
 | Run | 一次输入及其模型/工具循环，保存请求、回执、事件、输出和用量 |
-| Goal / WorkItem / Attempt | 共同目标、依赖任务，以及任务每次认领与执行的身份记录 |
-| Artifact / 工作区 | 不可变文本与文件/JSON 交付，以及实例自己的可变文件目录 |
-| 频道 / 共享上下文 | 团队讨论与订阅唤醒，以及可修订、可追溯的发现与决策 |
+| 工作区快照 | 不可变文本与文件/JSON 交付，以及实例自己的可变文件目录 |
+| 消息 | 同板根成员之间的持久点对点交接，投递与消费可恢复 |
 | Operation | Agent 池创建、扩缩容等异步操作的接纳与完成状态 |
 
-普通 Run 只执行单个 Agent。任务板按任务按需启动实例；兼容团队协作使用 Goal 或显式消息交接。批量创建 Agent 池本身不会产生任务。
+普通 Run 只执行单个 Agent。任务板按任务按需启动实例；成员之间通过板根招募与显式消息交接协作。批量创建 Agent 池本身不会产生任务。
 
 ## Agent 池与单实例运行
 
@@ -83,7 +82,7 @@ cargo run --locked -p ant3-cli -- up \
 - 扩缩容要求匹配 `expected_revision`。缩容排空大编号槽位，已接纳的运行结算后回收；缩到零仍可扩容。终止整个池后不可恢复。
 - TTL 从每个实例实际创建时开始，可为 1–2,592,000 秒或省略。到期取消排队 Run，并请求活动 Run 协作取消；已知成功结果仍保留。
 
-创建返回 HTTP 202 与 `fleet_id`、`operation_id`，表示意图和容量已持久化；实例分批创建。Operation 完成表示实例创建完成，业务结果需查看 Run 或 Goal。
+创建返回 HTTP 202 与 `fleet_id`、`operation_id`，表示意图和容量已持久化；实例分批创建。Operation 完成表示实例创建完成，业务结果需查看 Run 或任务板任务。
 
 实例详情可暂停、恢复、终止或“排空并终止”。排空拒绝新任务、等待已接纳工作结算，不能撤回；终止后保留历史会话和回执。
 
@@ -96,15 +95,13 @@ cargo run --locked -p ant3-cli -- up \
 ./target/debug/ant3 runs show RUN_ID
 ```
 
-## 显式任务图
+## 拆分与评审
 
-“协作目标”使用已有实例定义共同目标、验收标准、任务和依赖。独立任务并行，下游收到直接依赖的输出、实例、Run 和产物身份后执行。任务按拓扑顺序提交，`depends_on` 只能引用前面已定义的 key。
+任务运行中的 Agent 可以把工作拆分为子任务；子任务进入同一任务板，由控制面继续选型。拆分来源成功后激活子任务，子任务全部完成后原任务重新可认领以整合结果。失败、取消或结果未知的子任务会阻断父任务整合，兄弟任务继续结算。
 
-候选池可提供备用实例，也可让操作者人工领取。任务运行中的 Agent 可请求后续领取或追加任务；追加只影响尚未派发的直接下游。失败、取消或结果未知的上游会阻断依赖后继，独立任务继续结算。下游上下文超过 64,000 UTF-8 字节时明确阻断，不截断证据。
+根任务执行成功后进入待评审。发布时启用独立验证的任务先由全新验证器实例按验收标准审计冻结结果：通过自动归档，退回附意见有界返工，证据不足或预算耗尽交回人类评审。Run 成功只证明执行成功；人类核对结果与验收标准后提交评审，`review_state=accepted` 才归档。
 
-全部任务成功后，有验证策略的 Goal 进入 `verifying`，否则进入 `awaiting-review`。Run 成功只证明执行成功；用户核对本轮产物、共享上下文和验收标准后提交评审，Goal 才成为 `accepted`。
-
-取消停止后续派发、取消排队工作，并等待活动 Run 收尾，不撤销已发生的工具效果。返工最多三轮（含初始轮），可选择整图或指定任务及其下游；未受影响的成功产物保留原身份和版本。
+取消停止后续认领、取消排队工作，并等待活动 Run 收尾，不撤销已发生的工具效果。退回修改按评审意见重新启动选型与执行；历史结果与评审记录保留。
 
 ## HTTP、CLI 与 MCP
 
@@ -118,8 +115,6 @@ CLI 从 `--data-dir` 读取平台 token，只调用 loopback HTTP，不直接写
 ./target/debug/ant3 board list
 ./target/debug/ant3 board show TASK_ID
 ./target/debug/ant3 presets list
-./target/debug/ant3 goals create --file goal.json --key goal-create-1
-./target/debug/ant3 goals show GOAL_ID
 ./target/debug/ant3 events --after 0
 ```
 
@@ -130,9 +125,9 @@ MCP stdio 连接已启动的 daemon：
 # 需要写入时追加 --allow-write
 ```
 
-客户端配置见 [mcp.json](../examples/clients/mcp.json)。适配器仅读取平台 token；stdout 用于逐行 JSON-RPC，诊断使用 stderr。默认只公布查询工具，`--allow-write` 授予本地操作者写权限。支持协议版本 2024-11-05、2025-03-26、2025-06-18、2025-11-25；没有 resources、Streamable HTTP、并发调用或协议级请求取消，取消 Run/Goal 使用显式工具。
+客户端配置见 [mcp.json](../examples/clients/mcp.json)。适配器仅读取平台 token；stdout 用于逐行 JSON-RPC，诊断使用 stderr。默认只公布查询工具，`--allow-write` 授予本地操作者写权限。支持协议版本 2024-11-05、2025-03-26、2025-06-18、2025-11-25；没有 resources、Streamable HTTP、并发调用或协议级请求取消，取消 Run/任务使用显式工具。
 
-HTTP JSON 请求和 CLI 文件上限为 128 KiB，用户输入上限为 64,000 UTF-8 字节。列表有返回窗口；完整 Run、Goal、Operation 通过 ID 查询，事件按游标补读。平台不自动重试写入。
+HTTP JSON 请求和 CLI 文件上限为 128 KiB，用户输入上限为 64,000 UTF-8 字节。列表有返回窗口；完整 Run、任务、Operation 通过 ID 查询，事件按游标补读。平台不自动重试写入。
 
 ## 专题指南
 
@@ -141,22 +136,16 @@ HTTP JSON 请求和 CLI 文件上限为 128 KiB，用户输入上限为 64,000 U
 | 发布任务，动态选型、认领、拆分与回投 | [共享任务板](task-board.zh-CN.md) |
 | 定义母体、继承、多个插件和实例参数 | [母体与参数](presets.zh-CN.md) |
 | 安装自定义本地工具 | [进程插件](process-plugins.zh-CN.md) |
-| 理解候选池、人工领取与执行尝试 | [任务认领](task-claims.zh-CN.md) |
-| Goal 内 Agent 请求接续或追加工作 | [Goal 自主协作](autonomy.zh-CN.md) |
-| 子 Agent 委派与父 Agent 续作 | [动态委派](dynamic-delegation.zh-CN.md) |
-| 发布发现、修订及处理并发冲突 | [共享上下文](shared-context.zh-CN.md) |
+| 读取信息素痕迹、浓度与蒸发 | [信息素痕迹场](traces.zh-CN.md) |
 | 点对点交接、消费及未知结果处置 | [协作消息](messaging.zh-CN.md) |
-| 分组讨论与订阅唤醒 | [协作频道](channels.zh-CN.md) |
 | 写文件、发布文件/JSON 快照并交接 | [文件工作区](workspaces.zh-CN.md) |
-| 检查交付、人工验收和局部返工 | [产物与评审](artifacts.zh-CN.md) |
-| 固定证据、独立验证和自动局部修复 | [验证与自动返工](verification.zh-CN.md) |
 | 理解持久执行与 Temporal 的边界 | [Durable Workflow](durable-workflows.zh-CN.md) |
 
 设计目标见[架构提案](managed-agents.zh-CN.md)，范围见[当前建设范围](status.zh-CN.md)，代码目录和能力状态见[实现清单](capabilities.zh-CN.md)。
 
 ## 本地运行边界
 
-全局最多 256 个非终结实例及预留容量，8 个本地 Worker；每个 Goal 最多 64 项任务、最多 32 个活动或待验收 Goal。递归委派最多 6 层、一次 8 个子任务、每根 48 个后代；这些是规模限制，当前不设团队费用预算账本。
+全局最多 256 个非终结实例及预留容量，8 个本地 Worker；每个板根任务树最多 64 项任务，活动根任务同样受该上限约束。递归拆分最多 6 层、一次 8 个子任务；这些是规模限制，当前不设团队费用预算账本。
 
 平台采用单 daemon、SQLite 与本地进程，未提供远程 Worker、多租户、任意任务图重写或操作系统沙箱。本地 token 具有整个平台访问权。进程插件以 daemon 所在 OS 用户权限执行，需显式启用 `--allow-process-plugins`；插件版本和能力绑定固定在 Preset，安装新版本不会改写已有实例。
 
