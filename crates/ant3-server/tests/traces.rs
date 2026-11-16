@@ -470,3 +470,47 @@ fn interrupted_runs_never_auto_retry_or_penalize() {
     assert!(!events.iter().any(|e| e["kind"] == "board.trace_deposited"
         && e["data"]["reason"] == "failure"));
 }
+
+#[test]
+fn neighborhood_view_hides_unrelated_branches_but_all_scope_shows_everything() {
+    let (s, t) = fixture();
+    let parent = provision(&s, &t);
+    s.claim_board_task(id(&parent), id(&t)).unwrap();
+    let children = s
+        .split_board_task(
+            id(&parent),
+            &SplitInput { tasks: vec![input("child A"), input("child B")] },
+            "split",
+        )
+        .unwrap();
+    finish(&s, &parent, "completed");
+    let a_id = children["task_ids"][0].as_str().unwrap();
+    let b_id = children["task_ids"][1].as_str().unwrap();
+    let peer = provision(&s, &s.board_task(a_id).unwrap());
+    let run = id(&peer);
+    // Default view: target A, its parent (root), and A's children — not B.
+    let view = s.read_board_view(run, 0, 16, true).unwrap();
+    assert_eq!(view["view"], "neighborhood");
+    let ids: Vec<&str> = view["tasks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["id"].as_str().unwrap())
+        .collect();
+    assert!(ids.contains(&a_id));
+    assert!(ids.contains(&id(&t)));
+    assert!(!ids.contains(&b_id));
+    assert_eq!(view["total"], 2);
+    // Explicit full-board opt-out sees the sibling branch too.
+    let all = s.read_board_view(run, 0, 16, false).unwrap();
+    assert_eq!(all["view"], "all");
+    assert_eq!(all["total"], 3);
+    // Claiming narrows nothing away: the claimed task stays visible.
+    s.claim_board_task(run, a_id).unwrap();
+    let after = s.read_board_view(run, 0, 16, true).unwrap();
+    assert!(after["tasks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|t| t["id"] == a_id));
+}

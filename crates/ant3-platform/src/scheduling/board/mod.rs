@@ -314,16 +314,50 @@ impl Store {
         self.read_board_page(run, 0, 16)
     }
     pub fn read_board_page(&self, run: &str, offset: usize, limit: usize) -> PResult<Value> {
+        self.read_board_view(run, offset, limit, false)
+    }
+    /// Neighborhood view: the Agent sees its target, claimed work, their
+    /// ancestors and direct children — local perception for swarm emergence.
+    /// `neighborhood=false` keeps the full root board (operator/control-plane
+    /// checks and the explicit `scope:"all"` opt-out).
+    pub fn read_board_view(
+        &self,
+        run: &str,
+        offset: usize,
+        limit: usize,
+        neighborhood: bool,
+    ) -> PResult<Value> {
         if limit == 0 || limit > 16 {
             return Err(fault(400, "invalid_board_page"));
         }
         self.board_transaction(|tx| {
             let s=active_scope(tx,run)?;
-            let ids=task_ids(tx,s["root_id"].as_str())?;
+            let root=s["root_id"].as_str().unwrap();
+            let ids=if neighborhood {
+                let mut anchors=vec![s["target_task_id"].as_str().unwrap().to_owned()];
+                if let Some(claimed)=s["claimed_task_id"].as_str() {anchors.push(claimed.to_owned());}
+                let mut visible=std::collections::BTreeSet::new();
+                for anchor in anchors {
+                    // Anchor plus its ancestor chain.
+                    let mut cursor=Some(anchor.clone());
+                    while let Some(id)=cursor {
+                        if !visible.insert(id.clone()) {break;}
+                        cursor=task(tx,&id)?["parent_id"].as_str().map(str::to_owned);
+                    }
+                    // Direct children of the anchor.
+                    let mut stmt=tx.prepare("SELECT id FROM board_tasks WHERE parent_id=? ORDER BY created_at,rowid")?;
+                    let children=stmt.query_map([&anchor],|r|r.get::<_,String>(0))?.collect::<Result<Vec<_>,_>>()?;
+                    visible.extend(children);
+                }
+                // Keep board order (created_at,rowid) within the neighborhood.
+                task_ids(tx,Some(root))?.into_iter().filter(|id|visible.contains(id)).collect::<Vec<_>>()
+            } else {
+                task_ids(tx,Some(root))?
+            };
             let tasks=ids.iter().skip(offset).take(limit).map(|id|task(tx,id).map(preview)).collect::<PResult<Vec<_>>>()?;
             let next=offset.saturating_add(tasks.len());
             let target=preview(task(tx,s["target_task_id"].as_str().unwrap())?);
-            Ok(json!({"scope":s,"target_task":target,"tasks":tasks,"total":ids.len(),"next_offset":if next<ids.len(){Some(next)}else{None},"max_tasks":crate::limits::TASKS_PER_GOAL,"max_split_children":crate::limits::DELEGATION_CHILDREN,"max_depth":crate::limits::DELEGATION_DEPTH}))
+            Ok(json!({"scope":s,"target_task":target,"tasks":tasks,"total":ids.len(),"view":if neighborhood {"neighborhood"}else{"all"},"next_offset":if next<ids.len(){Some(next)}else{None},"max_tasks":crate::limits::TASKS_PER_GOAL,"max_split_children":crate::limits::DELEGATION_CHILDREN,"max_depth":crate::limits::DELEGATION_DEPTH}))
         })
     }
     pub fn read_board_result(
