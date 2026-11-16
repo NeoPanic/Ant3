@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS preset_experience(
  preset_version TEXT NOT NULL,
  successes INTEGER NOT NULL DEFAULT 0,
  failures INTEGER NOT NULL DEFAULT 0,
+ energy_spent INTEGER NOT NULL DEFAULT 0,
  PRIMARY KEY(preset_name,preset_version)
 );CREATE TABLE IF NOT EXISTS board_verifications(
  id TEXT PRIMARY KEY,

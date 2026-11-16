@@ -521,7 +521,8 @@ impl Store {
                     if t["state"]=="running"&&t["run_id"]==run {
                         tx.execute("UPDATE board_tasks SET result=? WHERE id=?",params![report,claimed])?;
                         if state=="completed" {
-                            crate::division::record_outcome(tx,&preset_name,&preset_version,true)?;
+                            let cost:Option<i64>=tx.query_row("SELECT amount FROM energy_ledger WHERE run_id=? AND kind IN ('settle','settle_unknown')",[&run],|r|r.get(0)).optional()?;
+                            crate::division::record_outcome(tx,&preset_name,&preset_version,true,cost.unwrap_or(crate::energy::ENERGY_UNKNOWN_COST))?;
                             crate::traces::deposit(tx,t["root_id"].as_str().unwrap(),claimed,crate::domain::traces::RESULT_TRACE_KIND,crate::domain::traces::TRACE_COMPLETION_AMOUNT,"completion",Some(&run))?;
                             // Recruitment: success amplifies the trails this Run
                             // signposted, recruiting peers toward used paths.
@@ -552,7 +553,8 @@ impl Store {
                             // Negative feedback: a definite failure penalizes the
                             // path. Outcome-unknown Runs are not definite failures.
                             if failed_state=="failed" {
-                                crate::division::record_outcome(tx,&preset_name,&preset_version,false)?;
+                                let cost:Option<i64>=tx.query_row("SELECT amount FROM energy_ledger WHERE run_id=? AND kind IN ('settle','settle_unknown')",[&run],|r|r.get(0)).optional()?;
+                                crate::division::record_outcome(tx,&preset_name,&preset_version,false,cost.unwrap_or(crate::energy::ENERGY_UNKNOWN_COST))?;
                                 crate::traces::penalize_failure(tx,root,claimed,Some(&run))?;
                             }
                             // Individual-loss robustness: a definitely-failed task

@@ -18,13 +18,25 @@ impl Database {
         let connection = Connection::open(path)?;
         connection.busy_timeout(std::time::Duration::from_secs(5))?;
         let version: i64 = connection.query_row("PRAGMA user_version", [], |r| r.get(0))?;
-        if version > 23 {
+        if version > 24 {
             return Err(fault(500, "database_version_unsupported"));
         }
         connection.execute_batch(include_str!("../migrations/sqlite/schema.sql"))?;
         connection.execute_batch(include_str!("../migrations/sqlite/board.sql"))?;
         connection.execute_batch(include_str!("../migrations/sqlite/routing.sql"))?;
         connection.execute_batch(include_str!("../migrations/sqlite/traces.sql"))?;
+        if (21..24).contains(&version) {
+            let has: bool = connection.query_row(
+                "SELECT EXISTS(SELECT 1 FROM pragma_table_info('preset_experience') WHERE name='energy_spent')",
+                [],
+                |r| r.get(0),
+            )?;
+            if !has {
+                connection.execute_batch(
+                    "ALTER TABLE preset_experience ADD COLUMN energy_spent INTEGER NOT NULL DEFAULT 0;",
+                )?;
+            }
+        }
         if (16..22).contains(&version) {
             // Legacy board_reviews predates reviewer attribution.
             let has: bool = connection.query_row(

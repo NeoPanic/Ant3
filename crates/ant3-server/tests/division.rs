@@ -78,7 +78,13 @@ fn success_lowers_and_definite_failure_raises_the_response_threshold() {
     let e = experience(&s, "reader");
     assert_eq!(e["successes"], 1);
     assert_eq!(e["failures"], 1);
-    assert_eq!(e["response_threshold"], response_threshold(1, 1));
+    // Threshold now also reflects cost efficiency (both runs bill unknown
+    // usage): base(1,1) scaled by mean-energy efficiency.
+    let eff = e["cost_efficiency"].as_f64().unwrap();
+    assert_eq!(
+        e["response_threshold"],
+        ant3_platform::division::cost_adjusted_threshold(response_threshold(1, 1), eff)
+    );
 }
 
 #[test]
@@ -146,4 +152,32 @@ fn crowding_dilutes_offering_stimulus_and_spreads_work() {
     assert_eq!(pending[1]["id"], a["id"]);
     assert_eq!(stimulus(2.0, 1), 1.0);
     std::fs::remove_file(path).unwrap();
+}
+#[test]
+fn energy_efficiency_shapes_the_response_threshold() {
+    let (s, t) = fixture();
+    let r = provision(&s, &t);
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    // Cheap success: 100 billable tokens -> 10 energy.
+    s.finish(id(&r), r["instance_id"].as_str().unwrap(), "completed",
+        json!({"output":"Evidence","usage":{"input":80,"output":20}})).unwrap();
+    s.reconcile_board().unwrap();
+    let e = experience(&s, "reader");
+    assert_eq!(e["successes"], 1);
+    assert_eq!(e["energy_spent"], 10);
+    // efficiency = 10/2000 = 0.005 -> clamped 0.25: threshold far below base.
+    assert!(e["cost_efficiency"].as_f64().unwrap() <= 0.01);
+    assert!(e["response_threshold"].as_f64().unwrap() < response_threshold(1, 0));
+    // An expensive peer on a fresh root: unknown usage bills 1500.
+    let other = s.publish_board_task(&input("expensive"), "expensive").unwrap();
+    let r2 = provision(&s, &other);
+    s.claim_board_task(id(&r2), id(&other)).unwrap();
+    finish(&s, &r2, "completed");
+    // Same preset now mixes cheap+expensive: mean 755/success, eff 0.3775.
+    let e = experience(&s, "reader");
+    assert_eq!(e["energy_spent"], 1510);
+    let eff = e["cost_efficiency"].as_f64().unwrap();
+    assert!((eff - 0.3775).abs() < 1e-6);
+    let expected = ant3_platform::division::cost_adjusted_threshold(response_threshold(2, 0), eff);
+    assert_eq!(e["response_threshold"], expected);
 }

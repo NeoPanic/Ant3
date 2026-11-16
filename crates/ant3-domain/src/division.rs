@@ -26,6 +26,15 @@ pub fn stimulus(strength: f64, crowd: usize) -> f64 {
     quantize_strength(strength.max(0.0) / (1 + crowd) as f64)
 }
 
+/// Cost-aware threshold: a preset's energy efficiency scales its threshold.
+/// efficiency = mean_energy_per_success / ENERGY_RESERVE (clamped 0.25..4).
+/// Cheap specialists (efficiency < 1) get lower thresholds and respond to
+/// fainter stimuli; expensive presets need stronger evidence of payoff.
+pub fn cost_adjusted_threshold(threshold: f64, efficiency: f64) -> f64 {
+    let factor = efficiency.clamp(0.25, 4.0);
+    quantize_strength((threshold * factor).clamp(THRESHOLD_MIN, THRESHOLD_MAX))
+}
+
 /// Classic threshold response probability s²/(s²+θ²): monotone in stimulus,
 /// anti-monotone in threshold, 0.5 at s=θ. Used as evidence, not authority.
 pub fn response_probability(stimulus: f64, threshold: f64) -> f64 {
@@ -63,6 +72,18 @@ mod tests {
         assert!(response_probability(2.0, 0.5) > response_probability(1.0, 0.5));
         assert!(response_probability(1.0, 0.2) > response_probability(1.0, 0.8));
         assert_eq!(response_probability(0.0, 0.5), 0.0);
+    }
+
+    #[test]
+    fn cheap_presets_get_lower_thresholds_than_expensive_ones() {
+        let base = response_threshold(2, 0);
+        let cheap = cost_adjusted_threshold(base, 0.5);
+        let expensive = cost_adjusted_threshold(base, 2.0);
+        assert!(cheap < base && base < expensive);
+        assert_eq!(cost_adjusted_threshold(base, 1.0), base);
+        // Clamped: absurd efficiencies cannot escape the band.
+        assert!(cost_adjusted_threshold(base, 0.0) >= THRESHOLD_MIN);
+        assert!(cost_adjusted_threshold(base, 100.0) <= THRESHOLD_MAX);
     }
 
     #[test]
