@@ -32,7 +32,7 @@
 
 ## Agent 工具
 
-- `platform.board.traces`：读取本根任务的痕迹，按有效浓度降序，附半衰期与上限。只读、可并行。
+- `platform.board.traces`：读取本根任务的痕迹，按有效浓度降序，附半衰期与上限。**局部感知**：默认只返回浓度 ≥ 1.0 的痕迹，弱痕迹存在但低于注意阈值（`below_threshold` 计数提示）；传 `min_strength: 0` 显式全览。只读、可并行。
 - `platform.board.trace`：沉积一条信号，参数 `key`（≤80 字符稳定键）、`kind`、可选 `note`、`command_key`。同键同内容重放原回执，改内容冲突；配额耗尽返回 `board_trace_quota`。
 
 任务视图（`platform.board.read`、任务详情、任务板快照）为每个任务附带 `trace` 字段：该任务键的当前有效浓度，无痕迹时为 null。选型与认领可以据此偏向高浓度路径，但痕迹文本始终是不可信任务数据。

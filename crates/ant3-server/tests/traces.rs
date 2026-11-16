@@ -126,7 +126,7 @@ fn agent_deposits_are_bounded_idempotent_and_quota_limited() {
         .1,
         "board_trace_quota"
     );
-    let view = s.read_board_traces(run).unwrap();
+    let view = s.read_board_traces(run, Some(0.0)).unwrap();
     assert_eq!(view["root_id"], t["id"]);
     assert_eq!(view["traces"].as_array().unwrap().len(), 8);
     assert_eq!(view["half_life_ms"], traces::TRACE_HALF_LIFE_MS);
@@ -218,7 +218,7 @@ fn traces_are_scoped_to_the_root_task() {
     deposit(&s, id(&r), "local.finding", "finding", "d1");
     let other = s.publish_board_task(&input("other-root"), "other-root").unwrap();
     let other_run = provision(&s, &other);
-    let view = s.read_board_traces(id(&other_run)).unwrap();
+    let view = s.read_board_traces(id(&other_run), Some(0.0)).unwrap();
     assert_eq!(view["root_id"], other["id"]);
     assert!(view["traces"].as_array().unwrap().is_empty());
     near(strength(&s, id(&t), "local.finding"), 2.0);
@@ -515,4 +515,36 @@ fn neighborhood_view_hides_unrelated_branches_but_all_scope_shows_everything() {
         .unwrap()
         .iter()
         .any(|t| t["id"] == a_id));
+}
+
+#[test]
+fn local_perception_hides_faint_trails_unless_explicitly_requested() {
+    let s = Store::memory().unwrap();
+    s.publish(Preset { name: "reader".into(), version: "1".into(), purpose: "p".into(), objective: "o".into(), instructions: "i".into(), protocol: Protocol::Demo, plugin: None }).unwrap();
+    let t = s.publish_board_task(&input("root"), "root").unwrap();
+    let r = provision(&s, &t);
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    deposit(&s, id(&r), "strong.path", "path", "d1");
+    deposit(&s, id(&r), "faint.path", "finding", "d2");
+    // Backdate the faint trail by two half-lives (strength 2.0 -> 0.5).
+    s.transaction(|tx| {
+        tx.execute(
+            "UPDATE board_traces SET updated_at=updated_at-? WHERE key='faint.path'",
+            [2 * traces::TRACE_HALF_LIFE_MS],
+        )?;
+        Ok(())
+    })
+    .unwrap();
+    // Default perception: faint trail (0.5) hidden, strong (2.0) visible.
+    let view = s.read_board_traces(id(&r), None).unwrap();
+    assert_eq!(view["perception_threshold"], 1.0);
+    assert_eq!(view["below_threshold"], 1);
+    let keys: Vec<&str> = view["traces"].as_array().unwrap().iter().map(|t| t["key"].as_str().unwrap()).collect();
+    assert_eq!(keys, vec!["strong.path"]);
+    // Explicit full perception sees both.
+    let all = s.read_board_traces(id(&r), Some(0.0)).unwrap();
+    assert_eq!(all["traces"].as_array().unwrap().len(), 2);
+    assert_eq!(all["below_threshold"], 0);
+    // Invalid threshold rejected.
+    assert_eq!(s.read_board_traces(id(&r), Some(-1.0)).unwrap_err().1, "invalid_perception_threshold");
 }

@@ -245,11 +245,29 @@ impl Store {
     pub fn board_traces(&self, root: &str) -> PResult<Value> {
         self.board_transaction(|tx| traces_in(tx, root))
     }
-    /// Agent view, scoped to the Run's root task.
-    pub fn read_board_traces(&self, run: &str) -> PResult<Value> {
+    /// Agent view, scoped to the Run's root task. Local perception: only
+    /// trails at or above `min_strength` are returned; `None` means the
+    /// default perception threshold. Pass 0.0 to see everything.
+    pub fn read_board_traces(&self, run: &str, min_strength: Option<f64>) -> PResult<Value> {
+        let threshold = min_strength.unwrap_or(PERCEPTION_THRESHOLD);
+        if !(0.0..=TRACE_MAX_STRENGTH).contains(&threshold) {
+            return Err(fault(400, "invalid_perception_threshold"));
+        }
         self.board_transaction(|tx| {
             let scope = active_scope(tx, run)?;
-            traces_in(tx, scope["root_id"].as_str().unwrap())
+            let mut view = traces_in(tx, scope["root_id"].as_str().unwrap())?;
+            let all = view["traces"].as_array().unwrap().len();
+            let visible: Vec<Value> = view["traces"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|t| t["strength"].as_f64().unwrap_or(0.0) >= threshold)
+                .cloned()
+                .collect();
+            view["traces"] = json!(visible);
+            view["perception_threshold"] = json!(threshold);
+            view["below_threshold"] = json!(all - view["traces"].as_array().unwrap().len());
+            Ok(view)
         })
     }
     /// Bounded agent signal deposit with idempotent retries.
