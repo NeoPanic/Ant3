@@ -84,6 +84,10 @@ struct Metrics {
     reuse_deposits: usize,
     root_trace_strength: f64,
     wall_ms: u128,
+    /// Convergence speed: publish -> acceptance latency from durable records.
+    time_to_accept_ms: Option<i64>,
+    energy_spent: i64,
+    energy_refunded: i64,
 }
 fn measure(s: &Store, root: &Value, started: Instant) -> Metrics {
     let mut m = Metrics {
@@ -95,6 +99,18 @@ fn measure(s: &Store, root: &Value, started: Instant) -> Metrics {
     m.accepted = task["review_state"] == "accepted";
     m.runs = s.list("runs").unwrap().len();
     m.root_trace_strength = task["trace"]["strength"].as_f64().unwrap_or(0.0);
+    if m.accepted {
+        let accepted_at = task["reviews"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["decision"] == "accepted")
+            .and_then(|r| r["created_at"].as_i64());
+        m.time_to_accept_ms = accepted_at.map(|at| at - task["created_at"].as_i64().unwrap());
+    }
+    let pool = s.board_energy(id(root)).unwrap();
+    m.energy_spent = pool["spent"].as_i64().unwrap();
+    m.energy_refunded = pool["refunded"].as_i64().unwrap();
     let mut cursor = 0;
     loop {
         let page = s.events(cursor).unwrap();
@@ -126,6 +142,10 @@ fn report(arm: &str, m: &Metrics) -> Value {
         "reuse_deposits": m.reuse_deposits,
         "root_trace_strength": m.root_trace_strength,
         "wall_ms": m.wall_ms,
+        "time_to_accept_ms": m.time_to_accept_ms,
+        "energy_spent": m.energy_spent,
+        "energy_refunded": m.energy_refunded,
+        "net_energy": m.energy_spent - m.energy_refunded,
     })
 }
 
@@ -271,8 +291,14 @@ fn equal_task_comparison_report() {
             "information_reuse": swarm.reuse_deposits > solo.reuse_deposits,
             "reuse_per_child": swarm.reuse_deposits as f64 / CHILDREN as f64,
             "run_cost_ratio": swarm.runs as f64 / solo.runs as f64,
+            "convergence": {
+                "single_ms": solo.time_to_accept_ms,
+                "swarm_ms": swarm.time_to_accept_ms,
+                "single_net_energy": solo.energy_spent - solo.energy_refunded,
+                "swarm_net_energy": swarm.energy_spent - swarm.energy_refunded,
+            },
         },
-        "notes": "Deterministic contract baseline; real-model equal-budget evaluation pending usage accounting. Individual-loss robustness covered by swarm_converges_after_losing_an_individual: a lost worker requeues under the retry budget and the swarm still converges.",
+        "notes": "Deterministic contract baseline with energy accounting (usage-less fixture bills conservatively). Convergence reports publish-to-accept latency and net energy per arm. Individual-loss robustness covered by swarm_converges_after_losing_an_individual.",
     });
     eprintln!("EVAL_COMPARISON {comparison}");
     assert!(solo.completed && solo.accepted);
