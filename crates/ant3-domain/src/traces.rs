@@ -72,6 +72,12 @@ fn quantize(strength: f64) -> f64 {
     (strength * 1e6).round() / 1e6
 }
 
+/// Six-decimal quantization shared with other swarm signals (thresholds,
+/// probabilities) so they round-trip exactly through JSON session storage.
+pub fn quantize_strength(value: f64) -> f64 {
+    quantize(value)
+}
+
 /// Control-plane task offering order. Entries are `(task_id, strength,
 /// created_at)`. Deterministic mode offers stronger trails first with FIFO
 /// ties. Exploration mode samples without replacement, proportional to

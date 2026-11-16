@@ -252,13 +252,24 @@ impl Store {
             let mut stmt=tx.prepare("SELECT id,root_id,created_at FROM board_tasks WHERE state='pending' AND route_state='unassigned' ORDER BY created_at,rowid LIMIT 64")?;
             let candidates=stmt.query_map([],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,i64>(2)?)))?.collect::<Result<Vec<_>,_>>()?;
             drop(stmt);
-            // Trace-weighted offering: stronger trails surface first; FIFO
-            // breaks ties. Exploration is opt-in and seeded per sweep.
+            // Crowding avoidance: a root's active workers dilute the stimulus
+            // of its tasks, so offering spreads across branches. Stronger
+            // (less crowded) trails surface first; FIFO breaks ties.
+            // Exploration is opt-in and seeded per sweep.
+            let mut crowds=std::collections::HashMap::<String,usize>::new();
             let entries:Vec<(String,f64,i64)>=candidates.iter().map(|(id,root,created_at)|{
+                let crowd=match crowds.get(root) {
+                    Some(c)=>*c,
+                    None=>{
+                        let c:usize=tx.query_row("SELECT count(*) FROM board_agents a JOIN runs r ON r.id=a.run_id WHERE a.root_id=? AND r.state IN ('queued','running')",[root],|r|r.get(0))?;
+                        crowds.insert(root.clone(),c);
+                        c
+                    }
+                };
                 let strength=crate::traces::trace_view(tx,root,id)?
                     .and_then(|v|v["strength"].as_f64())
                     .unwrap_or(0.0);
-                Ok((id.clone(),strength,*created_at))
+                Ok((id.clone(),crate::domain::division::stimulus(strength,crowd),*created_at))
             }).collect::<PResult<_>>()?;
             let explore=std::env::var("ANT3_BOARD_EXPLORATION").is_ok_and(|v|v=="1");
             let order=crate::domain::traces::offer_order(&entries,explore,now() as u64);
@@ -479,15 +490,16 @@ impl Store {
     }
     pub fn reconcile_board(&self) -> PResult<()> {
         self.board_transaction(|tx| {
-            let mut stmt=tx.prepare("SELECT a.run_id,a.instance_id,a.task_id,a.claimed_task_id,r.state,r.report FROM board_agents a JOIN runs r ON r.id=a.run_id WHERE a.processed=0 AND r.state NOT IN ('queued','running') ORDER BY a.created_at,a.rowid")?;
-            let rows=stmt.query_map([],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,String>(2)?,r.get::<_,Option<String>>(3)?,r.get::<_,String>(4)?,r.get::<_,Option<String>>(5)?)))?.collect::<Result<Vec<_>,_>>()?;
+            let mut stmt=tx.prepare("SELECT a.run_id,a.instance_id,a.task_id,a.claimed_task_id,r.state,r.report,i.preset_name,i.preset_version FROM board_agents a JOIN runs r ON r.id=a.run_id JOIN instances i ON i.id=a.instance_id WHERE a.processed=0 AND r.state NOT IN ('queued','running') ORDER BY a.created_at,a.rowid")?;
+            let rows=stmt.query_map([],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,String>(2)?,r.get::<_,Option<String>>(3)?,r.get::<_,String>(4)?,r.get::<_,Option<String>>(5)?,r.get::<_,String>(6)?,r.get::<_,String>(7)?)))?.collect::<Result<Vec<_>,_>>()?;
             drop(stmt);
-            for (run,agent,target,claimed,state,report) in rows {
+            for (run,agent,target,claimed,state,report,preset_name,preset_version) in rows {
                 if let Some(claimed)=&claimed {
                     let t=task(tx,claimed)?;
                     if t["state"]=="running"&&t["run_id"]==run {
                         tx.execute("UPDATE board_tasks SET result=? WHERE id=?",params![report,claimed])?;
                         if state=="completed" {
+                            crate::division::record_outcome(tx,&preset_name,&preset_version,true)?;
                             crate::traces::deposit(tx,t["root_id"].as_str().unwrap(),claimed,crate::domain::traces::RESULT_TRACE_KIND,crate::domain::traces::TRACE_COMPLETION_AMOUNT,"completion",Some(&run))?;
                             // Recruitment: success amplifies the trails this Run
                             // signposted, recruiting peers toward used paths.
@@ -511,6 +523,7 @@ impl Store {
                             // Negative feedback: a definite failure penalizes the
                             // path. Outcome-unknown Runs are not definite failures.
                             if failed_state=="failed" {
+                                crate::division::record_outcome(tx,&preset_name,&preset_version,false)?;
                                 crate::traces::penalize_failure(tx,root,claimed,Some(&run))?;
                             }
                             // Individual-loss robustness: a definitely-failed task

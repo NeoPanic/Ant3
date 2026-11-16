@@ -21,12 +21,14 @@ pub fn router(app: App) -> Router {
         .route("/api/board/tasks/{id}/cancel", post(board_cancel))
         .route("/api/board/tasks/{id}/review", post(board_review))
         .route("/api/board/traces", get(board_traces))
+        .route("/api/presets/experience", get(preset_experience))
         .route("/api/v1/board", get(board_list))
         .route("/api/v1/board/tasks", post(board_create))
         .route("/api/v1/board/tasks/{id}", get(board_show))
         .route("/api/v1/board/tasks/{id}/cancel", post(board_cancel))
         .route("/api/v1/board/tasks/{id}/review", post(board_review))
         .route("/api/v1/board/traces", get(board_traces))
+        .route("/api/v1/presets/experience", get(preset_experience))
         .route(
             "/studio.css",
             get(|| async {

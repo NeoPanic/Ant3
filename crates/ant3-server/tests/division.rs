@@ -1,0 +1,147 @@
+//! Response-threshold division of labor and crowding avoidance.
+use ant3_platform::{
+    board::PublishInput,
+    division::{response_threshold, stimulus},
+    domain::*,
+    store::Store,
+};
+use serde_json::{Value, json};
+
+fn input(title: &str) -> PublishInput {
+    PublishInput {
+        title: title.into(),
+        instructions: format!("Inspect {title}"),
+        acceptance: "Evidence is reported".into(),
+    }
+}
+fn preset(name: &str) -> Preset {
+    Preset {
+        name: name.into(),
+        version: "1".into(),
+        purpose: "Read evidence".into(),
+        objective: "Report findings".into(),
+        instructions: "Inspect supplied evidence".into(),
+        protocol: Protocol::Demo,
+        plugin: None,
+    }
+}
+fn fixture() -> (Store, Value) {
+    let s = Store::memory().unwrap();
+    s.publish(preset("reader")).unwrap();
+    let t = s.publish_board_task(&input("root"), "root").unwrap();
+    (s, t)
+}
+fn id(v: &Value) -> &str {
+    v["id"].as_str().unwrap()
+}
+fn provision(s: &Store, t: &Value) -> Value {
+    s.provision_board_task(id(t), "reader", "1", "fixture")
+        .unwrap();
+    s.claim().unwrap().unwrap()
+}
+fn finish(s: &Store, r: &Value, state: &str) {
+    s.finish(
+        id(r),
+        r["instance_id"].as_str().unwrap(),
+        state,
+        json!({"output":"Evidence"}),
+    )
+    .unwrap();
+    s.reconcile_board().unwrap();
+}
+fn experience(s: &Store, name: &str) -> Value {
+    s.preset_experience()
+        .unwrap()
+        .into_iter()
+        .find(|e| e["preset_name"] == name)
+        .unwrap_or(json!({"successes":0,"failures":0,"response_threshold":response_threshold(0,0)}))
+}
+
+#[test]
+fn success_lowers_and_definite_failure_raises_the_response_threshold() {
+    let (s, t) = fixture();
+    assert_eq!(experience(&s, "reader")["response_threshold"], 0.5);
+    let r = provision(&s, &t);
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    finish(&s, &r, "completed");
+    let e = experience(&s, "reader");
+    assert_eq!(e["successes"], 1);
+    assert_eq!(e["failures"], 0);
+    assert!(e["response_threshold"].as_f64().unwrap() < 0.5);
+    // A definite failure on a fresh root raises the threshold back up.
+    let other = s.publish_board_task(&input("other"), "other").unwrap();
+    let bad = provision(&s, &other);
+    s.claim_board_task(id(&bad), id(&other)).unwrap();
+    finish(&s, &bad, "failed");
+    let e = experience(&s, "reader");
+    assert_eq!(e["successes"], 1);
+    assert_eq!(e["failures"], 1);
+    assert_eq!(e["response_threshold"], response_threshold(1, 1));
+}
+
+#[test]
+fn interrupted_and_cancelled_runs_are_not_experience() {
+    let (s, t) = fixture();
+    let r = provision(&s, &t);
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    s.finish(
+        id(&r),
+        r["instance_id"].as_str().unwrap(),
+        "completed",
+        json!({"error":{"code":"interrupted_outcome_unknown"}}),
+    )
+    .unwrap();
+    s.reconcile_board().unwrap();
+    assert_eq!(experience(&s, "reader")["successes"], 0);
+    assert_eq!(experience(&s, "reader")["failures"], 0);
+    let other = s.publish_board_task(&input("cancelled"), "cancelled").unwrap();
+    let c = provision(&s, &other);
+    s.claim_board_task(id(&c), id(&other)).unwrap();
+    finish(&s, &c, "cancelled");
+    assert_eq!(experience(&s, "reader")["failures"], 0);
+}
+
+#[test]
+fn crowding_dilutes_offering_stimulus_and_spreads_work() {
+    let path = std::env::temp_dir().join(format!("ant3-crowd-{}.sqlite", uuid::Uuid::new_v4()));
+    let s = Store::open(&path).unwrap();
+    s.publish(preset("reader")).unwrap();
+    // Two roots, each with a pending task carrying equal trail strength.
+    let a = s.publish_board_task(&input("a"), "a").unwrap();
+    let b = s.publish_board_task(&input("b"), "b").unwrap();
+    let ra = provision(&s, &a);
+    s.deposit_board_trace(
+        id(&ra),
+        &ant3_platform::board::TraceInput { key: id(&a).into(), kind: "finding".into(), note: String::new() },
+        "da",
+    )
+    .unwrap();
+    let rb = provision(&s, &b);
+    s.deposit_board_trace(
+        id(&rb),
+        &ant3_platform::board::TraceInput { key: id(&b).into(), kind: "finding".into(), note: String::new() },
+        "db",
+    )
+    .unwrap();
+    // Return both tasks to the pool. Root A keeps a queued worker (crowd=1);
+    // root B's invitation is released so it has no active worker (crowd=0).
+    drop(s);
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute_batch("UPDATE board_tasks SET route_state='unassigned',state='pending';")
+        .unwrap();
+    db.execute("DELETE FROM board_agents WHERE run_id=?", [id(&rb)])
+        .unwrap();
+    db.execute(
+        "UPDATE runs SET state='cancelled' WHERE id=?",
+        [id(&rb)],
+    )
+    .unwrap();
+    drop(db);
+    let s = Store::open(&path).unwrap();
+    // Equal raw strength, but A is crowded: B must be offered first.
+    let pending = s.board_pending().unwrap();
+    assert_eq!(pending[0]["id"], b["id"]);
+    assert_eq!(pending[1]["id"], a["id"]);
+    assert_eq!(stimulus(2.0, 1), 1.0);
+    std::fs::remove_file(path).unwrap();
+}

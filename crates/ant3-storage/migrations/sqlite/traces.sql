@@ -24,3 +24,10 @@ CREATE TABLE IF NOT EXISTS board_task_retries(
  task_id TEXT PRIMARY KEY REFERENCES board_tasks(id),
  attempts INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS preset_experience(
+ preset_name TEXT NOT NULL,
+ preset_version TEXT NOT NULL,
+ successes INTEGER NOT NULL DEFAULT 0,
+ failures INTEGER NOT NULL DEFAULT 0,
+ PRIMARY KEY(preset_name,preset_version)
+);
