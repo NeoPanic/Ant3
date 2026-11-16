@@ -32,7 +32,8 @@ Use **³** (U+00B3) in display text; use `Ant3` where ASCII is required. Technic
 
 | Asset | Intended use |
 | --- | --- |
-| [banner.svg](banner.svg) | README hero; wordmark, tagline, three ants on pheromone trails around a shared task node. |
+| [banner.svg](banner.svg) | English README hero; wordmark, tagline, three ants on pheromone trails around a shared task node. |
+| [banner.zh-CN.svg](banner.zh-CN.svg) | 中文 README 头图；与英文版同构图，文案为中文。 |
 | [mark.svg](mark.svg) | Warm orange ant for dark navigation and the favicon. |
 | [mark-mono.svg](mark-mono.svg) | Ink ant for light backgrounds and single-color use. |
 | [social-preview.png](social-preview.png) | 1280 × 640 social sharing image; upload in GitHub repository settings. |

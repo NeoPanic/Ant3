@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 640" width="1600" height="640" role="img" aria-labelledby="title desc">
+<title id="title">Ant³ — 用 Rust 构建的 AI Agent 群体智能平台。</title>
+<desc id="desc">借鉴蚂蚁的涌现式协作。三只蚂蚁沿信息素痕迹在共享任务间接力：认领、贡献、接力。</desc>
+<defs>
+  <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#D9D4C8"/></pattern>
+  <g id="ant"><g fill="none" stroke="#22251F" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M105 66 88 42H70m81 24 17-24h18M108 114 76 96 48 108m58 28H70l-22 26m60-6-24 28-28 8m92-78 32-18 28 12m-58 28h36l22 26m-60-6 24 28 28 8"/>
+</g>
+<g fill="#22251F"><ellipse cx="128" cy="85" rx="29" ry="27"/><ellipse cx="128" cy="130" rx="20" ry="21"/><ellipse cx="128" cy="192" rx="34" ry="43"/></g></g>
+</defs>
+<rect width="1600" height="640" rx="28" fill="#F5F1E8"/>
+<rect x="810" y="32" width="758" height="576" rx="18" fill="url(#dots)"/>
+<path d="M80 72h42" stroke="#EF7543" stroke-width="5"/>
+<g font-family="'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', Inter, ui-sans-serif, system-ui, sans-serif">
+  <text x="138" y="79" fill="#62665B" font-size="15" font-weight="600" letter-spacing="6">涌现式多智能体协调</text>
+  <text x="72" y="296" fill="#22251F" font-size="192" font-weight="750" letter-spacing="-12" font-family="Inter, ui-sans-serif, system-ui, sans-serif">Ant<tspan dy="-91" fill="#D8572B" font-size="89" letter-spacing="0">3</tspan></text>
+  <text x="82" y="378" fill="#22251F" font-size="43" font-weight="550" letter-spacing="2">个体专注，群体协作。</text>
+  <text x="84" y="426" fill="#62665B" font-size="23">用 Rust 构建的 AI Agent 群体智能平台。</text>
+  <path d="M84 477h620" stroke="#D9D4C8"/>
+  <text x="84" y="527" fill="#62665B" font-size="16" letter-spacing="4">认领 → 贡献 → 接力</text>
+  <text x="84" y="574" fill="#62665B" font-size="15" letter-spacing="1">信息素协调 / 自适应分工 / 人类评审</text>
+</g>
+<g fill="none" stroke-linecap="round">
+  <path d="M948 194C1050 124 1290 146 1408 286S1308 520 1148 478 890 346 948 194Z" stroke="#DCD7CC" stroke-width="44"/>
+  <path d="M948 194C1050 124 1290 146 1408 286S1308 520 1148 478 890 346 948 194Z" stroke="#EF7543" stroke-width="3" stroke-dasharray="3 12"/>
+  <path d="M975 218 1180 324 1360 304m-180 20-16 132" stroke="#ADAFA1" stroke-width="2" stroke-dasharray="4 10"/>
+</g>
+<g fill="#D8572B">
+  <circle cx="1010" cy="163" r="5" opacity=".9"/><circle cx="1120" cy="140" r="4" opacity=".65"/><circle cx="1250" cy="150" r="3.5" opacity=".45"/><circle cx="1360" cy="205" r="3" opacity=".3"/>
+  <circle cx="1408" cy="360" r="4" opacity=".55"/><circle cx="1330" cy="470" r="3.5" opacity=".4"/><circle cx="1210" cy="492" r="3" opacity=".28"/>
+  <circle cx="1050" cy="430" r="4" opacity=".5"/><circle cx="930" cy="330" r="3.5" opacity=".38"/><circle cx="920" cy="250" r="3" opacity=".25"/>
+</g>
+<text x="1048" y="92" fill="#D8572B" font-size="13" letter-spacing="3" font-family="'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif">信息素痕迹</text>
+<g transform="translate(1180 324)">
+  <rect x="-53" y="-53" width="106" height="106" rx="25" fill="#22251F"/>
+  <g fill="none" stroke="#F5F1E8" stroke-width="4" stroke-linecap="round"><path d="M-18-20h36m-36 20h36m-36 20h23"/></g>
+</g>
+<use href="#ant" transform="translate(948 194) rotate(58) scale(.47) translate(-128 -128)"/>
+<use href="#ant" transform="translate(1408 286) rotate(166) scale(.47) translate(-128 -128)"/>
+<use href="#ant" transform="translate(1148 478) rotate(-72) scale(.47) translate(-128 -128)"/>
+<g fill="#62665B" font-size="14" letter-spacing="2" font-family="'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif">
+  <text x="1048" y="111">01 / 认领</text><text x="1300" y="432">02 / 贡献</text><text x="876" y="494">03 / 接力</text>
+</g>
+<circle cx="1486" cy="554" r="6" fill="#D8572B"/>
+</svg>

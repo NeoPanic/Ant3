@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/brand/banner.svg" alt="Ant³ — 个体专注，群体协作" width="960">
+  <img src="docs/brand/banner.zh-CN.svg" alt="Ant³ — 个体专注，群体协作" width="960">
 </p>
 
 <h1 align="center">Ant³</h1>
