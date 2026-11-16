@@ -396,3 +396,77 @@ fn pending_offering_prefers_stronger_trails_then_fifo() {
     assert_eq!(pending[1]["id"], b["id"]);
     std::fs::remove_file(path).unwrap();
 }
+
+#[test]
+fn definite_failure_penalizes_the_path_and_requeues_under_a_bounded_budget() {
+    let (s, t) = fixture();
+    let r = provision(&s, &t);
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    deposit(&s, id(&r), id(&t), "finding", "d1");
+    near(strength(&s, id(&t), id(&t)), traces::TRACE_AGENT_AMOUNT);
+    finish(&s, &r, "failed");
+    // Negative feedback floors the trail at zero.
+    near(strength(&s, id(&t), id(&t)), 0.0);
+    // The task returns to the pool instead of blocking the root.
+    let requeued = s.board_task(id(&t)).unwrap();
+    assert_eq!(requeued["state"], "pending");
+    assert_eq!(requeued["route_state"], "unassigned");
+    let events = s.events(0).unwrap();
+    assert!(events.iter().any(|e| e["kind"] == "board.task_requeued"
+        && e["data"]["attempt"] == 1));
+    assert!(events.iter().any(|e| e["kind"] == "board.trace_deposited"
+        && e["data"]["reason"] == "failure"));
+    // A fresh peer can claim the requeued task and complete the work.
+    let retry = provision(&s, &requeued);
+    s.claim_board_task(id(&retry), id(&t)).unwrap();
+    finish(&s, &retry, "completed");
+    assert_eq!(s.board_task(id(&t)).unwrap()["state"], "completed");
+    near(
+        strength(&s, id(&t), id(&t)),
+        traces::TRACE_COMPLETION_AMOUNT,
+    );
+}
+
+#[test]
+fn retry_budget_is_bounded_and_exhaustion_settles_failed() {
+    let (s, t) = fixture();
+    for attempt in 1..=limits::BOARD_TASK_RETRIES {
+        let r = provision(&s, &t);
+        s.claim_board_task(id(&r), id(&t)).unwrap();
+        finish(&s, &r, "failed");
+        let task = s.board_task(id(&t)).unwrap();
+        assert_eq!(task["state"], "pending", "attempt {attempt}");
+    }
+    let r = provision(&s, &t);
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    finish(&s, &r, "failed");
+    let task = s.board_task(id(&t)).unwrap();
+    assert_eq!(task["state"], "failed");
+    assert_eq!(task["error"], "board_run_failed");
+    assert!(s.board_pending().unwrap().is_empty());
+}
+
+#[test]
+fn interrupted_runs_never_auto_retry_or_penalize() {
+    let (s, t) = fixture();
+    let r = provision(&s, &t);
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    // Outcome-unknown settlement: the platform cannot prove the external
+    // effect, so it must neither punish the path nor silently re-execute.
+    s.finish(
+        id(&r),
+        r["instance_id"].as_str().unwrap(),
+        "interrupted",
+        json!({"error":{"code":"interrupted_outcome_unknown"}}),
+    )
+    .unwrap();
+    s.reconcile_board().unwrap();
+    let task = s.board_task(id(&t)).unwrap();
+    assert_eq!(task["state"], "failed");
+    assert_eq!(task["error"], "interrupted_outcome_unknown");
+    assert!(s.board_pending().unwrap().is_empty());
+    let events = s.events(0).unwrap();
+    assert!(!events.iter().any(|e| e["kind"] == "board.task_requeued"));
+    assert!(!events.iter().any(|e| e["kind"] == "board.trace_deposited"
+        && e["data"]["reason"] == "failure"));
+}

@@ -20,6 +20,10 @@ pub const TRACE_ACCEPTED_AMOUNT: f64 = 12.0;
 /// Recruitment: a successful Run amplifies the signals it left behind,
 /// recruiting peers toward the paths it actually used.
 pub const TRACE_RECRUITMENT_AMOUNT: f64 = 2.0;
+/// Negative feedback: definite failure penalizes the path so peers avoid it.
+/// Interrupted (outcome-unknown) Runs are not definite failures and deposit
+/// nothing.
+pub const TRACE_FAILURE_PENALTY: f64 = 4.0;
 
 /// Kinds an Agent may deposit. Quality-like kinds (`reuse`, `completion`,
 /// `accepted`) are platform-only and tied to tool receipts or human review.
@@ -57,6 +61,11 @@ pub fn effective_strength(strength: f64, updated_at: i64, now: i64) -> f64 {
 /// Reinforce with saturation. Callers must evaporate the old strength first.
 pub fn reinforce(strength: f64, amount: f64) -> f64 {
     quantize((strength + amount).clamp(0.0, TRACE_MAX_STRENGTH))
+}
+
+/// Negative feedback: penalize a failed path, floored at zero.
+pub fn penalize(strength: f64, amount: f64) -> f64 {
+    quantize((strength - amount).max(0.0))
 }
 
 fn quantize(strength: f64) -> f64 {

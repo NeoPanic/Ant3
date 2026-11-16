@@ -192,11 +192,14 @@ impl GoalPlan {
 pub fn outcome_unknown(value: &Value) -> bool {
     match value {
         Value::Object(map) => map.iter().any(|(key, value)| {
-            ((key == "code" || key == "error")
+            // Only string codes count: an "error" object wrapper is a
+            // container, not an outcome-unknown marker. Recursing into it
+            // under the same key would flag every ordinary error report.
+            (((key == "code" || key == "error")
                 && value
                     .as_str()
                     .is_some_and(|s| s.contains("outcome_unknown")))
-                || (key == "outcome_unknown" && value == &Value::Bool(true))
+                || (key == "outcome_unknown" && value == &Value::Bool(true)))
                 || (key != "arguments" && key != "call" && outcome_unknown(value))
         }),
         Value::Array(items) => items.iter().any(outcome_unknown),
@@ -215,3 +218,24 @@ pub mod messaging;
 pub mod research;
 pub mod traces;
 pub mod verification;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn outcome_unknown_detects_only_real_unknown_markers() {
+        assert!(outcome_unknown(&json!({"error":{"code":"interrupted_outcome_unknown"}})));
+        assert!(outcome_unknown(&json!({"error":"external_outcome_unknown"})));
+        assert!(outcome_unknown(&json!({"outcome_unknown":true})));
+        assert!(outcome_unknown(&json!({"observations":[{"output":{"error":"tool_outcome_unknown"}}]})));
+        // Ordinary error reports are definite failures, not unknown outcomes.
+        assert!(!outcome_unknown(&json!({"error":{"code":"board_run_failed"}})));
+        assert!(!outcome_unknown(&json!({"error":{"code":"timeout","message":"deadline"}})));
+        assert!(!outcome_unknown(&json!({"output":"done"})));
+        assert!(!outcome_unknown(&json!({"outcome_unknown":false})));
+        // Tool arguments are untrusted data and never classify the outcome.
+        assert!(!outcome_unknown(&json!({"arguments":{"error":"outcome_unknown"}})));
+    }
+}

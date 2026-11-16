@@ -471,7 +471,27 @@ impl Store {
                                 event(tx,"board.children_activated",claimed,json!({"source_run_id":run,"count":activated}))?;
                             } else {settle(tx,claimed,"completed",None)?;}
                         } else {
-                            settle(tx,claimed,if state=="cancelled"{"cancelled"}else{"failed"},Some(if state=="interrupted"{"interrupted_outcome_unknown"}else{"board_run_failed"}))?;
+                            let failed_state=if state=="cancelled"{"cancelled"}else if state=="interrupted"{"interrupted"}else{"failed"};
+                            let error=if state=="interrupted"{"interrupted_outcome_unknown"}else{"board_run_failed"};
+                            let root=t["root_id"].as_str().unwrap();
+                            // Negative feedback: a definite failure penalizes the
+                            // path. Outcome-unknown Runs are not definite failures.
+                            if failed_state=="failed" {
+                                crate::traces::penalize_failure(tx,root,claimed,Some(&run))?;
+                            }
+                            // Individual-loss robustness: a definitely-failed task
+                            // returns to the pool under a bounded retry budget;
+                            // the swarm reroutes instead of blocking the root.
+                            // Interrupted (outcome-unknown) Runs never auto-retry:
+                            // the external effect is unproven and needs recovery.
+                            let attempts:usize=tx.query_row("SELECT coalesce((SELECT attempts FROM board_task_retries WHERE task_id=?),0)",[claimed],|r|r.get(0))?;
+                            if failed_state=="failed" && attempts<crate::limits::BOARD_TASK_RETRIES {
+                                tx.execute("INSERT INTO board_task_retries(task_id,attempts) VALUES(?,1) ON CONFLICT(task_id) DO UPDATE SET attempts=attempts+1",[claimed])?;
+                                tx.execute("UPDATE board_tasks SET state='pending',route_state='unassigned',instance_id=NULL,run_id=NULL,result=NULL,error=NULL,finished_at=NULL WHERE id=?",[claimed])?;
+                                event(tx,"board.task_requeued",claimed,json!({"attempt":attempts+1,"max_retries":crate::limits::BOARD_TASK_RETRIES,"previous_run_id":run,"reason":error}))?;
+                            } else {
+                                settle(tx,claimed,if failed_state=="interrupted"{"failed"}else{failed_state},Some(error))?;
+                            }
                             tx.execute("UPDATE board_tasks SET state='cancelled',error='source_run_failed',finished_at=? WHERE source_run_id=? AND state='staged'",params![now(),run])?;
                         }
                     }
@@ -481,7 +501,18 @@ impl Store {
                 if latest_invitation&&target_task["state"]=="pending"&&target_task["route_state"]=="provisioned" {
                     if claimed.is_some() {
                         tx.execute("UPDATE board_tasks SET route_state='unassigned' WHERE id=?",[&target])?;
-                    } else {settle(tx,&target,"failed",Some("board_agent_did_not_claim"))?;}
+                    } else {
+                        // The invited peer never claimed: requeue under the same
+                        // bounded retry budget before settling the task failed.
+                        let attempts:usize=tx.query_row("SELECT coalesce((SELECT attempts FROM board_task_retries WHERE task_id=?),0)",[&target],|r|r.get(0))?;
+                        if attempts<crate::limits::BOARD_TASK_RETRIES {
+                            tx.execute("INSERT INTO board_task_retries(task_id,attempts) VALUES(?,1) ON CONFLICT(task_id) DO UPDATE SET attempts=attempts+1",[&target])?;
+                            tx.execute("UPDATE board_tasks SET route_state='unassigned' WHERE id=?",[&target])?;
+                            event(tx,"board.task_requeued",&target,json!({"attempt":attempts+1,"max_retries":crate::limits::BOARD_TASK_RETRIES,"previous_run_id":run,"reason":"board_agent_did_not_claim"}))?;
+                        } else {
+                            settle(tx,&target,"failed",Some("board_agent_did_not_claim"))?;
+                        }
+                    }
                 }
                 crate::lifecycle::drain(tx,&agent,false)?;
                 tx.execute("UPDATE fleets SET state='completed' WHERE id=(SELECT fleet_id FROM instances WHERE id=?)",[&agent])?;

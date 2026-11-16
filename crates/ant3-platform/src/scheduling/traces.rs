@@ -130,6 +130,44 @@ pub(crate) fn deposit_recruitment_once(
     deposit_once(tx, root, key, run, "recruitment", TRACE_RECRUITMENT_AMOUNT, None)
 }
 
+/// Negative feedback: a definite failure penalizes the task's trail so peers
+/// and the offering order avoid the dead end. Floors at zero; interrupted
+/// (outcome-unknown) Runs must not call this.
+pub(crate) fn penalize_failure(
+    tx: &Transaction<'_>,
+    root: &str,
+    key: &str,
+    source_run: Option<&str>,
+) -> PResult<()> {
+    let at = now();
+    let existing: Option<(f64, i64)> = tx
+        .query_row(
+            "SELECT strength,updated_at FROM board_traces WHERE root_id=? AND key=?",
+            params![root, key],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .optional()?;
+    let base = existing
+        .map(|(strength, updated_at)| effective_strength(strength, updated_at, at))
+        .unwrap_or(0.0);
+    let strength = penalize(base, TRACE_FAILURE_PENALTY);
+    tx.execute(
+        "INSERT INTO board_traces(root_id,key,kind,strength,deposits,created_at,updated_at) VALUES(?,?,?,?,1,?,?)
+         ON CONFLICT(root_id,key) DO UPDATE SET strength=excluded.strength,deposits=deposits+1,updated_at=excluded.updated_at",
+        params![root, key, RESULT_TRACE_KIND, strength, at, at],
+    )?;
+    tx.execute(
+        "INSERT INTO board_trace_deposits(root_id,key,amount,reason,source_run_id,created_at) VALUES(?,?,?,'failure',?,?)",
+        params![root, key, -TRACE_FAILURE_PENALTY, source_run, at],
+    )?;
+    event(
+        tx,
+        "board.trace_deposited",
+        root,
+        json!({"key":key,"kind":RESULT_TRACE_KIND,"amount":-TRACE_FAILURE_PENALTY,"strength":strength,"reason":"failure","source_run_id":source_run}),
+    )
+}
+
 pub(crate) fn trace_view(tx: &Transaction<'_>, root: &str, key: &str) -> PResult<Option<Value>> {
     let row: Option<(String, f64, i64, i64, i64)> = tx
         .query_row(

@@ -50,13 +50,11 @@ fn provision(s: &Store, t: &Value) -> Value {
     s.claim().unwrap().unwrap()
 }
 fn finish(s: &Store, r: &Value, output: &str) {
-    s.finish(
-        id(r),
-        r["instance_id"].as_str().unwrap(),
-        "completed",
-        json!({"output":output}),
-    )
-    .unwrap();
+    settle(s, r, "completed", json!({"output":output}));
+}
+fn settle(s: &Store, r: &Value, state: &str, report: Value) {
+    s.finish(id(r), r["instance_id"].as_str().unwrap(), state, report)
+        .unwrap();
     s.reconcile_board().unwrap();
 }
 fn accept(s: &Store, t: &Value, run: &str) {
@@ -270,10 +268,87 @@ fn equal_task_comparison_report() {
             "reuse_per_child": swarm.reuse_deposits as f64 / CHILDREN as f64,
             "run_cost_ratio": swarm.runs as f64 / solo.runs as f64,
         },
-        "notes": "Deterministic contract baseline; real-model equal-budget evaluation pending usage accounting. Individual-loss robustness not yet supported: failed children block the root.",
+        "notes": "Deterministic contract baseline; real-model equal-budget evaluation pending usage accounting. Individual-loss robustness covered by swarm_converges_after_losing_an_individual: a lost worker requeues under the retry budget and the swarm still converges.",
     });
     eprintln!("EVAL_COMPARISON {comparison}");
     assert!(solo.completed && solo.accepted);
     assert!(swarm.completed && swarm.accepted);
     assert!(swarm.reuse_deposits > solo.reuse_deposits);
+}
+/// Individual-loss robustness: killing one worker mid-flight must not sink the
+/// goal. The lost task requeues under the retry budget, a fresh peer completes
+/// it, and the swarm still integrates and passes acceptance. The failed path
+/// is penalized (negative feedback) while the recovered trail ends verified.
+#[test]
+fn swarm_converges_after_losing_an_individual() {
+    let s = Store::memory().unwrap();
+    s.publish(preset()).unwrap();
+    let started = Instant::now();
+    let root = s.publish_board_task(&root_input(), "root").unwrap();
+    let splitter = provision(&s, &root);
+    s.claim_board_task(id(&splitter), id(&root)).unwrap();
+    let children = s
+        .split_board_task(
+            id(&splitter),
+            &SplitInput { tasks: (0..CHILDREN).map(child_input).collect() },
+            "eval-split",
+        )
+        .unwrap();
+    finish(&s, &splitter, "Split into independent evidence work.");
+    let mut child_ids: Vec<String> = children["task_ids"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c.as_str().unwrap().to_string())
+        .collect();
+    // Execute the first child, then "lose" its worker: definite failure.
+    let lost_id = child_ids.remove(0);
+    let lost_task = s.board_task(&lost_id).unwrap();
+    let lost_run = provision(&s, &lost_task);
+    s.claim_board_task(id(&lost_run), &lost_id).unwrap();
+    settle(&s, &lost_run, "failed", json!({"error":{"code":"worker_lost"}}));
+    assert_eq!(s.board_task(&lost_id).unwrap()["state"], "pending");
+    assert_eq!(s.board_task(id(&root)).unwrap()["state"], "waiting");
+    // The failed path is penalized below any verified trail.
+    let lost_strength = s.board_traces(id(&root)).unwrap()["traces"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["key"] == lost_id.as_str())
+        .map(|t| t["strength"].as_f64().unwrap())
+        .unwrap_or(0.0);
+    assert!(lost_strength < traces::TRACE_COMPLETION_AMOUNT);
+    // A fresh peer picks up the lost task; the rest proceed normally.
+    let mut all_ids = vec![lost_id.clone()];
+    all_ids.extend(child_ids.iter().cloned());
+    for child_id in &all_ids {
+        let child_task = s.board_task(child_id).unwrap();
+        let run = provision(&s, &child_task);
+        s.claim_board_task(id(&run), child_id).unwrap();
+        finish(&s, &run, &format!("Evidence summary for {child_id}."));
+    }
+    let root_task = s.board_task(id(&root)).unwrap();
+    assert_eq!(root_task["state"], "pending");
+    let integrator = provision(&s, &root_task);
+    s.claim_board_task(id(&integrator), id(&root)).unwrap();
+    for child_id in &all_ids {
+        s.read_board_result(id(&integrator), child_id, 0, 16000).unwrap();
+    }
+    finish(&s, &integrator, "Integrated report citing all child contributions.");
+    accept(&s, &root, id(&integrator));
+    let m = measure(&s, &root, started);
+    eprintln!("EVAL {}", report("swarm-after-loss", &m));
+    assert!(m.completed && m.accepted);
+    // One extra Run was spent recovering the lost individual.
+    assert_eq!(m.runs, CHILDREN + 3);
+    assert_eq!(m.reuse_deposits, CHILDREN);
+    // The recovered trail ends at completion + reuse, above the failure floor.
+    let recovered = s.board_traces(id(&root)).unwrap()["traces"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["key"] == lost_id.as_str())
+        .map(|t| t["strength"].as_f64().unwrap())
+        .unwrap_or(0.0);
+    assert!(recovered >= traces::TRACE_COMPLETION_AMOUNT + traces::TRACE_REUSE_AMOUNT - 1e-3);
 }

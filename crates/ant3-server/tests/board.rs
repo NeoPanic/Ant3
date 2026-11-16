@@ -304,12 +304,21 @@ fn failed_split_never_launches_children() {
     )
     .unwrap();
     finish(&s, &r, "failed");
-    assert!(s.board_pending().unwrap().is_empty());
-    assert_eq!(s.board_task(id(&t)).unwrap()["state"], "failed");
+    // Bounded retry: the failed splitter returns to the pool, but its staged
+    // children stay cancelled — they are never launched from a failed source.
+    assert_eq!(s.board_task(id(&t)).unwrap()["state"], "pending");
     assert_eq!(
         s.board_snapshot().unwrap()["tasks"][1]["state"],
         "cancelled"
     );
+    // Exhaust the retry budget; only then does the root settle failed.
+    for _ in 0..ant3_platform::limits::BOARD_TASK_RETRIES {
+        let retry = provision(&s, &t);
+        s.claim_board_task(id(&retry), id(&t)).unwrap();
+        finish(&s, &retry, "failed");
+    }
+    assert_eq!(s.board_task(id(&t)).unwrap()["state"], "failed");
+    assert!(s.board_pending().unwrap().is_empty());
 }
 #[test]
 fn failed_child_blocks_parent_and_cancels_siblings() {
@@ -330,6 +339,21 @@ fn failed_child_blocks_parent_and_cancels_siblings() {
     s.claim_board_task(id(&child_run), id(&children[0]))
         .unwrap();
     finish(&s, &child_run, "failed");
+    // Individual-loss robustness: one lost worker requeues its task; the
+    // parent keeps waiting and the sibling is untouched.
+    assert_eq!(s.board_task(id(&t)).unwrap()["state"], "waiting");
+    assert_eq!(s.board_task(id(&children[0])).unwrap()["state"], "pending");
+    assert_eq!(
+        s.board_task(id(&children[1])).unwrap()["state"],
+        "pending"
+    );
+    // Exhaust the child's retry budget: only then does the parent block and
+    // cancel the remaining sibling.
+    for _ in 0..ant3_platform::limits::BOARD_TASK_RETRIES {
+        let retry = provision(&s, &children[0]);
+        s.claim_board_task(id(&retry), id(&children[0])).unwrap();
+        finish(&s, &retry, "failed");
+    }
     assert_eq!(s.board_task(id(&t)).unwrap()["state"], "blocked");
     assert_eq!(
         s.board_task(id(&children[1])).unwrap()["state"],
@@ -342,6 +366,12 @@ fn unclaimed_and_interrupted_runs_do_not_retry_forever() {
     let (s, t) = fixture();
     let r = provision(&s, &t);
     finish(&s, &r, "completed");
+    // An invitation the agent never claimed requeues under the retry budget.
+    assert_eq!(s.board_task(id(&t)).unwrap()["state"], "pending");
+    for _ in 0..ant3_platform::limits::BOARD_TASK_RETRIES {
+        let retry = provision(&s, &t);
+        finish(&s, &retry, "completed");
+    }
     assert_eq!(
         s.board_task(id(&t)).unwrap()["error"],
         "board_agent_did_not_claim"
@@ -830,7 +860,7 @@ fn schema_upgrade_preserves_completed_results_and_review_snapshots_survive_resta
     assert_eq!(
         db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
             .unwrap(),
-        17
+        18
     );
     drop(db);
     drop(s);
