@@ -26,6 +26,23 @@ pub fn stimulus(strength: f64, crowd: usize) -> f64 {
     quantize_strength(strength.max(0.0) / (1 + crowd) as f64)
 }
 
+/// Oscillation suppression: rework chains cool down exponentially and stop
+/// at a bounded chain length, handing the task back to human review instead
+/// of looping between worker and reviewer forever.
+pub const REWORK_CHAIN_LIMIT: usize = 4;
+pub const REWORK_COOLDOWN_BASE_MS: i64 = 15_000;
+pub const REWORK_COOLDOWN_MAX_MS: i64 = 120_000;
+
+/// Cooldown before a reworked task is offered again: base * 2^(chain-1),
+/// capped. Chain counts consecutive changes_requested rounds.
+pub fn rework_cooldown_ms(chain: usize) -> i64 {
+    if chain == 0 {
+        return 0;
+    }
+    (REWORK_COOLDOWN_BASE_MS * 2_i64.pow((chain as u32).saturating_sub(1).min(8)))
+        .min(REWORK_COOLDOWN_MAX_MS)
+}
+
 /// Cost-aware threshold: a preset's energy efficiency scales its threshold.
 /// efficiency = mean_energy_per_success / ENERGY_RESERVE (clamped 0.25..4).
 /// Cheap specialists (efficiency < 1) get lower thresholds and respond to
@@ -72,6 +89,14 @@ mod tests {
         assert!(response_probability(2.0, 0.5) > response_probability(1.0, 0.5));
         assert!(response_probability(1.0, 0.2) > response_probability(1.0, 0.8));
         assert_eq!(response_probability(0.0, 0.5), 0.0);
+    }
+
+    #[test]
+    fn rework_cooldown_grows_and_caps() {
+        assert_eq!(rework_cooldown_ms(0), 0);
+        assert_eq!(rework_cooldown_ms(1), REWORK_COOLDOWN_BASE_MS);
+        assert_eq!(rework_cooldown_ms(2), REWORK_COOLDOWN_BASE_MS * 2);
+        assert_eq!(rework_cooldown_ms(20), REWORK_COOLDOWN_MAX_MS);
     }
 
     #[test]

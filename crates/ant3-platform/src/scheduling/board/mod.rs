@@ -224,6 +224,20 @@ fn preview(mut task: Value) -> Value {
     }
     task
 }
+/// Oscillation suppression: record a rework round, cool the task down, and
+/// report whether the chain exceeded its bound (caller then stops rework).
+pub(crate) fn rework_round(tx: &Transaction<'_>, task: &str) -> PResult<bool> {
+    let chain:usize=tx.query_row("SELECT coalesce((SELECT chain FROM board_rework_chains WHERE task_id=?),0)",[task],|r|r.get(0))?;
+    let chain=chain+1;
+    let cooldown=crate::domain::division::rework_cooldown_ms(chain);
+    tx.execute("INSERT INTO board_rework_chains(task_id,chain,not_before) VALUES(?,?,?) ON CONFLICT(task_id) DO UPDATE SET chain=excluded.chain,not_before=excluded.not_before",params![task,chain,now()+cooldown])?;
+    event(tx,"board.rework_cooldown",task,json!({"chain":chain,"cooldown_ms":cooldown,"limit":crate::domain::division::REWORK_CHAIN_LIMIT}))?;
+    Ok(chain>crate::domain::division::REWORK_CHAIN_LIMIT)
+}
+pub(crate) fn cooled(tx: &Transaction<'_>, task: &str) -> PResult<bool> {
+    let not_before:Option<i64>=tx.query_row("SELECT not_before FROM board_rework_chains WHERE task_id=?",[task],|r|r.get(0)).optional()?;
+    Ok(not_before.is_none_or(|at| at<=now()))
+}
 impl Store {
     pub(crate) fn board_transaction<T>(&self, f: impl FnOnce(&Transaction<'_>) -> PResult<T>) -> PResult<T> {
         let mut connection = self.lock()?;
@@ -289,7 +303,7 @@ impl Store {
             let mut funded=Vec::new();
             for entry in entries {
                 let root:String=tx.query_row("SELECT root_id FROM board_tasks WHERE id=?",[&entry.0],|r|r.get(0))?;
-                if crate::energy::available(tx,&root)?>=crate::energy::ENERGY_RESERVE { funded.push(entry); }
+                if crate::energy::available(tx,&root)?>=crate::energy::ENERGY_RESERVE && cooled(tx,&entry.0)? { funded.push(entry); }
             }
             let entries=funded;
             let explore=std::env::var("ANT3_BOARD_EXPLORATION").is_ok_and(|v|v=="1");
@@ -333,7 +347,13 @@ impl Store {
                 crate::traces::deposit(tx,t["root_id"].as_str().unwrap(),id,crate::domain::traces::RESULT_TRACE_KIND,crate::domain::traces::TRACE_ACCEPTED_AMOUNT,"accepted",Some(&input.run_id))?;
             }
             if input.decision == ReviewDecision::ChangesRequested {
+                let exhausted=rework_round(tx,id)?;
+                if exhausted {
+                    return Err(fault(409,"rework_chain_exhausted"));
+                }
                 tx.execute("UPDATE board_tasks SET state='pending',route_state='unassigned',instance_id=NULL,run_id=NULL,result=NULL,finished_at=NULL,error=NULL WHERE id=?", [id])?;
+            } else {
+                tx.execute("DELETE FROM board_rework_chains WHERE task_id=?", [id])?;
             }
             event(tx, "board.task_reviewed", id, json!({"run_id":input.run_id,"decision":decision,"feedback":input.feedback,"author_kind":"operator"}))?;
             receipt(tx, &command_scope, key, &fingerprint, task(tx, id)?)

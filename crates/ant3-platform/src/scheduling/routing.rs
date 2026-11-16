@@ -302,6 +302,8 @@ impl Store {
             if !eligible {return Ok(false);}
             let retry:Option<i64>=tx.query_row("SELECT retry_at FROM board_routing WHERE task_id=?",[task],|r|r.get(0)).optional()?;
             if retry.is_some_and(|at|at>now()) {return Ok(false);}
+            // Oscillation cooldown: reworked tasks wait before re-routing.
+            if !crate::board::cooled(tx,task)? {return Ok(false);}
             let active:usize=tx.query_row("SELECT count(*) FROM board_agents a JOIN runs r ON r.id=a.run_id WHERE r.state IN ('queued','running')",[],|r|r.get(0))?;
             let routing:usize=tx.query_row("SELECT count(*) FROM board_routing WHERE state='routing' AND retry_at>?",[now()],|r|r.get(0))?;
             if active+routing>=crate::limits::WORKERS || crate::fleets::quota_used(tx)?+routing>=crate::limits::INSTANCES {return Ok(false);}

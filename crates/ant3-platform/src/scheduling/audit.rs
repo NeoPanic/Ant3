@@ -302,6 +302,7 @@ fn advance(tx: &Transaction<'_>, id: &str) -> PResult<()> {
                 params![task_id, task["run_id"].as_str().unwrap(), feedback, task["result"].to_string(), task_id, now()],
             )?;
             settle(tx, &job, "passed", None)?;
+            tx.execute("DELETE FROM board_rework_chains WHERE task_id=?", [&task_id])?;
             crate::energy::refund(tx, task["root_id"].as_str().unwrap(), job["run_id"].as_str(), "accept_refund", crate::energy::ENERGY_ACCEPT_REFUND)?;
             crate::traces::deposit(
                 tx,
@@ -326,7 +327,8 @@ fn advance(tx: &Transaction<'_>, id: &str) -> PResult<()> {
                 |r| r.get(0),
             )?;
             settle(tx, &job, "changes-requested", None)?;
-            if used < job["max_auto_reworks"].as_i64().unwrap() {
+            let chain_exhausted = crate::board::rework_round(tx, &task_id)?;
+            if used < job["max_auto_reworks"].as_i64().unwrap() && !chain_exhausted {
                 let feedback = format!(
                     "Independent audit {} requested changes: {}",
                     id,

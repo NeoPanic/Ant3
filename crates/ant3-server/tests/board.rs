@@ -645,6 +645,11 @@ async fn worker_loop_completes_a_peer_board_split_and_continuation() {
                     "human-rework",
                 )
                 .unwrap();
+                s.transaction(|tx| {
+                    tx.execute("UPDATE board_rework_chains SET not_before=0 WHERE task_id=?", [id(&t)])?;
+                    Ok(())
+                })
+                .unwrap();
                 reviewed = true;
                 continue;
             }
@@ -862,9 +867,56 @@ fn schema_upgrade_preserves_completed_results_and_review_snapshots_survive_resta
     assert_eq!(
         db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
             .unwrap(),
-        24
+        25
     );
     drop(db);
     drop(s);
     std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn rework_chains_cool_down_and_stop_at_the_bound() {
+    use ant3_platform::board::{ReviewDecision, ReviewInput};
+    let (s, t) = fixture();
+    // Four rework rounds allowed; the fifth is refused (chain exhausted).
+    for round in 1..=4 {
+        let r = provision(&s, &t);
+        s.claim_board_task(id(&r), id(&t)).unwrap();
+        finish(&s, &r, "completed");
+        s.review_board_task(
+            id(&t),
+            &ReviewInput { run_id: id(&r).into(), decision: ReviewDecision::ChangesRequested, feedback: format!("round {round}") },
+            &format!("rework-{round}"),
+        )
+        .unwrap();
+        // Cooldown keeps the task out of offering until it elapses.
+        assert!(s.board_pending().unwrap().is_empty(), "round {round} should cool down");
+        // Fast-forward the cooldown for the test.
+        s.transaction(|tx| {
+            tx.execute("UPDATE board_rework_chains SET not_before=0 WHERE task_id=?", [id(&t)])?;
+            Ok(())
+        })
+        .unwrap();
+    }
+    let r = provision(&s, &t);
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    finish(&s, &r, "completed");
+    assert_eq!(
+        s.review_board_task(
+            id(&t),
+            &ReviewInput { run_id: id(&r).into(), decision: ReviewDecision::ChangesRequested, feedback: "once more".into() },
+            "rework-5",
+        )
+        .unwrap_err()
+        .1,
+        "rework_chain_exhausted"
+    );
+    // Human acceptance still works and clears the chain.
+    s.review_board_task(
+        id(&t),
+        &ReviewInput { run_id: id(&r).into(), decision: ReviewDecision::Accepted, feedback: String::new() },
+        "accept-final",
+    )
+    .unwrap();
+    assert_eq!(s.board_task(id(&t)).unwrap()["review_state"], "accepted");
 }

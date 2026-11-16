@@ -85,3 +85,8 @@ CREATE TABLE IF NOT EXISTS energy_ledger(
 );
 CREATE INDEX IF NOT EXISTS energy_ledger_root ON energy_ledger(root_id,seq);
 CREATE UNIQUE INDEX IF NOT EXISTS energy_settle_once ON energy_ledger(run_id) WHERE kind IN ('settle','settle_unknown');
+CREATE TABLE IF NOT EXISTS board_rework_chains(
+ task_id TEXT PRIMARY KEY REFERENCES board_tasks(id),
+ chain INTEGER NOT NULL,
+ not_before INTEGER NOT NULL
+);
