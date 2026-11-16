@@ -82,7 +82,7 @@ impl Store {
                     )?;
                 }
             }
-            tx.execute_batch("PRAGMA user_version=25;")?;
+            tx.execute_batch("PRAGMA user_version=26;")?;
             Ok(())
         })?;
         Ok(store)

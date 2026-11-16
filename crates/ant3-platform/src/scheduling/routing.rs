@@ -129,6 +129,8 @@ impl Router {
                 json!({"name":"platform.board.progress","description":"Report concrete milestones or blockers on claimed work."}),
                 json!({"name":"platform.board.traces","description":"Read pheromone trails left by peers and verified events, sorted by decayed strength."}),
                 json!({"name":"platform.board.trace","description":"Deposit a bounded finding/path/blocker signal on a shared trail for peers."}),
+                json!({"name":"platform.board.notes","description":"Read the root blackboard: active findings and adjudicated history."}),
+                json!({"name":"platform.board.note","description":"Publish a CAS finding with evidence support; conflicts adjudicated by trace strength."}),
             ]);
             result.push(
                 json!({"preset_name":preset.name,"preset_version":preset.version,

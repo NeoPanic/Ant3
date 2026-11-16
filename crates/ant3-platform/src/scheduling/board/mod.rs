@@ -104,6 +104,11 @@ fn task(tx: &Transaction<'_>, id: &str) -> PResult<Value> {
     value["reviews"] = json!(reviews);
     value["verification"] = tx.query_row("SELECT json(verification) FROM board_tasks WHERE id=?",[id],|r|r.get::<_,Option<String>>(0))?.map(|s|serde_json::from_str::<Value>(&s)).transpose()?.unwrap_or(Value::Null);
     value["audits"] = json!(crate::audit::by_task(tx, id)?);
+    value["notes"] = if value["parent_id"].is_null() {
+        let mut stmt=tx.prepare("SELECT json_object('key',key,'revision',revision,'body',body,'status',status,'support_score',support_score) FROM board_notes WHERE root_id=? AND status='active' ORDER BY key LIMIT 64")?;
+        let rows=stmt.query_map([id],|r|r.get::<_,String>(0))?.map(|r|Ok(serde_json::from_str::<Value>(&r?)?)).collect::<PResult<Vec<_>>>()?;
+        json!(rows)
+    } else { json!([]) };
     value["energy"] = if value["parent_id"].is_null() {
         let (budget,reserved,spent,refunded):(i64,i64,i64,i64)=tx.query_row("SELECT budget,reserved,spent,refunded FROM board_energy WHERE root_id=?",[id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?))).optional()?.unwrap_or((crate::energy::ENERGY_DEFAULT,0,0,0));
         json!({"budget":budget,"spent":spent,"refunded":refunded,"available":budget+refunded-spent-reserved})

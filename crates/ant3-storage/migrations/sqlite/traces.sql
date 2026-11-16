@@ -90,3 +90,17 @@ CREATE TABLE IF NOT EXISTS board_rework_chains(
  chain INTEGER NOT NULL,
  not_before INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS board_notes(
+ root_id TEXT NOT NULL REFERENCES board_tasks(id),
+ key TEXT NOT NULL,
+ revision INTEGER NOT NULL,
+ body TEXT NOT NULL,
+ status TEXT NOT NULL,
+ support TEXT NOT NULL,
+ support_score REAL NOT NULL,
+ source_run_id TEXT NOT NULL REFERENCES runs(id),
+ superseded_by INTEGER,
+ created_at INTEGER NOT NULL,
+ PRIMARY KEY(root_id,key,revision)
+);
+CREATE INDEX IF NOT EXISTS board_notes_root ON board_notes(root_id,key,revision DESC);

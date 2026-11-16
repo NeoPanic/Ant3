@@ -101,7 +101,7 @@ pub(super) async fn execute(
         ));
     }
     if board.is_some() {
-        instructions.push_str("\nShared task board protocol: you are a peer Agent. Read platform.board.read, then claim a compatible pending task with platform.board.claim before using work tools. Follow the claimed task's instructions and acceptance criteria. Every peer can read, claim and split; no peer controls other identities. Split only when independent work is useful; publish task descriptions without choosing Presets or Agents, then finish this Run. Report concrete milestones and blockers with platform.board.progress. A continuation has completed children: inspect their results before integrating. Read target_task.reviews for human feedback; after changes_requested, correct the result and split additional work only if needed. Your final output is the durable task contribution, submitted for human review on the root task. Only the human operator can accept it. Do not claim success beyond available evidence.");
+        instructions.push_str("\nShared task board protocol: you are a peer Agent. Read platform.board.read, then claim a compatible pending task with platform.board.claim before using work tools. Follow the claimed task's instructions and acceptance criteria. Every peer can read, claim and split; no peer controls other identities. Split only when independent work is useful; publish task descriptions without choosing Presets or Agents, then finish this Run. Report concrete milestones and blockers with platform.board.progress. Share durable findings on the root blackboard with platform.board.note (CAS revisions, cite trace keys as evidence); read peer findings with platform.board.notes. Conflicts are adjudicated by evidence strength. A continuation has completed children: inspect their results before integrating. Read target_task.reviews for human feedback; after changes_requested, correct the result and split additional work only if needed. Your final output is the durable task contribution, submitted for human review on the root task. Only the human operator can accept it. Do not claim success beyond available evidence.");
     }
     if audit.is_some() {
         instructions = format!(
@@ -158,6 +158,10 @@ pub(super) async fn execute(
         tools.push("text.inspect".to_owned());
         if board.is_some() {
             for tool in ant3_platform::board::tools(store.clone(), run) {
+                tools.push(tool.spec().name);
+                registry.tool(tool).map_err(core_error)?;
+            }
+            for tool in ant3_platform::notes::tools(store.clone(), run) {
                 tools.push(tool.spec().name);
                 registry.tool(tool).map_err(core_error)?;
             }

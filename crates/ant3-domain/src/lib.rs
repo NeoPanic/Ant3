@@ -143,6 +143,7 @@ pub mod energy;
 pub mod fleets;
 pub mod limits;
 pub mod messaging;
+pub mod notes;
 pub mod traces;
 
 #[cfg(test)]

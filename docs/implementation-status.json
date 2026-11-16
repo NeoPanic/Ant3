@@ -268,7 +268,7 @@
     "name": "信息素痕迹场",
     "phase": "P2",
     "status": "implemented",
-    "detail": "根任务作用域痕迹浓度：完成/验收/复用按固定权重自动增强，成功 Run 招募放大其留下的路径信号，确定失败施加负反馈降权（结果未知不惩罚不重试），Agent finding/path/blocker 沉积有界（每 Run 8 次、每根 64 条）；30 分钟半衰期惰性蒸发、六位小数量化、饱和上限 100；台账与事件可审计。振荡抑制已落地：返工链指数冷却（15s×2^n 上限 120s）+链长上限 4，超限拒绝自动返工交回人类，验收清链。黑板冲突裁决未实现。",
+    "detail": "根任务作用域痕迹浓度：完成/验收/复用按固定权重自动增强，成功 Run 招募放大其留下的路径信号，确定失败施加负反馈降权（结果未知不惩罚不重试），Agent finding/path/blocker 沉积有界（每 Run 8 次、每根 64 条）；30 分钟半衰期惰性蒸发、六位小数量化、饱和上限 100；台账与事件可审计。振荡抑制已落地：返工链指数冷却（15s×2^n 上限 120s）+链长上限 4，超限拒绝自动返工交回人类，验收清链。板根黑板已重建：CAS 修订+证据支持度自动裁决（强证据取代、弱/平局保留在位者、历史可审计）。",
     "source": [
       "crates/ant3-domain/src/traces.rs",
       "crates/ant3-platform/src/scheduling/traces.rs",
@@ -283,6 +283,24 @@
     "verification": "existing-tests",
     "scope": "current",
     "path": "emergence"
+  },
+  {
+    "id": "notes",
+    "name": "板根黑板与冲突裁决",
+    "phase": "P2",
+    "status": "implemented",
+    "path": "emergence",
+    "detail": "根任务作用域共享黑板：Agent 以稳定键+CAS 修订发布发现（每 Run 8 次、每根 64 键），引用最多 8 个痕迹键作为证据支持。冲突写入按证据强度自动裁决而非先到先得：更强支持取代在位者，弱/平局（相对容差防蒸发抖动）保留在位者并记为 superseded 历史；裁决事件可审计。工具 platform.board.notes/note，操作员视图 /api/board/tasks/{id}/notes。黑板内容为不可信证据。",
+    "source": [
+      "crates/ant3-domain/src/notes.rs",
+      "crates/ant3-platform/src/scheduling/notes.rs",
+      "crates/ant3-server/tests/notes.rs"
+    ],
+    "target": [
+      "crates/ant3-platform/src/scheduling/"
+    ],
+    "verification": "existing-tests",
+    "scope": "current"
   },
   {
     "id": "division",

@@ -85,6 +85,7 @@ function boardDetail(task,tasks){
     (routingError?`<div class="callout" role="status" title="${esc(route.error)}">${esc(boardRoutingMessage(route.error))}${route.retry_at?`。下次尝试 ${esc(time(route.retry_at))}`:''}${route.attempts?`，已尝试 ${esc(route.attempts)} 次`:''}。</div>`:'')+
     (task.error?`<div class="callout" role="status">${esc(task.error)}</div>`:'')+
     (task.progress?panel('Agent 进度',`<div class="panel-body record-text">${esc(task.progress.message)}</div>`):'')+
+    boardNotesPanel(task)+
     boardTraceFieldPanel(task,tasks)+
     panel('任务内容',`<div class="panel-body"><dl class="definition"><dt>目标</dt><dd>${esc(task.instructions)}</dd><dt>验收标准</dt><dd>${esc(task.acceptance)}</dd>${parent?`<dt>拆分来源</dt><dd><a href="#board/${esc(parent.id)}">${esc(parent.title)}</a></dd>`:''}</dl></div>`)+
     (children.length?panel('拆分后的任务',`<div class="board-task-list">${children.map(boardTaskRow).join('')}</div>`):'')+
@@ -94,6 +95,15 @@ function boardDetail(task,tasks){
     (task.review_state==='pending'&&!boardAuditing(task)?panel('人类评审',`<div class="panel-body"><p>根据验收标准检查结果。通过后归档；退回修改将按评审意见重新启动 Agent 执行。</p>${button('评审结果','board-review',true,`data-id="${esc(task.id)}" data-run="${esc(task.run_id)}"`)}</div>`):'')+
     (task.reviews?.length?panel('最近评审记录',`<div class="panel-body">${task.reviews.map(review=>`<div class="record-text"><strong>${review.decision==='accepted'?'通过':'退回修改'}</strong>${review.author_kind==='verifier'?' <span class="hint">（独立验证器）</span>':' <span class="hint">（人类）</span>'}<p>${esc(review.feedback)}</p>${button('查看本轮执行记录','run-detail',false,`data-id="${esc(review.run_id)}"`)}</div>`).join('')}</div>`):'')+
     `<div class="head-actions">${task.instance_id?button('认领实例','agent-detail',false,`data-id="${esc(task.instance_id)}"`):''}${task.run_id?button('执行记录','run-detail',false,`data-id="${esc(task.run_id)}"`):''}<a class="button" href="#studio">工作现场</a></div>`;
+}
+function boardNotesPanel(task){
+  if(task.parent_id)return '';
+  const notes=task.notes||[];
+  if(!notes.length)return '';
+  const active=notes.filter(n=>n.status==='active');
+  const rows=active.map(n=>`<div class="record-text"><strong>${esc(n.key)} <span class="hint">r${esc(n.revision)} · 支持度 ${esc(n.support_score)}</span></strong><p>${esc(n.body)}</p></div>`).join('');
+  const superseded=notes.length-active.length;
+  return panel('共享黑板',`<div class="panel-body">${rows}${superseded?`<p class="hint">${superseded} 条被裁决取代的历史见 API。</p>`:''}<p class="hint">冲突按证据强度自动裁决；内容为不可信证据。</p></div>`);
 }
 const auditStates={pending:'等待验证器',running:'验证中',passed:'验证通过','changes-requested':'验证退回',inconclusive:'证据不足',failed:'验证器失败',cancelled:'已取消',stale:'结果已变更'};
 function boardAuditPanel(task){
