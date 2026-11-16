@@ -78,6 +78,9 @@ pub(super) async fn board_energy(
 ) -> PResult<Json<Value>> {
     Ok(Json(app.store.board_energy(&id)?))
 }
+pub(super) async fn swarm_pool(State(app): State<App>) -> PResult<Json<Value>> {
+    Ok(Json(app.store.swarm_pool()?))
+}
 pub(super) async fn preset_experience(State(app): State<App>) -> PResult<Json<Value>> {
     Ok(Json(json!({"experience":app.store.preset_experience()?})))
 }

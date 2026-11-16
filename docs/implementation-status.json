@@ -241,7 +241,7 @@
     "name": "对等 Agent 共享任务板",
     "phase": "P2",
     "status": "implemented",
-    "detail": "任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。任务视图已接入信息素痕迹浓度；Agent 读取默认局部邻域（scope=all 可退出）；根任务可选独立验证已接入：全新验证器实例审计冻结结果，通过自动归档（验证器署名）、失败有界返工、unknown 不通过、预算耗尽交回人类；消息招募与同根快照交接已接通；深度产物整合为后续方向，确定失败与未认领任务在有界重试预算（默认 2 次）内自动重排队、新实例接手，预算耗尽才阻塞上游；结果未知不自动重试。没有分布式租约或费用硬预算。",
+    "detail": "任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。任务视图已接入信息素痕迹浓度；Agent 读取默认局部邻域（scope=all 可退出）；根任务可选独立验证已接入：全新验证器实例审计冻结结果，通过自动归档（验证器署名）、失败有界返工、unknown 不通过、预算耗尽交回人类；消息招募与同根快照交接已接通；深度产物整合为后续方向，确定失败与未认领任务在有界重试预算（默认 2 次）内自动重排队、新实例接手，预算耗尽才阻塞上游；结果未知不自动重试。没有分布式租约或费用硬预算。自选模式下认领支持 self-selected 路由态。",
     "source": [
       "crates/ant3-platform/src/scheduling/board/mod.rs",
       "crates/ant3-platform/src/scheduling/board/tools.rs",
@@ -314,6 +314,24 @@
       "crates/ant3-platform/src/scheduling/division.rs",
       "crates/ant3-platform/src/scheduling/routing.rs",
       "crates/ant3-server/tests/division.rs"
+    ],
+    "target": [
+      "crates/ant3-platform/src/scheduling/"
+    ],
+    "verification": "existing-tests",
+    "scope": "current"
+  },
+  {
+    "id": "selfselect",
+    "name": "个体自选认领（选型下沉）",
+    "phase": "P2",
+    "status": "implemented",
+    "path": "emergence",
+    "detail": "ANT3_SELF_SELECT=1 时中央选型分类器完全退位：游走待命池（上限 8）按验证经验繁殖（Laplace 平滑份额，持续失败母体退役），空闲游走消耗群体能量（20/实例/分钟，群体池 20 万，耗尽退役全池）。每个待命个体按自己的成本调整阈值对开放任务做 s²/(s²+θ²) 概率响应（splitmix64 种子化），响应者原子竞争认领（先插 Run 后 UPDATE 门控，败者回滚）；控制面只保留容量/能量/原子性物理法则。自选 Run 幂等认领自己的工作；swarm.self_selected/peer_spawned/peer_retired/colony_starved 事件可审计；操作员视图 /api/swarm/pool。默认关闭，与选型模式可对照。",
+    "source": [
+      "crates/ant3-domain/src/division.rs",
+      "crates/ant3-platform/src/scheduling/selfselect.rs",
+      "crates/ant3-server/tests/selfselect.rs"
     ],
     "target": [
       "crates/ant3-platform/src/scheduling/"

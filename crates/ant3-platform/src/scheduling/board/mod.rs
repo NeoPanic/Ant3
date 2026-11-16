@@ -153,7 +153,7 @@ fn scope(tx: &Transaction<'_>, run: &str, active: bool) -> PResult<Option<Value>
         }
     }
     Ok(Some(
-        json!({"root_id":root,"task_id":target,"target_task_id":target,"instance_id":agent,"claimed_task_id":claimed,"preset_name":name,"preset_version":version}),
+        json!({"root_id":root,"task_id":target,"target_task_id":target,"instance_id":agent,"claimed_task_id":claimed,"preset_name":name,"preset_version":version,"run_id":run}),
     ))
 }
 pub(crate) fn active_scope(tx: &Transaction<'_>, run: &str) -> PResult<Value> {
@@ -489,6 +489,11 @@ impl Store {
             let t=task(tx,task_id)?;
             if t["root_id"]!=s["root_id"] {return Err(fault(403,"board_task_outside_scope"));}
             if t["preset_name"]!=s["preset_name"]||t["preset_version"]!=s["preset_version"] {return Err(fault(403,"board_preset_mismatch"));}
+            if t["state"]=="running"&&t["run_id"]==run&&t["route_state"]=="self-selected" {
+                tx.execute("UPDATE board_agents SET claimed_task_id=? WHERE run_id=?",params![task_id,run])?;
+                event(tx,"board.task_claimed",task_id,json!({"instance_id":s["instance_id"],"run_id":run,"self_selected":true}))?;
+                return task(tx,task_id).map(preview);
+            }
             let changed=tx.execute("UPDATE board_tasks SET state='running',instance_id=?,run_id=? WHERE id=? AND state='pending' AND route_state='provisioned'",params![s["instance_id"].as_str().unwrap(),run,task_id])?;
             if changed!=1 {return Err(fault(409,"board_task_already_claimed"));}
             tx.execute("UPDATE board_agents SET claimed_task_id=? WHERE run_id=?",params![task_id,run])?;
@@ -635,6 +640,7 @@ impl Store {
                     event(tx,"board.continuation_ready",&parent,json!({"completed_children":done}))?;
                 }
             }
+            crate::selfselect::sweep(tx)?;
             crate::audit::reconcile(tx)?;
             crate::lifecycle::reconcile(tx)
         })

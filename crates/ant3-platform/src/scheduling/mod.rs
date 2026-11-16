@@ -5,4 +5,5 @@ pub mod division;
 pub mod energy;
 pub mod notes;
 pub mod routing;
+pub mod selfselect;
 pub mod traces;

@@ -509,10 +509,12 @@ fn demo_board(input: &ModelInput) -> Result<ModelReply> {
             .into_iter()
             .flatten()
             .filter(|t| {
-                t["state"] == "pending"
-                    && t["route_state"] == "provisioned"
-                    && t["preset_name"] == scope["preset_name"]
+                t["preset_name"] == scope["preset_name"]
                     && t["preset_version"] == scope["preset_version"]
+                    && ((t["state"] == "pending" && t["route_state"] == "provisioned")
+                        || (t["state"] == "running"
+                            && t["route_state"] == "self-selected"
+                            && t["run_id"] == scope["run_id"]))
             })
             .collect::<Vec<_>>();
         let task = eligible

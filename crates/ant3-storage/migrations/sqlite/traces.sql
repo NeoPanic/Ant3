@@ -104,3 +104,8 @@ CREATE TABLE IF NOT EXISTS board_notes(
  PRIMARY KEY(root_id,key,revision)
 );
 CREATE INDEX IF NOT EXISTS board_notes_root ON board_notes(root_id,key,revision DESC);
+CREATE TABLE IF NOT EXISTS wander_stock(
+ fleet_id TEXT PRIMARY KEY REFERENCES fleets(id),
+ preset_name TEXT NOT NULL,
+ created_at INTEGER NOT NULL
+);
