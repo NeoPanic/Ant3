@@ -82,7 +82,7 @@ impl Store {
                     )?;
                 }
             }
-            tx.execute_batch("PRAGMA user_version=22;")?;
+            tx.execute_batch("PRAGMA user_version=23;")?;
             Ok(())
         })?;
         Ok(store)
@@ -322,6 +322,7 @@ impl Store {
                 run,
                 json!({"instance_id":agent,"state":state}),
             )?;
+            crate::energy::settle(tx, run, &report)?;
             crate::lifecycle::reconcile(tx)?;
             Ok(())
         })

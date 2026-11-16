@@ -66,6 +66,12 @@ pub(super) async fn board_audits(
 ) -> PResult<Json<Value>> {
     Ok(Json(app.store.board_audits(&id)?))
 }
+pub(super) async fn board_energy(
+    State(app): State<App>,
+    Path(id): Path<String>,
+) -> PResult<Json<Value>> {
+    Ok(Json(app.store.board_energy(&id)?))
+}
 pub(super) async fn preset_experience(State(app): State<App>) -> PResult<Json<Value>> {
     Ok(Json(json!({"experience":app.store.preset_experience()?})))
 }

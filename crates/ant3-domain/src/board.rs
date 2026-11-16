@@ -10,6 +10,9 @@ pub struct PublishInput {
     /// criteria before the result can be auto-accepted. Humans keep final say.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub verification: Option<BoardVerification>,
+    /// Root energy pool (budget-as-energy). Defaults to ENERGY_DEFAULT.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub energy_budget: Option<i64>,
 }
 impl PublishInput {
     pub fn validate(&self) -> PResult<()> {
@@ -24,6 +27,9 @@ impl PublishInput {
         }
         if let Some(v) = &self.verification {
             v.validate()?;
+        }
+        if let Some(budget) = self.energy_budget {
+            crate::energy::validate_budget(budget)?;
         }
         Ok(())
     }

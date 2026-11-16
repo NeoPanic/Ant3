@@ -9,6 +9,7 @@
 | 对等 Agent 共享任务板 | 已实现 | 原生测试 + Web 联调 | 任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。任务视图已接入信息素痕迹浓度；Agent 读取默认局部邻域（scope=all 可退出）；根任务可选独立验证已接入：全新验证器实例审计冻结结果，通过自动归档（验证器署名）、失败有界返工、unknown 不通过、预算耗尽交回人类；消息招募与同根快照交接已接通；深度产物整合为后续方向，确定失败与未认领任务在有界重试预算（默认 2 次）内自动重排队、新实例接手，预算耗尽才阻塞上游；结果未知不自动重试。没有分布式租约或费用硬预算。 |
 | 信息素痕迹场 | 已实现 | 原生测试 | 根任务作用域痕迹浓度：完成/验收/复用按固定权重自动增强，成功 Run 招募放大其留下的路径信号，确定失败施加负反馈降权（结果未知不惩罚不重试），Agent finding/path/blocker 沉积有界（每 Run 8 次、每根 64 条）；30 分钟半衰期惰性蒸发、六位小数量化、饱和上限 100；台账与事件可审计。冲突裁决与振荡抑制未实现。 |
 | 响应阈值分工与拥挤规避 | 已实现 | 原生测试 | 母体经验自适应响应阈值（成功×1/1.25、确定失败×1.25，夹[0.05,0.95]基线0.5；结果未知与取消不计经验），经验统计随能力目录进入选型证据，操作员可查 /api/presets/experience。任务供给刺激=浓度/(1+同根活跃工作者数)，拥挤分支降权、跨分支分散；可选种子化概率探索（splitmix64）按刺激+1 抽样防锁死。选型接收最强 8 条痕迹的稀释刺激与拥挤数。阈值是证据不是权威，能力匹配优先。 |
+| 预算即能量 | 已实现 | 原生测试 | 根任务能量池（发布可配，默认 100000）：派发原子预留 2000/Run，结算按真实 usage 计费（10 token=1 能量，缓存输入免费；usage 缺失保守计 1500），完成回充 500、独立验收回充 4000——高效路径赚回预算，浪费路径饿死。可用能量不足预留的根停止供给，待认领任务显式淘汰（energy_exhausted）；结算幂等、账本与事件可审计，操作员视图 /api/board/tasks/{id}/energy。选择压力由此成为涌现机制而非会计治理。 |
 | 可靠协作消息 | 部分实现 | 原生测试 + Web 联调 | 持久 Outbox/Inbox、稳定消息 ID、幂等去重、投递与消费分离、暂停积压和未知结果人工处置；Agent 使用 platform.messaging 直接交接。作用域=同 fleet 或同板根；板上 Agent 可向任意活跃同伴发起交接，消息接受时把发送者板根传播给收件人（招募台账 board_peer_roots），回复保持在作用域内。没有远程投递或 Grant 授权。 |
 | 实例工作区与文件/JSON交接 | 部分实现 | 原生测试 + Web 联调 | 实例独立目录、UTF-8 文件读写、文件/JSON 不可变快照；同板根（邀请或招募）同伴可读取快照作为 stigmergy 交接，私有文件仍隔离；Web 预览/下载保留来源状态和摘要。没有 OS 沙箱或通用代码执行环境。 |
 | 涌现评估基线 | 部分实现 | 原生测试 | 单/多 Agent 同任务同验收对照：确定性契约基线报告通过/验收、Run 成本代理、信息复用率与痕迹浓度，断言群体整合复用全部子任务贡献；个体损失鲁棒性场景已验证（杀一个执行者，任务有界重排队、新个体接手，群体仍整合验收）。不预设多 Agent 更优。真实模型等预算对照与收敛速度指标未实现。 |
@@ -44,7 +45,7 @@
 
 | 能力 | 状态 | 验证范围 | 当前行为与限制 |
 | --- | --- | --- | --- |
-| 预算预留与账本 | 规划中 | 待实现 | 提供单 Run 轮次、工具次数及超时限制；没有团队费用硬上限、原子预算预留、结算账本或费用归属。设计方向：预算作为能量与选择压力服务群体涌现，不止会计治理。 |
+| 预算预留与账本 | 规划中 | 待实现 | 能量账本已落地（见预算即能量条目）：预留/结算/回充/淘汰。尚未提供：跨根团队费用硬上限、供应商限价对账、进行中请求的结算边界。 |
 | 身份、授权与审批 | 部分实现 | 原生测试 | loopback、本地 token 与浏览器会话认证；没有 Principal/Grant、持久审批、租户隔离或插件作用域授权。 |
 | 监督 Worker 与执行隔离 | 规划中 | 待实现 | 使用嵌入式本地 Worker；没有独立进程、所有权 fencing、跨进程租约或执行沙箱。 |
 | 远程控制面与 PostgreSQL | 规划中 | 待实现 | 没有多机器 Worker、网络分区对账、分布式背压或滚动升级兼容契约。 |
@@ -69,6 +70,7 @@
 | 对等 Agent 共享任务板 | `crates/ant3-platform/src/scheduling/board/mod.rs`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-storage/migrations/sqlite/board.sql`<br>`crates/ant3-platform/src/scheduling/routing.rs`<br>`crates/ant3-platform/src/scheduling/decision.rs`<br>`web/src/features/board/board.js`<br>`crates/ant3-server/tests/board.rs`<br>`crates/ant3-server/tests/routing.rs`<br>`crates/ant3-server/tests/decision.rs`<br>`crates/ant3-platform/src/scheduling/audit.rs`<br>`crates/ant3-server/tests/audit.rs` | `crates/ant3-platform/src/collaboration/`<br>`crates/ant3-platform/src/scheduling/` |
 | 信息素痕迹场 | `crates/ant3-domain/src/traces.rs`<br>`crates/ant3-platform/src/scheduling/traces.rs`<br>`crates/ant3-storage/migrations/sqlite/traces.sql`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-server/tests/traces.rs`<br>`crates/ant3-server/tests/evaluation.rs` | `crates/ant3-platform/src/scheduling/` |
 | 响应阈值分工与拥挤规避 | `crates/ant3-domain/src/division.rs`<br>`crates/ant3-platform/src/scheduling/division.rs`<br>`crates/ant3-platform/src/scheduling/routing.rs`<br>`crates/ant3-server/tests/division.rs` | `crates/ant3-platform/src/scheduling/` |
+| 预算即能量 | `crates/ant3-domain/src/energy.rs`<br>`crates/ant3-platform/src/scheduling/energy.rs`<br>`crates/ant3-server/tests/energy.rs` | `crates/ant3-platform/src/scheduling/` |
 | 可靠协作消息 | `crates/ant3-platform/src/collaboration/messaging/mod.rs`<br>`crates/ant3-platform/src/collaboration/messaging/tools.rs`<br>`web/src/features/messages/messages.js`<br>`crates/ant3-server/tests/messaging.rs`<br>`crates/ant3-server/tests/messaging.rs` | `crates/ant3-storage/src/inbox_outbox/`<br>`crates/ant3-domain/src/collaboration/` |
 | 实例工作区与文件/JSON交接 | `crates/ant3-platform/src/workspaces/mod.rs`<br>`crates/ant3-platform/src/workspaces/tools.rs`<br>`web/src/features/workspaces/workspaces.js`<br>`crates/ant3-server/tests/workspaces.rs` | `crates/ant3-platform/src/workspaces/`<br>`crates/ant3-domain/src/artifacts/` |
 | Web 执行证据检查 | `web/src/app/app.js`<br>`web/src/features/studio/studio.js`<br>`web/src/features/studio/studio.css`<br>`web/src/features/agents/fleets.js`<br>`web/src/features/messages/messages.js`<br>`web/src/features/workspaces/workspaces.js` | `web/src/features/` |
@@ -119,6 +121,7 @@ crates/
 │   ├── src/
 │   │   ├── board.rs
 │   │   ├── division.rs
+│   │   ├── energy.rs
 │   │   ├── fleets.rs
 │   │   ├── lib.rs
 │   │   ├── limits.rs
@@ -152,6 +155,7 @@ crates/
 │   │   │   ├── audit.rs
 │   │   │   ├── decision.rs
 │   │   │   ├── division.rs
+│   │   │   ├── energy.rs
 │   │   │   ├── mod.rs
 │   │   │   ├── routing.rs
 │   │   │   └── traces.rs
@@ -204,6 +208,7 @@ crates/
 │   │   ├── builtin_plugins.rs
 │   │   ├── decision.rs
 │   │   ├── division.rs
+│   │   ├── energy.rs
 │   │   ├── evaluation.rs
 │   │   ├── fleets.rs
 │   │   ├── messaging.rs

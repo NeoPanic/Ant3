@@ -70,6 +70,7 @@ fn input(title: &str) -> PublishInput {
         instructions: "Analyze supplied text".into(),
         acceptance: "Show evidence".into(),
         verification: None,
+        energy_budget: None,
     }
 }
 fn setup() -> (Store, Models) {

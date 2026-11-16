@@ -12,5 +12,5 @@ pub mod workspaces;
 // Preserve existing module paths while implementations move behind their boundaries.
 pub use collaboration::messaging;
 pub use control::{fleets, lifecycle, organization, presets};
-pub use scheduling::{audit, board, decision, division, routing, traces};
+pub use scheduling::{audit, board, decision, division, energy, routing, traces};
 pub use storage::sqlite as store;

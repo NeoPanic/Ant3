@@ -30,6 +30,7 @@
 | [共享任务板](task-board.zh-CN.md) | 无实例绑定发布、Preset 选型、原子认领与拆分 |
 | [信息素痕迹场](traces.zh-CN.md) | 浓度、增强、蒸发与有界 Agent 信号 |
 | [涌现评估基线](evaluation.zh-CN.md) | 单/多 Agent 同任务对照与信息复用指标 |
+| [预算即能量](energy.zh-CN.md) | 预留、usage 结算、验收回充与饥饿淘汰 |
 | [点对点消息](messaging.zh-CN.md) | 投递、派发、消费和恢复 |
 | [文件工作区](workspaces.zh-CN.md) | 私有文件与同板根快照共享 |
 | [进程插件](process-plugins.zh-CN.md) | 包格式、安装、绑定与执行契约 |

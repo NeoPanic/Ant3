@@ -47,6 +47,7 @@ fn fixture() -> Fixture {
                 instructions: "share files".into(),
                 acceptance: "snapshot readable".into(),
                 verification: None,
+                energy_budget: None,
             },
             "ws-root",
         )

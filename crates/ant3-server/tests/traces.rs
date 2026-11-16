@@ -13,6 +13,7 @@ fn input(title: &str) -> PublishInput {
         instructions: format!("Inspect {title}"),
         acceptance: "Evidence is reported".into(),
         verification: None,
+        energy_budget: None,
     }
 }
 fn fixture() -> (Store, Value) {

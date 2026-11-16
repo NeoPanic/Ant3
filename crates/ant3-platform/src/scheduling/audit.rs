@@ -272,6 +272,7 @@ fn advance(tx: &Transaction<'_>, id: &str) -> PResult<()> {
             json!({"id":id,"run_id":run,"instance_id":member}),
         )?;
         event(tx, "run.queued", &run, json!({"audit_id":id,"instance_id":member}))?;
+        crate::energy::reserve(tx, task["root_id"].as_str().unwrap(), &run)?;
         return Ok(());
     }
     // running: wait for the reviewer Run to settle.
@@ -301,6 +302,7 @@ fn advance(tx: &Transaction<'_>, id: &str) -> PResult<()> {
                 params![task_id, task["run_id"].as_str().unwrap(), feedback, task["result"].to_string(), task_id, now()],
             )?;
             settle(tx, &job, "passed", None)?;
+            crate::energy::refund(tx, task["root_id"].as_str().unwrap(), job["run_id"].as_str(), "accept_refund", crate::energy::ENERGY_ACCEPT_REFUND)?;
             crate::traces::deposit(
                 tx,
                 task["root_id"].as_str().unwrap(),

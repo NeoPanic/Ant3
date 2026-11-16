@@ -304,6 +304,24 @@
     "scope": "current"
   },
   {
+    "id": "energy",
+    "name": "预算即能量",
+    "phase": "P2",
+    "status": "implemented",
+    "path": "emergence",
+    "detail": "根任务能量池（发布可配，默认 100000）：派发原子预留 2000/Run，结算按真实 usage 计费（10 token=1 能量，缓存输入免费；usage 缺失保守计 1500），完成回充 500、独立验收回充 4000——高效路径赚回预算，浪费路径饿死。可用能量不足预留的根停止供给，待认领任务显式淘汰（energy_exhausted）；结算幂等、账本与事件可审计，操作员视图 /api/board/tasks/{id}/energy。选择压力由此成为涌现机制而非会计治理。",
+    "source": [
+      "crates/ant3-domain/src/energy.rs",
+      "crates/ant3-platform/src/scheduling/energy.rs",
+      "crates/ant3-server/tests/energy.rs"
+    ],
+    "target": [
+      "crates/ant3-platform/src/scheduling/"
+    ],
+    "verification": "existing-tests",
+    "scope": "current"
+  },
+  {
     "id": "messaging",
     "name": "可靠协作消息",
     "phase": "P2",
@@ -410,7 +428,7 @@
     "name": "预算预留与账本",
     "phase": "P2",
     "status": "planned",
-    "detail": "提供单 Run 轮次、工具次数及超时限制；没有团队费用硬上限、原子预算预留、结算账本或费用归属。设计方向：预算作为能量与选择压力服务群体涌现，不止会计治理。",
+    "detail": "能量账本已落地（见预算即能量条目）：预留/结算/回充/淘汰。尚未提供：跨根团队费用硬上限、供应商限价对账、进行中请求的结算边界。",
     "source": [],
     "target": [
       "crates/ant3-platform/src/accounting/",

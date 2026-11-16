@@ -66,3 +66,21 @@ CREATE TABLE IF NOT EXISTS board_peer_roots(
  created_at INTEGER NOT NULL,
  PRIMARY KEY(instance_id,root_id)
 );
+CREATE TABLE IF NOT EXISTS board_energy(
+ root_id TEXT PRIMARY KEY REFERENCES board_tasks(id),
+ budget INTEGER NOT NULL,
+ reserved INTEGER NOT NULL DEFAULT 0,
+ spent INTEGER NOT NULL DEFAULT 0,
+ refunded INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS energy_ledger(
+ seq INTEGER PRIMARY KEY AUTOINCREMENT,
+ root_id TEXT NOT NULL REFERENCES board_tasks(id),
+ run_id TEXT REFERENCES runs(id),
+ kind TEXT NOT NULL,
+ amount INTEGER NOT NULL,
+ balance INTEGER NOT NULL,
+ created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS energy_ledger_root ON energy_ledger(root_id,seq);
+CREATE UNIQUE INDEX IF NOT EXISTS energy_settle_once ON energy_ledger(run_id) WHERE kind IN ('settle','settle_unknown');

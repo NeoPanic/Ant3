@@ -139,6 +139,7 @@ pub fn outcome_unknown(value: &Value) -> bool {
 
 pub mod board;
 pub mod division;
+pub mod energy;
 pub mod fleets;
 pub mod limits;
 pub mod messaging;

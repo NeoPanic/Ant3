@@ -413,6 +413,7 @@ async fn responses_worker_sends_as_current_run_and_recipient_consumes_durable_en
                 instructions: "exchange evidence".into(),
                 acceptance: "handoff consumed".into(),
                 verification: None,
+                energy_budget: None,
             },
             "handoff-root",
         )

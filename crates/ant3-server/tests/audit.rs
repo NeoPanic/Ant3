@@ -24,6 +24,7 @@ fn input(title: &str, verification: Option<BoardVerification>) -> PublishInput {
         instructions: format!("Inspect {title}"),
         acceptance: "Evidence is reported with sources".into(),
         verification,
+        energy_budget: None,
     }
 }
 fn policy() -> BoardVerification {
