@@ -104,11 +104,12 @@ function overview() {
 }
 function progressPage() {
   if(!data.capabilities.length)return head('实现进度')+empty('尚未读取到能力清单','请刷新页面；持续为空时检查平台 API 的能力清单。');
-  const phases = ['P1','P2','P3','P4'];
   const counts = status => data.capabilities.filter(c=>c.status===status).length;
+  const pathMeta=[['emergence','涌现机制','北极星目标路径：stigmergy 痕迹、分工、自组织认领与整合'],['foundation','运行底座','支撑个体执行与持久状态'],['verification','证据与验证','可信交付与返工'],['control-group','中央编排对照组','固定模板与显式 DAG，用于收益对照'],['support','支撑能力','入口、可视化与生态'],['governance','治理与规模化','预算、授权、隔离与远程，按需推进']];
+  const item=c=>`<article class="progress-item"><div class="progress-title"><h3>${esc(c.name)}</h3>${badge(c.status)}</div><p>${esc(c.detail)}</p><details><summary>验证与代码位置</summary><dl class="detail-kv">${c.scope?`<dt>范围</dt><dd>${esc(({current:'本轮重点',extension:'后续扩展',deferred:'暂缓'})[c.scope]||c.scope)}</dd>`:''}<dt>验证</dt><dd>${esc(({pending:'本轮待验证','native-tests-and-browser':'原生测试与 Web 联调'})[c.verification]||c.verification||'未记录')}</dd><dt>当前代码</dt><dd>${c.source.length?c.source.map(path=>`<code class="wrap">${esc(path)}</code>`).join('<br>'):'尚无实现模块'}</dd><dt>规划目录</dt><dd>${c.target.map(path=>`<code class="wrap">${esc(path)}</code>`).join('<br>')}</dd></dl></details></article>`;
   return head('实现进度')+
     `<div class="progress-summary">${['implemented','partial','planned'].map(status=>`<span>${labels[status]} <strong>${counts(status)}</strong> 项</span>`).join('')}</div>`+
-    phases.map(phase=>panel(`${phase} ${ {P1:'持久化控制面',P2:'本地 Managed Agents MVP',P3:'恢复与隔离',P4:'远程与生态'}[phase] }`, `<div class="progress-list">${data.capabilities.filter(c=>c.phase===phase).map(c=>`<article class="progress-item"><div class="progress-title"><h3>${esc(c.name)}</h3>${badge(c.status)}</div><p>${esc(c.detail)}</p><details><summary>验证与代码位置</summary><dl class="detail-kv">${c.scope?`<dt>范围</dt><dd>${esc(({current:'本轮重点',extension:'后续扩展',deferred:'暂缓'})[c.scope]||c.scope)}</dd>`:''}<dt>验证</dt><dd>${esc(({pending:'本轮待验证','native-tests-and-browser':'原生测试与 Web 联调'})[c.verification]||c.verification||'未记录')}</dd><dt>当前代码</dt><dd>${c.source.length?c.source.map(path=>`<code class="wrap">${esc(path)}</code>`).join('<br>'):'尚无实现模块'}</dd><dt>规划目录</dt><dd>${c.target.map(path=>`<code class="wrap">${esc(path)}</code>`).join('<br>')}</dd></dl></details></article>`).join('')}</div>`)).join('');
+    pathMeta.map(([key,title,desc])=>{const group=data.capabilities.filter(c=>c.path===key);if(!group.length)return '';return panel(`${title} <small class="hint">${esc(desc)}</small>`,`<div class="progress-list">${group.map(item).join('')}</div>`,`<span class="board-count">${group.filter(c=>c.status==='implemented').length}/${group.length} 已实现</span>`);}).join('');
 }
 function render() {
   if (!data || composing) return;

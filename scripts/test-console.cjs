@@ -18,11 +18,12 @@ test('历史记录包含日期，跨日运行不会只显示相同时刻',()=>{
   assert.equal(values[2],'未记录');
 });
 
-test('能力列表每项仅有一个状态标签，范围与验证信息完整保留',()=>{
+test('能力列表按涌现路径分组，每项仅有一个状态标签，范围与验证信息完整保留',()=>{
   const context=consoleContext();
-  vm.runInContext(`data={capabilities:[{name:'能力 <A>',phase:'P1',status:'partial',scope:'extension',verification:'native-tests-and-browser',detail:'已知限制',source:['crates/ant3-core/src/lib.rs'],target:['future/']}]}`,context);
+  vm.runInContext(`data={capabilities:[{name:'能力 <A>',phase:'P1',path:'emergence',status:'partial',scope:'extension',verification:'native-tests-and-browser',detail:'已知限制',source:['crates/ant3-core/src/lib.rs'],target:['future/']}]}`,context);
   const html=vm.runInContext('progressPage()',context);
   assert.equal((html.match(/class="badge /g)||[]).length,1);
+  assert(html.includes('涌现机制'));
   assert(html.includes('后续扩展'));
   assert(html.includes('原生测试与 Web 联调'));
   assert(html.includes('crates/ant3-core/src/lib.rs'));

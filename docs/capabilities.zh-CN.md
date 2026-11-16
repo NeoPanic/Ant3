@@ -1,6 +1,22 @@
 # 能力与源码索引
 
-本表与 Web 能力页共享 `docs/implementation-status.json`。能力状态描述已提供的功能与缺口；验证列仅适用于该行已提供的部分。平台概览见[当前平台状态](status.zh-CN.md)，分层与约束见[架构设计](managed-agents.zh-CN.md)。
+本表与 Web 能力页共享 `docs/implementation-status.json`。能力按涌现路径分类：涌现机制是北极星目标路径，运行底座支撑个体执行，证据与验证保证可信交付，中央编排对照组用于收益对照，支撑能力与治理/规模化按需推进。状态描述已提供的功能与缺口；验证列仅适用于该行已提供的部分。平台概览见[当前平台状态](status.zh-CN.md)，分层与约束见[架构设计](managed-agents.zh-CN.md)。
+
+## 涌现机制
+
+| 能力 | 状态 | 验证范围 | 当前行为与限制 |
+| --- | --- | --- | --- |
+| 对等 Agent 共享任务板 | 部分实现 | 原生测试 + Web 联调 | 任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。任务视图已接入信息素痕迹浓度；Agent 读取默认局部邻域（scope=all 可退出）；尚未接入 Goal 频道、文件产物与自动独立验证，确定失败与未认领任务在有界重试预算（默认 2 次）内自动重排队、新实例接手，预算耗尽才阻塞上游；结果未知不自动重试。没有分布式租约或费用硬预算。 |
+| 信息素痕迹场 | 已实现 | 原生测试 | 根任务作用域痕迹浓度：完成/验收/复用按固定权重自动增强，成功 Run 招募放大其留下的路径信号，确定失败施加负反馈降权（结果未知不惩罚不重试），Agent finding/path/blocker 沉积有界（每 Run 8 次、每根 64 条）；30 分钟半衰期惰性蒸发、六位小数量化、饱和上限 100；台账与事件可审计。冲突裁决与振荡抑制未实现。 |
+| 响应阈值分工与拥挤规避 | 已实现 | 原生测试 | 母体经验自适应响应阈值（成功×1/1.25、确定失败×1.25，夹[0.05,0.95]基线0.5；结果未知与取消不计经验），经验统计随能力目录进入选型证据，操作员可查 /api/presets/experience。任务供给刺激=浓度/(1+同根活跃工作者数)，拥挤分支降权、跨分支分散；可选种子化概率探索（splitmix64）按刺激+1 抽样防锁死。选型接收最强 8 条痕迹的稀释刺激与拥挤数。阈值是证据不是权威，能力匹配优先。 |
+| 候选池认领与执行尝试 | 部分实现 | 原生测试 + Web 联调 | 任务最多 16 位候选；认领、Run 和 Attempt 同事务，记录 generation 与幂等回执，每轮最多 8 次尝试，仅未开始可释放。platform.tasks.board/claim 提供任务板及下一任务请求；没有分布式租约、执行后对账或预算预留。 |
+| 可靠协作消息 | 部分实现 | 原生测试 + Web 联调 | 持久 Outbox/Inbox、稳定消息 ID、幂等去重、投递与消费分离、暂停积压和未知结果人工处置；Agent 使用 platform.messaging 交接，四入口共用。没有远程投递或 Grant 授权。 |
+| 协作频道与订阅唤醒 | 部分实现 | 原生测试 + Web 联调 | 同 Goal 成员分组、持久发言、显式订阅与消息唤醒；参与者自动进入团队讨论，订阅默认关，显式移除不补回，通知回复不再广播。没有跨机器投递、全文分页或自动冲突裁决。 |
+| 共享上下文与版本化黑板 | 部分实现 | 原生测试 + Web 联调 | Goal 内发现、决策和疑问支持宿主身份、CAS 修订/撤回、来源及产物引用、派发快照与验收版本绑定；四入口可读写。没有黑板自动冲突裁决。 |
+| 实例工作区与文件/JSON交接 | 部分实现 | 原生测试 + Web 联调 | 实例独立目录、UTF-8 文件读写、文件/JSON 不可变快照、同 Goal 共享读取与 Web 预览/下载；保留来源状态和摘要，成功来源可进入独立验证。没有 OS 沙箱或通用代码执行环境。 |
+| 涌现评估基线 | 部分实现 | 原生测试 | 单/多 Agent 同任务同验收对照：确定性契约基线报告通过/验收、Run 成本代理、信息复用率与痕迹浓度，断言群体整合复用全部子任务贡献；个体损失鲁棒性场景已验证（杀一个执行者，任务有界重排队、新个体接手，群体仍整合验收）。不预设多 Agent 更优。真实模型等预算对照与收敛速度指标未实现。 |
+
+## 运行底座
 
 | 能力 | 状态 | 验证范围 | 当前行为与限制 |
 | --- | --- | --- | --- |
@@ -15,27 +31,39 @@
 | SQLite 与恢复 | 部分实现 | 原生测试 | SQLite 事务、检查点、事件和 daemon 独占锁；恢复时保留已知回执，未知结果进入中断。没有完整备份运维、外部对账或事件分页。 |
 | 三类模型协议 | 部分实现 | 原生测试 | 提供 Chat Completions、Responses、Anthropic 三类非流式工具循环；Responses 经过真实服务验证。没有流式输出或分片中断契约。 |
 | 内置工具与提示词包 | 已实现 | 原生测试 | 内置 text.inspect、web.fetch、web.search；搜索需配置 Brave API 密钥。插件页仅展示内置能力，母体绑定固定版本与摘要。 |
-| 可执行插件契约与 SDK | 部分实现 | 原生测试 + Web 联调 | 版本化 manifest/RPC、严格 schema 子集、握手、健康、进度、取消、错误分类、Rust SDK 与 Python 示例；示例覆盖统计、HTTP 读取和文件交接。没有配置/权限/依赖锁、多能力包或完整对账协议。 |
-| 外部插件与热加载 | 部分实现 | 原生测试 + Web 联调 | 底层兼容接口支持本地进程包安装、内容寻址、调用前摘要检查、版本并存、母体快照、健康检查及禁用/取消。需显式启用，以系统用户运行；没有 MCP loader、watch、进程池、rollout、沙箱或作用域授权。 |
-| 对等 Agent 共享任务板 | 部分实现 | 原生测试 + Web 联调 | 任务发布无需绑定 Preset 或实例；控制面模型选型并创建实例，Agent 使用统一工具原子认领、上报进度、拆分和读取同根结果。来源成功后激活子任务，全部完成后原任务重新选型与认领；根任务执行成功后等待人类评审，通过后归档，附意见退回后重新选型执行，保留旧 Run 结果与最近 16 次评审摘要。每轮人类返工可补拆一次，整合续作不能重复拆分。独立选型模型支持三类通用协议及百炼 decision-model-preview，失败退避。任务视图已接入信息素痕迹浓度；Agent 读取默认局部邻域（scope=all 可退出）；尚未接入 Goal 频道、文件产物与自动独立验证，确定失败与未认领任务在有界重试预算（默认 2 次）内自动重排队、新实例接手，预算耗尽才阻塞上游；结果未知不自动重试。没有分布式租约或费用硬预算。 |
-| 信息素痕迹场 | 已实现 | 原生测试 | 根任务作用域痕迹浓度：完成/验收/复用按固定权重自动增强，成功 Run 招募放大其留下的路径信号，确定失败施加负反馈降权（结果未知不惩罚不重试），Agent finding/path/blocker 沉积有界（每 Run 8 次、每根 64 条）；30 分钟半衰期惰性蒸发、六位小数量化、饱和上限 100；台账与事件可审计。待处理任务按拥挤稀释后的刺激加权供给（FIFO 平局），可选种子化概率探索；选型接收最强 8 条痕迹与拥挤数证据。母体经验自适应响应阈值（成功降/失败升，未知不计）随目录进入选型。冲突裁决与振荡抑制未实现。 |
+
+## 证据与验证
+
+| 能力 | 状态 | 验证范围 | 当前行为与限制 |
+| --- | --- | --- | --- |
+| 产物、验证与返工 | 部分实现 | 原生测试 + Web 联调 | 文本贡献、文件/JSON 快照保存版本、摘要与来源；当前成功任务证据进入冻结验证清单，支持有界自动返工、人工局部返工及按失败产物定位任务和下游。给定证据与抓取回执不构成外部事实认证。 |
+
+## 中央编排对照组
+
+| 能力 | 状态 | 验证范围 | 当前行为与限制 |
+| --- | --- | --- | --- |
 | 显式目标与任务依赖 | 已实现 | 原生测试 + Web 联调 | 持久依赖图最多 64 项任务，传递上游输出与 Run ID，支持取消、候选池及人工验收；可自动选择就绪候选或等待人工认领。显式依赖图作为脚手架与对照组；群体路径经任务板自组织。 |
 | 固定调研模板与动态委派 | 部分实现 | 原生测试 + Web 联调 | 兼容调研模板固定规划、研究和汇总分工，支持递归委派、原实例续作与独立验证；Goal 内 Agent 可读取任务、来源成功后追加或请求接续，验证器按证据选择局部返工。该模板与对等任务板独立。没有已运行节点重写、任意子树迁移或通用自主修复。固定模板定位为中央编排对照组，不是群体涌现路径。 |
-| 候选池认领与执行尝试 | 部分实现 | 原生测试 + Web 联调 | 任务最多 16 位候选；认领、Run 和 Attempt 同事务，记录 generation 与幂等回执，每轮最多 8 次尝试，仅未开始可释放。platform.tasks.board/claim 提供任务板及下一任务请求；没有分布式租约、执行后对账或预算预留。 |
-| 可靠协作消息 | 部分实现 | 原生测试 + Web 联调 | 持久 Outbox/Inbox、稳定消息 ID、幂等去重、投递与消费分离、暂停积压和未知结果人工处置；Agent 使用 platform.messaging 交接，四入口共用。没有远程投递或 Grant 授权。 |
-| 协作频道与订阅唤醒 | 部分实现 | 原生测试 + Web 联调 | 同 Goal 成员分组、持久发言、显式订阅与消息唤醒；参与者自动进入团队讨论，订阅默认关，显式移除不补回，通知回复不再广播。没有跨机器投递、全文分页或自动冲突裁决。 |
-| 共享上下文与版本化黑板 | 部分实现 | 原生测试 + Web 联调 | Goal 内发现、决策和疑问支持宿主身份、CAS 修订/撤回、来源及产物引用、派发快照与验收版本绑定；四入口可读写。没有黑板自动冲突裁决。 |
-| 实例工作区与文件/JSON交接 | 部分实现 | 原生测试 + Web 联调 | 实例独立目录、UTF-8 文件读写、文件/JSON 不可变快照、同 Goal 共享读取与 Web 预览/下载；保留来源状态和摘要，成功来源可进入独立验证。没有 OS 沙箱或通用代码执行环境。 |
-| 产物、验证与返工 | 部分实现 | 原生测试 + Web 联调 | 文本贡献、文件/JSON 快照保存版本、摘要与来源；当前成功任务证据进入冻结验证清单，支持有界自动返工、人工局部返工及按失败产物定位任务和下游。给定证据与抓取回执不构成外部事实认证。 |
-| Web 执行证据检查 | 已实现 | 原生测试 + Web 联调 | 桌面导航按场景、协作、运行、配置分层；独立赛博工作站以卡通队员姿态展示实例状态、消息光点、任务依赖与委派和系统设备岛，详情点击展开，支持全屏、暂停与轮询同步。展示团队任务、频道、共享区、文件产物、验证返工，以及实例、Run、请求快照、回执和事件。详情、下载、候选认领与自主操作共用后端状态。 |
+
+## 支撑能力
+
+| 能力 | 状态 | 验证范围 | 当前行为与限制 |
+| --- | --- | --- | --- |
+| 可执行插件契约与 SDK | 部分实现 | 原生测试 + Web 联调 | 版本化 manifest/RPC、严格 schema 子集、握手、健康、进度、取消、错误分类、Rust SDK 与 Python 示例；示例覆盖统计、HTTP 读取和文件交接。没有配置/权限/依赖锁、多能力包或完整对账协议。 |
+| 外部插件与热加载 | 部分实现 | 原生测试 + Web 联调 | 底层兼容接口支持本地进程包安装、内容寻址、调用前摘要检查、版本并存、母体快照、健康检查及禁用/取消。需显式启用，以系统用户运行；没有 MCP loader、watch、进程池、rollout、沙箱或作用域授权。 |
+| Web 执行证据检查 | 已实现 | 原生测试 + Web 联调 | 桌面导航按场景、协作、运行、配置分层；独立赛博工作站以卡通队员姿态展示实例状态、消息光点、任务依赖与委派和系统设备岛，详情点击展开，支持全屏、暂停与轮询同步。展示团队任务、频道、共享区、文件产物、验证返工，以及实例、Run、请求快照、回执和事件。详情、下载、候选认领与自主操作共用后端状态。任务板展示信息素痕迹浓度徽章与根任务痕迹场面板（按强度排序、沉积次数、半衰期），随轮询刷新；能力页按涌现路径分类展示进度。 |
 | API / CLI / MCP 入口 | 部分实现 | 原生测试 + Web 联调 | HTTP/Web、共享本地客户端、CLI 与 MCP stdio 共用状态；44 个 MCP 工具，默认开放 22 个查询工具。没有 MCP resources、Streamable HTTP、细粒度授权、并发取消或 CLI --wait。 |
 | 实时事件与查询 | 部分实现 | 原生测试 | 持久事件游标与 Web 轮询；没有 SSE、通用列表游标或统一事件订阅契约。 |
+| 发行、生态与验收套件 | 部分实现 | 原生测试 | 提供社区文档、CI 和源码本地启动；没有完整发行物/容器交付或插件分发生态；单/多 Agent 确定性对照基线已落地，真实模型对照未实现。 |
+
+## 治理与规模化
+
+| 能力 | 状态 | 验证范围 | 当前行为与限制 |
+| --- | --- | --- | --- |
 | 预算预留与账本 | 规划中 | 待实现 | 提供单 Run 轮次、工具次数及超时限制；没有团队费用硬上限、原子预算预留、结算账本或费用归属。设计方向：预算作为能量与选择压力服务群体涌现，不止会计治理。 |
 | 身份、授权与审批 | 部分实现 | 原生测试 | loopback、本地 token 与浏览器会话认证；没有 Principal/Grant、持久审批、租户隔离或插件作用域授权。 |
 | 监督 Worker 与执行隔离 | 规划中 | 待实现 | 使用嵌入式本地 Worker；没有独立进程、所有权 fencing、跨进程租约或执行沙箱。 |
 | 远程控制面与 PostgreSQL | 规划中 | 待实现 | 没有多机器 Worker、网络分区对账、分布式背压或滚动升级兼容契约。 |
-| 涌现评估基线 | 部分实现 | 原生测试 | 单/多 Agent 同任务同验收对照：确定性契约基线报告通过/验收、Run 成本代理、信息复用率与痕迹浓度，断言群体整合复用全部子任务贡献；不预设多 Agent 更优。真实模型等预算对照、个体损失鲁棒性与收敛速度指标未实现。 |
-| 发行、生态与验收套件 | 部分实现 | 原生测试 | 提供社区文档、CI 和源码本地启动；没有完整发行物/容器交付或插件分发生态；单/多 Agent 确定性对照基线已落地，真实模型对照未实现。 |
 
 ## 当前模块 → 目标目录
 
@@ -55,7 +83,8 @@
 | 可执行插件契约与 SDK | `crates/ant3-plugin-protocol/src/lib.rs`<br>`crates/ant3-plugin-sdk/src/lib.rs`<br>`crates/ant3-plugin-sdk/tests/contract.rs`<br>`examples/plugins/text-inspector/manifest.json`<br>`examples/plugins/http-reader/manifest.json`<br>`examples/plugins/http-reader/test_worker.py`<br>`examples/plugins/workspace-preset/preset.json` | `crates/ant3-plugin-protocol/src/`<br>`crates/ant3-plugin-sdk/src/` |
 | 外部插件与热加载 | `crates/ant3-plugins/src/lib.rs`<br>`crates/ant3-plugins/src/package.rs`<br>`crates/ant3-plugins/src/process.rs`<br>`web/src/features/plugins/plugins.js`<br>`crates/ant3-server/tests/process_plugins.rs` | `crates/ant3-plugins/src/loaders/`<br>`crates/ant3-plugins/src/reload/` |
 | 对等 Agent 共享任务板 | `crates/ant3-platform/src/scheduling/board/mod.rs`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-storage/migrations/sqlite/board.sql`<br>`crates/ant3-platform/src/scheduling/routing.rs`<br>`crates/ant3-platform/src/scheduling/decision.rs`<br>`web/src/features/board/board.js`<br>`crates/ant3-server/tests/board.rs`<br>`crates/ant3-server/tests/routing.rs`<br>`crates/ant3-server/tests/decision.rs` | `crates/ant3-platform/src/collaboration/`<br>`crates/ant3-platform/src/scheduling/` |
-| 信息素痕迹场 | `crates/ant3-domain/src/traces.rs`<br>`crates/ant3-platform/src/scheduling/traces.rs`<br>`crates/ant3-storage/migrations/sqlite/traces.sql`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-server/tests/traces.rs`<br>`crates/ant3-server/tests/evaluation.rs`<br>`crates/ant3-domain/src/division.rs`<br>`crates/ant3-platform/src/scheduling/division.rs`<br>`crates/ant3-server/tests/division.rs` | `crates/ant3-platform/src/scheduling/` |
+| 信息素痕迹场 | `crates/ant3-domain/src/traces.rs`<br>`crates/ant3-platform/src/scheduling/traces.rs`<br>`crates/ant3-storage/migrations/sqlite/traces.sql`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-server/tests/traces.rs`<br>`crates/ant3-server/tests/evaluation.rs` | `crates/ant3-platform/src/scheduling/` |
+| 响应阈值分工与拥挤规避 | `crates/ant3-domain/src/division.rs`<br>`crates/ant3-platform/src/scheduling/division.rs`<br>`crates/ant3-platform/src/scheduling/routing.rs`<br>`crates/ant3-server/tests/division.rs` | `crates/ant3-platform/src/scheduling/` |
 | 显式目标与任务依赖 | `crates/ant3-platform/src/collaboration/coordination.rs` | `crates/ant3-platform/src/collaboration/` |
 | 固定调研模板与动态委派 | `crates/ant3-platform/src/collaboration/research/mod.rs`<br>`crates/ant3-platform/src/collaboration/research/tools.rs`<br>`web/src/features/research/research.js`<br>`crates/ant3-server/tests/research.rs`<br>`crates/ant3-platform/src/collaboration/delegation/mod.rs`<br>`crates/ant3-platform/src/collaboration/delegation/tools.rs`<br>`crates/ant3-server/tests/delegation.rs`<br>`crates/ant3-platform/src/collaboration/autonomy/mod.rs`<br>`crates/ant3-platform/src/collaboration/autonomy/tools.rs`<br>`web/src/features/autonomy/autonomy.js`<br>`crates/ant3-server/tests/autonomy.rs` | `plugins/organization/`<br>`crates/ant3-platform/src/collaboration/` |
 | 候选池认领与执行尝试 | `crates/ant3-platform/src/collaboration/claims.rs`<br>`crates/ant3-platform/src/collaboration/coordination.rs`<br>`web/src/features/goals/tasks.js`<br>`crates/ant3-server/tests/claims.rs`<br>`crates/ant3-platform/src/collaboration/autonomy/mod.rs` | `crates/ant3-domain/src/goals/`<br>`crates/ant3-platform/src/collaboration/` |

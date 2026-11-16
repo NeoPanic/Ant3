@@ -13,7 +13,8 @@
       "crates/ant3-core/src/"
     ],
     "verification": "existing-tests",
-    "scope": "current"
+    "scope": "current",
+    "path": "foundation"
   },
   {
     "id": "preset-version",
@@ -30,7 +31,8 @@
       "crates/ant3-domain/src/presets/"
     ],
     "verification": "existing-tests",
-    "scope": "current"
+    "scope": "current",
+    "path": "foundation"
   },
   {
     "id": "preset-compose",
@@ -47,7 +49,8 @@
       "crates/ant3-domain/src/presets/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "extension"
+    "scope": "extension",
+    "path": "foundation"
   },
   {
     "id": "spawn",
@@ -63,7 +66,8 @@
       "crates/ant3-platform/src/control/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "current"
+    "scope": "current",
+    "path": "foundation"
   },
   {
     "id": "lifecycle",
@@ -80,7 +84,8 @@
       "crates/ant3-domain/src/agents/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "extension"
+    "scope": "extension",
+    "path": "foundation"
   },
   {
     "id": "fleet",
@@ -98,7 +103,8 @@
       "crates/ant3-platform/src/control/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "extension"
+    "scope": "extension",
+    "path": "foundation"
   },
   {
     "id": "lineage",
@@ -115,7 +121,8 @@
       "crates/ant3-domain/src/agents/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "current"
+    "scope": "current",
+    "path": "foundation"
   },
   {
     "id": "queue",
@@ -131,7 +138,8 @@
       "crates/ant3-platform/src/scheduling/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "current"
+    "scope": "current",
+    "path": "foundation"
   },
   {
     "id": "storage",
@@ -149,7 +157,8 @@
       "crates/ant3-storage/src/"
     ],
     "verification": "existing-tests",
-    "scope": "extension"
+    "scope": "extension",
+    "path": "foundation"
   },
   {
     "id": "models",
@@ -164,7 +173,8 @@
       "crates/ant3-models/src/"
     ],
     "verification": "existing-tests",
-    "scope": "extension"
+    "scope": "extension",
+    "path": "foundation"
   },
   {
     "id": "bundle",
@@ -183,7 +193,8 @@
       "plugins/"
     ],
     "verification": "existing-tests",
-    "scope": "current"
+    "scope": "current",
+    "path": "foundation"
   },
   {
     "id": "plugin-protocol",
@@ -205,7 +216,8 @@
       "crates/ant3-plugin-sdk/src/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "extension"
+    "scope": "extension",
+    "path": "support"
   },
   {
     "id": "plugin-runtime",
@@ -225,7 +237,8 @@
       "crates/ant3-plugins/src/reload/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "extension"
+    "scope": "extension",
+    "path": "support"
   },
   {
     "id": "shared-task-board",
@@ -249,23 +262,41 @@
       "crates/ant3-platform/src/scheduling/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "current"
+    "scope": "current",
+    "path": "emergence"
   },
   {
     "id": "traces",
     "name": "信息素痕迹场",
     "phase": "P2",
     "status": "implemented",
-    "detail": "根任务作用域痕迹浓度：完成/验收/复用按固定权重自动增强，成功 Run 招募放大其留下的路径信号，确定失败施加负反馈降权（结果未知不惩罚不重试），Agent finding/path/blocker 沉积有界（每 Run 8 次、每根 64 条）；30 分钟半衰期惰性蒸发、六位小数量化、饱和上限 100；台账与事件可审计。待处理任务按拥挤稀释后的刺激加权供给（FIFO 平局），可选种子化概率探索；选型接收最强 8 条痕迹与拥挤数证据。母体经验自适应响应阈值（成功降/失败升，未知不计）随目录进入选型。冲突裁决与振荡抑制未实现。",
+    "detail": "根任务作用域痕迹浓度：完成/验收/复用按固定权重自动增强，成功 Run 招募放大其留下的路径信号，确定失败施加负反馈降权（结果未知不惩罚不重试），Agent finding/path/blocker 沉积有界（每 Run 8 次、每根 64 条）；30 分钟半衰期惰性蒸发、六位小数量化、饱和上限 100；台账与事件可审计。冲突裁决与振荡抑制未实现。",
     "source": [
       "crates/ant3-domain/src/traces.rs",
       "crates/ant3-platform/src/scheduling/traces.rs",
       "crates/ant3-storage/migrations/sqlite/traces.sql",
       "crates/ant3-platform/src/scheduling/board/tools.rs",
       "crates/ant3-server/tests/traces.rs",
-      "crates/ant3-server/tests/evaluation.rs",
+      "crates/ant3-server/tests/evaluation.rs"
+    ],
+    "target": [
+      "crates/ant3-platform/src/scheduling/"
+    ],
+    "verification": "existing-tests",
+    "scope": "current",
+    "path": "emergence"
+  },
+  {
+    "id": "division",
+    "name": "响应阈值分工与拥挤规避",
+    "phase": "P2",
+    "status": "implemented",
+    "path": "emergence",
+    "detail": "母体经验自适应响应阈值（成功×1/1.25、确定失败×1.25，夹[0.05,0.95]基线0.5；结果未知与取消不计经验），经验统计随能力目录进入选型证据，操作员可查 /api/presets/experience。任务供给刺激=浓度/(1+同根活跃工作者数)，拥挤分支降权、跨分支分散；可选种子化概率探索（splitmix64）按刺激+1 抽样防锁死。选型接收最强 8 条痕迹的稀释刺激与拥挤数。阈值是证据不是权威，能力匹配优先。",
+    "source": [
       "crates/ant3-domain/src/division.rs",
       "crates/ant3-platform/src/scheduling/division.rs",
+      "crates/ant3-platform/src/scheduling/routing.rs",
       "crates/ant3-server/tests/division.rs"
     ],
     "target": [
@@ -287,7 +318,8 @@
       "crates/ant3-platform/src/collaboration/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "current"
+    "scope": "current",
+    "path": "control-group"
   },
   {
     "id": "planning",
@@ -313,7 +345,8 @@
       "crates/ant3-platform/src/collaboration/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "current"
+    "scope": "current",
+    "path": "control-group"
   },
   {
     "id": "task-claims",
@@ -333,7 +366,8 @@
       "crates/ant3-platform/src/collaboration/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "current"
+    "scope": "current",
+    "path": "emergence"
   },
   {
     "id": "messaging",
@@ -352,7 +386,8 @@
       "crates/ant3-domain/src/collaboration/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "current"
+    "scope": "current",
+    "path": "emergence"
   },
   {
     "id": "channels",
@@ -371,7 +406,8 @@
       "crates/ant3-platform/src/collaboration/channels/",
       "crates/ant3-storage/src/inbox_outbox/"
     ],
-    "verification": "native-tests-and-browser"
+    "verification": "native-tests-and-browser",
+    "path": "emergence"
   },
   {
     "id": "shared-context",
@@ -391,7 +427,8 @@
       "crates/ant3-platform/src/collaboration/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "current"
+    "scope": "current",
+    "path": "emergence"
   },
   {
     "id": "workspaces",
@@ -410,7 +447,8 @@
       "crates/ant3-platform/src/workspaces/",
       "crates/ant3-domain/src/artifacts/"
     ],
-    "verification": "native-tests-and-browser"
+    "verification": "native-tests-and-browser",
+    "path": "emergence"
   },
   {
     "id": "artifacts",
@@ -437,14 +475,15 @@
       "plugins/verification/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "current"
+    "scope": "current",
+    "path": "verification"
   },
   {
     "id": "web",
     "name": "Web 执行证据检查",
     "phase": "P1",
     "status": "implemented",
-    "detail": "桌面导航按场景、协作、运行、配置分层；独立赛博工作站以卡通队员姿态展示实例状态、消息光点、任务依赖与委派和系统设备岛，详情点击展开，支持全屏、暂停与轮询同步。展示团队任务、频道、共享区、文件产物、验证返工，以及实例、Run、请求快照、回执和事件。详情、下载、候选认领与自主操作共用后端状态。",
+    "detail": "桌面导航按场景、协作、运行、配置分层；独立赛博工作站以卡通队员姿态展示实例状态、消息光点、任务依赖与委派和系统设备岛，详情点击展开，支持全屏、暂停与轮询同步。展示团队任务、频道、共享区、文件产物、验证返工，以及实例、Run、请求快照、回执和事件。详情、下载、候选认领与自主操作共用后端状态。任务板展示信息素痕迹浓度徽章与根任务痕迹场面板（按强度排序、沉积次数、半衰期），随轮询刷新；能力页按涌现路径分类展示进度。",
     "source": [
       "web/src/app/app.js",
       "web/src/features/studio/studio.js",
@@ -463,7 +502,8 @@
       "web/src/features/"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "current"
+    "scope": "current",
+    "path": "support"
   },
   {
     "id": "entrances",
@@ -486,7 +526,8 @@
       "crates/ant3-server/src/mcp.rs"
     ],
     "verification": "native-tests-and-browser",
-    "scope": "extension"
+    "scope": "extension",
+    "path": "support"
   },
   {
     "id": "events",
@@ -501,7 +542,8 @@
       "crates/ant3-server/src/events/"
     ],
     "verification": "existing-tests",
-    "scope": "deferred"
+    "scope": "deferred",
+    "path": "support"
   },
   {
     "id": "budgets",
@@ -515,7 +557,8 @@
       "crates/ant3-domain/src/budgets/"
     ],
     "verification": "not-implemented",
-    "scope": "deferred"
+    "scope": "deferred",
+    "path": "governance"
   },
   {
     "id": "identity",
@@ -531,7 +574,8 @@
       "crates/ant3-domain/src/identity/"
     ],
     "verification": "existing-tests",
-    "scope": "deferred"
+    "scope": "deferred",
+    "path": "governance"
   },
   {
     "id": "worker",
@@ -544,7 +588,8 @@
       "crates/ant3-worker/src/"
     ],
     "verification": "not-implemented",
-    "scope": "deferred"
+    "scope": "deferred",
+    "path": "governance"
   },
   {
     "id": "remote",
@@ -558,14 +603,15 @@
       "crates/ant3-worker/src/backends/"
     ],
     "verification": "not-implemented",
-    "scope": "deferred"
+    "scope": "deferred",
+    "path": "governance"
   },
   {
     "id": "evaluation",
     "name": "涌现评估基线",
     "phase": "P2",
     "status": "partial",
-    "detail": "单/多 Agent 同任务同验收对照：确定性契约基线报告通过/验收、Run 成本代理、信息复用率与痕迹浓度，断言群体整合复用全部子任务贡献；不预设多 Agent 更优。真实模型等预算对照、个体损失鲁棒性与收敛速度指标未实现。",
+    "detail": "单/多 Agent 同任务同验收对照：确定性契约基线报告通过/验收、Run 成本代理、信息复用率与痕迹浓度，断言群体整合复用全部子任务贡献；个体损失鲁棒性场景已验证（杀一个执行者，任务有界重排队、新个体接手，群体仍整合验收）。不预设多 Agent 更优。真实模型等预算对照与收敛速度指标未实现。",
     "source": [
       "crates/ant3-server/tests/evaluation.rs",
       "docs/evaluation.zh-CN.md"
@@ -574,7 +620,8 @@
       "tests/evaluation/"
     ],
     "verification": "existing-tests",
-    "scope": "current"
+    "scope": "current",
+    "path": "emergence"
   },
   {
     "id": "distribution",
@@ -593,6 +640,7 @@
       "docs/"
     ],
     "verification": "existing-tests",
-    "scope": "deferred"
+    "scope": "deferred",
+    "path": "support"
   }
 ]

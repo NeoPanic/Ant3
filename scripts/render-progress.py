@@ -6,16 +6,25 @@ import sys
 root = Path(__file__).resolve().parents[1]
 features = json.loads((root / 'docs/implementation-status.json').read_text())
 labels = {'implemented':'已实现','partial':'部分实现','planned':'规划中'}
-lines = ['# 能力与源码索引', '', '本表与 Web 能力页共享 `docs/implementation-status.json`。能力状态描述已提供的功能与缺口；验证列仅适用于该行已提供的部分。平台概览见[当前平台状态](status.zh-CN.md)，分层与约束见[架构设计](managed-agents.zh-CN.md)。', '', '| 能力 | 状态 | 验证范围 | 当前行为与限制 |', '| --- | --- | --- | --- |']
+path_labels = {'emergence':'涌现机制','foundation':'运行底座','verification':'证据与验证','control-group':'中央编排对照组','support':'支撑能力','governance':'治理与规模化'}
+path_order = ['emergence','foundation','verification','control-group','support','governance']
+lines = ['# 能力与源码索引', '', '本表与 Web 能力页共享 `docs/implementation-status.json`。能力按涌现路径分类：涌现机制是北极星目标路径，运行底座支撑个体执行，证据与验证保证可信交付，中央编排对照组用于收益对照，支撑能力与治理/规模化按需推进。状态描述已提供的功能与缺口；验证列仅适用于该行已提供的部分。平台概览见[当前平台状态](status.zh-CN.md)，分层与约束见[架构设计](managed-agents.zh-CN.md)。', '']
 ids = set()
 for feature in features:
     assert feature['id'] not in ids
     ids.add(feature['id'])
     for source in feature['source']:
         assert (root / source).exists(), source
-    verified = {'pending':'待验证','not-implemented':'待实现','native-tests-and-browser':'原生测试 + Web 联调'}.get(feature['verification'],'原生测试')
-    lines.append(f"| {feature['name']} | {labels[feature['status']]} | {verified} | {feature['detail']} |")
-lines += ['', '## 当前模块 → 目标目录', '', '| 能力 | 当前落点 | 目标目录 |', '| --- | --- | --- |']
+for path_key in path_order:
+    group = [f for f in features if f.get('path') == path_key]
+    if not group:
+        continue
+    lines += [f"## {path_labels[path_key]}", '', '| 能力 | 状态 | 验证范围 | 当前行为与限制 |', '| --- | --- | --- | --- |']
+    for feature in group:
+        verified = {'pending':'待验证','not-implemented':'待实现','native-tests-and-browser':'原生测试 + Web 联调'}.get(feature['verification'],'原生测试')
+        lines.append(f"| {feature['name']} | {labels[feature['status']]} | {verified} | {feature['detail']} |")
+    lines.append('')
+lines += ['## 当前模块 → 目标目录', '', '| 能力 | 当前落点 | 目标目录 |', '| --- | --- | --- |']
 for feature in features:
     sources = '<br>'.join(f'`{s}`' for s in feature['source']) or '尚无实现模块'
     targets = '<br>'.join(f'`{s}`' for s in feature['target'])
