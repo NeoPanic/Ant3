@@ -4,17 +4,29 @@ async function loadWorkspaces(){
  if(workspaceLoading)return;workspaceLoading=true;workspaceLoadError='';
  try{[workspaceCatalog,workspacePublications]=await Promise.all([api('/api/v1/workspaces'),api('/api/v1/workspace-artifacts')]);}
  catch(error){workspaceLoadError=error.message;}
- finally{workspaceLoading=false;if(page()==='workspaces')render();}
+ finally{workspaceLoading=false;if(['deliveries','workspaces'].includes(page()))render();}
 }
-function workspacePage(){
+function deliveryReviewLabel(task){
+ if(task.review_state==='accepted')return badge('accepted','已交付');
+ if(task.review_state==='pending')return badge('awaiting-review','等你验收');
+ const audits=task.audits||[],latest=audits[audits.length-1];
+ if(latest?.state==='passed')return badge('good','质检通过');
+ if(latest?.state==='changes-requested')return badge('neutral','质检退回');
+ if(latest?.state==='inconclusive')return badge('neutral','质检证据不足');
+ return badge('neutral','已完成');
+}
+function deliveriesPage(){
  if(!workspaceCatalog&&!workspaceLoading&&!workspaceLoadError)queueMicrotask(loadWorkspaces);
- const rows=workspaceCatalog?.instances||[],artifacts=workspacePublications?.artifacts||[];
- return head('文件工作区', button(workspaceLoading?'正在刷新…':'刷新文件与产物','workspace-refresh',false,workspaceLoading?'disabled':''))+
+ const tasks=data.board?.tasks||[],artifacts=workspacePublications?.artifacts||[];
+ const delivered=tasks.filter(t=>t.state==='completed');
+ return head('成果库', button(workspaceLoading?'正在刷新…':'刷新','workspace-refresh',false,workspaceLoading?'disabled':''))+
  (workspaceLoadError?`<div class="callout" role="alert">${esc(workspaceLoadError)}。${button('重试','workspace-refresh')}</div>`:'')+
- (workspaceCatalog&&!workspaceCatalog.configured?'<div class="callout">文件工作区尚未配置。重启本地服务后使用数据目录下的 workspaces 文件夹。</div>':'')+
- panel('共享文件与结构化产物',!workspacePublications&&workspaceLoading?'<div class="loading">正在读取共享文件快照…</div>':artifacts.length?table(['名称 / 格式','来源','状态 / 大小','操作'],artifacts.map(a=>`<tr><td><div class="primary-text wrap">${esc(a.name)}</div><div class="secondary-text">${a.kind==='json'?'结构化数据':'文件快照'}${a.path?` ${esc(a.path)}`:''}</div></td><td class="mono wrap">${esc(short(a.instance_id))}<div class="secondary-text">运行 <a href="#runs">${esc(short(a.run_id))}</a></div></td><td>${badge(a.source_state)}<div class="secondary-text">${a.bytes.toLocaleString()} B</div></td><td>${button('查看快照','workspace-artifact',false,`data-id="${esc(a.id)}"`)}</td></tr>`)):empty('尚无共享文件产物','Agent 发布文件或结构化数据后，同板根任务的成员可读取固定快照。'))+
- panel('实例工作区',!workspaceCatalog?'<div class="loading">正在读取实例文件目录…</div>':rows.length?table(['Agent / 母体','运行状态','已发布快照','操作'],rows.map(a=>`<tr><td><div class="primary-text">${esc(a.preset_name)}</div><div class="secondary-text mono">${esc(short(a.id))}</div></td><td>${badge(a.state)}</td><td>${a.artifact_count}</td><td>${button('浏览文件','workspace-open',false,`data-id="${esc(a.id)}"`)}</td></tr>`)):empty('还没有实例','从母体创建 Agent 后，绑定 platform.workspace 即可使用文件工具。'));
+ panel('工作成果',delivered.length?table(['工作','产出者','质检与验收','被参考','操作'],delivered.map(t=>`<tr><td><div class="primary-text wrap">${esc(t.title)}</div>${t.parent_id?'<div class="secondary-text">子任务</div>':''}</td><td>${esc(t.preset_name||'未记录')}</td><td>${deliveryReviewLabel(t)}</td><td>${Number(t.reuse_count)>0?`被参考 ${Number(t.reuse_count)} 次`:'<span class="hint">—</span>'}</td><td><a class="text-button" href="#board/${esc(t.id)}">查看成果 ↗</a></td></tr>`)):empty('还没有完成的成果','群体交付第一项工作后，成果会汇集在这里。',button('发布任务','board-publish',true)))+
+ panel('共享文件与结构化产物',!workspacePublications&&workspaceLoading?'<div class="loading">正在读取共享文件快照…</div>':artifacts.length?table(['名称 / 格式','来源','状态 / 大小','操作'],artifacts.map(a=>`<tr><td><div class="primary-text wrap">${esc(a.name)}</div><div class="secondary-text">${a.kind==='json'?'结构化数据':'文件快照'}${a.path?` ${esc(a.path)}`:''}</div></td><td class="mono wrap">${esc(short(a.instance_id))}<div class="secondary-text">运行 <a href="#researcher">${esc(short(a.run_id))}</a></div></td><td>${badge(a.source_state)}<div class="secondary-text">${a.bytes.toLocaleString()} B</div></td><td>${button('查看快照','workspace-artifact',false,`data-id="${esc(a.id)}"`)}</td></tr>`)):empty('尚无共享文件产物','成员发布文件或结构化数据后，同伴可读取固定快照，你也可在这里下载。'))+
+ `<details class="researcher" id="deliveries-files"><summary>研究者视图：成员私有文件浏览</summary><div class="researcher-body">${workspaceCatalog&&!workspaceCatalog.configured?'<div class="callout">文件工作区尚未配置。重启本地服务后使用数据目录下的 workspaces 文件夹。</div>':''}${!workspaceCatalog?'<div class="loading">正在读取实例文件目录…</div>':(workspaceCatalog.instances||[]).length?table(['Agent / 母体','运行状态','已发布快照','操作'],workspaceCatalog.instances.map(a=>`<tr><td><div class="primary-text">${esc(a.preset_name)}</div><div class="secondary-text mono">${esc(short(a.id))}</div></td><td>${badge(a.state)}</td><td>${a.artifact_count}</td><td>${button('浏览文件','workspace-open',false,`data-id="${esc(a.id)}"`)}</td></tr>`)):empty('还没有实例','从母体创建 Agent 后，绑定 platform.workspace 即可使用文件工具。')}</div></details>`;
 }
+// 兼容旧入口名。
+function workspacePage(){return deliveriesPage();}
 async function workspaceOpen(id,path=''){
  const request=++inspectionRequest;
  const listing=await api(`/api/v1/agent-instances/${encodeURIComponent(id)}/workspace?path=${encodeURIComponent(path)}`);

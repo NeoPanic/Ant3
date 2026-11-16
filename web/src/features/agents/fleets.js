@@ -3,7 +3,7 @@ let selectedFleet=null;
 function fleetId(){return location.hash.startsWith('#fleet/')?location.hash.slice(7):null;}
 function fleetsPage(){
   const id=fleetId();
-  if(id)return selectedFleet?.id===id?selectedFleet.loadError?`<a class="back-link" href="#fleets">← 全部 Agent 池</a><div class="callout" role="alert">${esc(selectedFleet.loadError)}</div>`:fleetPage(selectedFleet):'<div class="loading">正在读取 Agent 池与操作…</div>';
+  if(id)return selectedFleet?.id===id?selectedFleet.loadError?`<a class="back-link" href="#researcher">← 研究者视图</a><div class="callout" role="alert">${esc(selectedFleet.loadError)}</div>`:fleetPage(selectedFleet):'<div class="loading">正在读取 Agent 池与操作…</div>';
   const fleets=data.fleets||[],capacity=data.capacity;
   return head('Agent 池', button('创建 Agent 池','spawn',true))+
     `<div class="quota-summary"><span>已占用或预留 <strong>${capacity.reserved} <span>/ ${capacity.limit}</span></strong></span><span>${capacity.active} 个实例未终止 ${capacity.reserved-capacity.active} 个槽位待创建</span></div>`+
@@ -12,7 +12,7 @@ function fleetsPage(){
 function fleetPage(f){
   const terminal=['draining','terminated'].includes(f.state),pending=f.pending_operations>0;
   const actions=(!terminal?button('调整目标数量','fleet-scale',true,`data-id="${esc(f.id)}" ${pending?'disabled':''}`)+button('终止 Agent 池','fleet-stop',false,`data-id="${esc(f.id)}"`):'');
-  return '<a class="back-link" href="#fleets">← 全部 Agent 池</a>'+head(esc(f.preset_name)+' Agent 池', actions)+
+  return '<a class="back-link" href="#researcher">← 研究者视图</a>'+head(esc(f.preset_name)+' Agent 池', actions)+
     `<div class="goal-summary"><div><span>协调状态</span>${badge(f.state)}</div><div><span>目标 / 当前实例</span><strong>${f.desired_count} / ${f.current_count}</strong></div><div><span>就绪 / 执行 / 排空</span><strong>${f.ready_count} / ${f.busy_count} / ${f.draining_count}</strong></div></div>`+
     (pending?'<p role="status">操作协调中，完成后可调整数量。</p>':'')+
     panel('成员与补建记录',table(['位置','创建代次','是否补足','当前实例','状态','检查'],f.slots.map(s=>`<tr><td class="mono">${s.slot}</td><td class="mono">${s.generation}</td><td>${s.enabled?'纳入目标数量':'已移出'}</td><td class="mono wrap">${esc(s.instance_id||'等待创建')}</td><td>${s.state?badge(s.state):badge('pending','等待创建')}</td><td>${s.instance_id&&data.instances.some(a=>a.id===s.instance_id)?`<button class="text-button" data-action="agent-detail" data-id="${esc(s.instance_id)}">实例 ↗</button>`:'—'}</td></tr>`)))+

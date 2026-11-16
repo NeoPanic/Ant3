@@ -4,15 +4,16 @@ const {readFileSync}=require('node:fs');
 const {resolve}=require('node:path');
 const vm=require('node:vm');
 
-const context=vm.createContext({document:{addEventListener(){}},events:[]});
+const context=vm.createContext({document:{addEventListener(){}},events:[],queueMicrotask(){}});
 Object.assign(context,{
   esc:(value='')=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
   labels:{},icon:()=>'',time:()=>'',short:value=>String(value??'').slice(0,15),
   button:(label)=>`<button>${label}</button>`,
   boardTraceKinds:{result:'结果',finding:'发现',path:'路径',blocker:'阻断'},
   boardTraceStrength:trace=>Math.max(0,Math.min(100,Number(trace?.strength)||0)),
-  auditStates:{pending:'等待验证器',running:'验证中',passed:'验证通过'},
+  auditStates:{pending:'等待质检',running:'质检中',passed:'质检通过'},
 });
+vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/colony/colony.js'),'utf8'),context);
 vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/studio/studio.js'),'utf8'),context);
 function layout(tasks) {
   context.input=tasks;
@@ -136,7 +137,7 @@ test('只有实际认领中的任务连接任务板与执行实例',()=>{
   ]};
   const html=vm.runInContext('studioNetwork(input)',context);
   assert.equal((html.match(/class="station-conduit /g)||[]).length,1);
-  assert(html.includes('已认领任务：检查数据'));
+  assert(html.includes('正在处理：检查数据'));
 });
 
 test('任务拆分图来自任务板父子记录，无固定规划或汇总身份',()=>{
@@ -152,13 +153,13 @@ test('任务拆分图来自任务板父子记录，无固定规划或汇总身�
   assert(!html.includes('#research'));
 });
 
-test('接力默认选中活跃板根，详情展示验收标准、痕迹与验证摘要',()=>{
+test('接力默认选中活跃板根，详情展示验收标准、被参考次数与质检摘要',()=>{
   context.input=sceneFixture();
   context.input.board={tasks:[
     {id:'done',root_id:'done',title:'已归档任务',state:'completed',review_state:'accepted'},
     {id:'root',root_id:'root',title:'任务目标',state:'waiting',instructions:'总目标',acceptance:'交付报告'},
     {id:'child',root_id:'root',parent_id:'root',title:'细分任务',state:'running',instance_id:'agent-b',instructions:'检查数据',acceptance:'覆盖全部样本',
-      trace:{kind:'result',strength:72.5},audits:[{attempt:1,state:'running'}],run_id:'run-b'},
+      trace:{kind:'result',strength:72.5},reuse_count:2,audits:[{attempt:1,state:'running'}],run_id:'run-b'},
   ]};
   vm.runInContext('studio.boardRootId="";studio.selectedTask="child"',context);
   const root=vm.runInContext('studioBoardRoot(input)',context);
@@ -167,8 +168,36 @@ test('接力默认选中活跃板根，详情展示验收标准、痕迹与验�
   assert(html.includes('细分任务'));
   assert(html.includes('验收标准'));
   assert(html.includes('覆盖全部样本'));
-  assert(html.includes('痕迹 结果 浓度 72.5'));
-  assert(html.includes('独立验证 第 1 次 · 验证中'));
+  assert(html.includes('成果被同伴参考 2 次'));
+  assert(!html.includes('浓度'));
+  assert(html.includes('独立质检 第 1 次 · 质检中'));
   assert(html.includes('#board/child'));
   vm.runInContext('studio.selectedTask=null',context);
+});
+
+test('现场底部展示最近 5 条群体动态一句话，忽略待命消耗',()=>{
+  context.data=sceneFixture();
+  context.events=[
+    {kind:'board.task_claimed',subject:'t2',data:{instance_id:'agent-b'},at:1},
+    {kind:'board.trace_deposited',subject:'t2',data:{reason:'reuse'},at:2},
+    {kind:'board.energy_posted',subject:'colony',data:{kind:'idle_burn'},at:3},
+    {kind:'swarm.peer_spawned',subject:'f',data:{},at:4},
+    {kind:'run.started',subject:'r',data:{},at:5},
+    {kind:'board.task_split',subject:'t2',data:{parent_id:'t2',task_ids:['a','b']},at:6},
+    {kind:'swarm.colony_starved',subject:'colony',data:{},at:7},
+    {kind:'board.audit_settled',subject:'t2',data:{state:'passed'},at:8},
+  ];
+  context.input=sceneFixture();
+  context.input.board={tasks:[{id:'t2',root_id:'t2',title:'检查数据',state:'running',instance_id:'agent-b'}]};
+  context.data=context.input;
+  const html=vm.runInContext('studioPage()',context);
+  assert(html.includes('群体动态'));
+  assert(html.includes('独立质检通过'));
+  assert(html.includes('群体预算耗尽，成员休息'));
+  assert(html.includes('被拆成2份独立工作'));
+  assert(html.includes('群体补充了新成员'));
+  assert(html.includes('一份成果被同伴参考'));
+  assert(!html.includes('idle_burn'));
+  assert.equal((html.match(/<li>/g)||[]).length,5);
+  context.events=[];
 });

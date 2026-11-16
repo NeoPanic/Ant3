@@ -273,12 +273,18 @@ web/
 │       │   └── fleets.js
 │       ├── board/
 │       │   └── board.js
+│       ├── colony/
+│       │   └── colony.js
+│       ├── inbox/
+│       │   └── inbox.js
 │       ├── messages/
 │       │   └── messages.js
 │       ├── plugins/
 │       │   └── plugins.js
 │       ├── presets/
 │       │   └── presets.js
+│       ├── researcher/
+│       │   └── researcher.js
 │       ├── studio/
 │       │   ├── studio.css
 │       │   └── studio.js

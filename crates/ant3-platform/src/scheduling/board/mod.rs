@@ -115,6 +115,11 @@ fn task(tx: &Transaction<'_>, id: &str) -> PResult<Value> {
     } else { Value::Null };
     value["trace"] = crate::traces::trace_view(tx, value["root_id"].as_str().unwrap(), id)?
         .unwrap_or(Value::Null);
+    // Human-facing observation: how many peers built on this result.
+    value["reuse_count"] = json!(tx.query_row(
+        "SELECT count(*) FROM board_trace_deposits WHERE key=? AND reason='reuse'",
+        [id], |r| r.get::<_, i64>(0),
+    )?);
     Ok(value)
 }
 fn task_ids(tx: &Transaction<'_>, root: Option<&str>) -> PResult<Vec<String>> {

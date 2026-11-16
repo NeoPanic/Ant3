@@ -9,49 +9,35 @@
   <script src="/fleets.js" defer></script><script src="/plugins.js" defer></script>
   <script src="/messages.js" defer></script><script src="/presets.js" defer></script>
   <script src="/workspaces.js" defer></script>
-  <script src="/board.js" defer></script><script src="/studio.js" defer></script><script src="/app.js" defer></script>
+  <script src="/board.js" defer></script><script src="/colony.js" defer></script><script src="/inbox.js" defer></script><script src="/researcher.js" defer></script><script src="/studio.js" defer></script><script src="/app.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#content">跳至主要内容</a>
   <div id="shell">
     <aside class="sidebar" id="sidebar">
-      <a class="brand" href="#overview" aria-label="Ant³ 控制台总览"><img src="/mark.svg" alt=""><span>Ant³</span></a>
+      <a class="brand" href="#studio" aria-label="Ant³ 工作现场"><img src="/mark.svg" alt=""><span>Ant³</span></a>
       <div class="navigation">
-        <section class="nav-group" aria-labelledby="nav-scenes">
-          <p class="nav-label" id="nav-scenes">场景</p>
-          <nav aria-label="场景导航">
+        <section class="nav-group" aria-labelledby="nav-observe">
+          <p class="nav-label" id="nav-observe">观察</p>
+          <nav aria-label="观察导航">
+            <a href="#studio" data-page="studio"><span class="nav-icon"></span>工作现场</a>
+            <a href="#colony" data-page="colony"><span class="nav-icon"></span>蚁群</a>
+            <a href="#deliveries" data-page="deliveries"><span class="nav-icon"></span>成果库</a>
+          </nav>
+        </section>
+        <section class="nav-group" aria-labelledby="nav-work">
+          <p class="nav-label" id="nav-work">工作</p>
+          <nav aria-label="工作导航">
             <a href="#board" data-page="board"><span class="nav-icon"></span>任务板</a>
-            <a href="#studio" data-page="studio"><span class="nav-icon"></span>Agent 工作现场</a>
+            <a href="#inbox" data-page="inbox"><span class="nav-icon"></span>需要你处理 <span id="inbox-count" class="nav-count" hidden>0</span></a>
           </nav>
         </section>
-        <section class="nav-group" aria-labelledby="nav-collaboration">
-          <p class="nav-label" id="nav-collaboration">协作</p>
-          <nav aria-label="协作导航">
-            <a href="#overview" data-page="overview"><span class="nav-icon">◈</span>总览</a>
-            <a href="#workspaces" data-page="workspaces"><span class="nav-icon"></span>文件工作区</a>
-            <a href="#messages" data-page="messages"><span class="nav-icon"></span>协作消息</a>
-          </nav>
-        </section>
-        <section class="nav-group" aria-labelledby="nav-runtime">
-          <p class="nav-label" id="nav-runtime">运行</p>
-          <nav aria-label="运行导航">
-            <a href="#agents" data-page="agents"><span class="nav-icon">▦</span>Agent 实例 <span id="nav-count" class="nav-count">0</span></a>
-            <a href="#fleets" data-page="fleets"><span class="nav-icon">▦</span>Agent 池</a>
-            <a href="#runs" data-page="runs"><span class="nav-icon">▷</span>执行记录</a>
-          </nav>
-        </section>
-        <section class="nav-group" aria-labelledby="nav-configuration">
-          <p class="nav-label" id="nav-configuration">配置</p>
-          <nav aria-label="配置导航">
-            <a href="#presets" data-page="presets"><span class="nav-icon">▧</span>母体 Presets</a>
-            <a href="#plugins" data-page="plugins"><span class="nav-icon">⌘</span>插件与能力</a>
-          </nav>
-        </section>
-        <section class="nav-group" aria-labelledby="nav-development">
-          <p class="nav-label" id="nav-development">开发</p>
-          <nav aria-label="开发导航">
-            <a href="#capabilities" data-page="capabilities"><span class="nav-icon">◫</span>实现进度</a>
-            <a href="#events" data-page="events"><span class="nav-icon">≋</span>事件日志</a>
+        <section class="nav-group" aria-labelledby="nav-settings">
+          <p class="nav-label" id="nav-settings">设置</p>
+          <nav aria-label="设置导航">
+            <a href="#presets" data-page="presets"><span class="nav-icon"></span>母体</a>
+            <a href="#plugins" data-page="plugins"><span class="nav-icon"></span>插件</a>
+            <a href="#researcher" data-page="researcher"><span class="nav-icon"></span>研究者视图</a>
           </nav>
         </section>
       </div>

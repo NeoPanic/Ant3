@@ -479,3 +479,24 @@ form input[type="checkbox"],form input[type="radio"] {accent-color:var(--ink)}
   input[type=checkbox],input[type=radio] { min-height:20px; min-width:20px; }
   .raw-data>summary,.table-detail>summary,.board-history>summary { min-height:44px; padding-block:12px; }
 }
+
+/* 观察者视角：研究者折叠区、群体动态与花费进度 */
+.researcher { border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); margin-bottom:20px; overflow:hidden; }
+.researcher>summary { padding:14px 18px; cursor:pointer; font-size:13px; font-weight:550; color:var(--muted); }
+.researcher>summary:hover { background:var(--bg); color:var(--ink); }
+.researcher[open]>summary { border-bottom:var(--divider) solid var(--line); }
+.researcher-body { padding:16px 18px; }
+.researcher-body>.panel:last-child { margin-bottom:0; }
+.researcher .researcher { margin:14px 0; }
+.swarm-timeline { display:grid; }
+.swarm-line { display:flex; align-items:baseline; gap:14px; padding:9px 0; border-bottom:var(--divider) solid var(--line); }
+.swarm-line:last-child { border-bottom:0; }
+.swarm-line-text { flex:1; min-width:0; overflow-wrap:anywhere; }
+.swarm-line-time { font:12px/1.8 var(--mono); color:var(--muted); white-space:nowrap; }
+.progress-track { display:block; height:6px; border-radius:3px; background:var(--line); overflow:hidden; margin-top:6px; }
+.progress-track i { display:block; height:100%; background:#4a4a4a; }
+.energy-progress { margin:8px 0 16px; font-size:12px; color:var(--muted); }
+.energy-inline { display:inline-block; width:90px; margin:0 6px 0 0; vertical-align:middle; }
+.inbox-card .task-form-actions { justify-content:flex-end; }
+.inbox-card .task-form-actions .hint { margin-right:auto; }
+@media (pointer: coarse) { .researcher>summary { min-height:44px; padding-block:12px; } }

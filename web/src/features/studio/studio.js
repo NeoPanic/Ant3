@@ -76,7 +76,15 @@ function studioPage(){
     <header class="studio-hud"><div class="studio-station-name"><span class="studio-station-mark" aria-hidden="true">◉</span><h1>夜航工作站</h1></div><div class="studio-tabs" role="group" aria-label="现场视图">${[['network','工作舱'],['tasks','接力'],['architecture','系统']].map(([key,title])=>`<button id="studio-view-${key}" data-action="studio-view" data-id="${key}" aria-pressed="${studio.view===key}" class="${studio.view===key?'active':''}">${title}</button>`).join('')}</div><div class="studio-live"><span id="studio-sync" role="status"></span><button class="studio-icon-button" data-action="studio-pause" title="${studio.paused?'继续实时同步':'暂停画面'}" aria-label="${studio.paused?'继续实时同步':'暂停画面'}">${studio.paused?'▶':'Ⅱ'}</button><button class="studio-icon-button" data-action="studio-fullscreen" title="全屏 / 退出全屏" aria-label="全屏 / 退出全屏">⛶</button></div></header>
     <div class="studio-scene-wrap">${studio.view==='architecture'?studioArchitecture(snapshot):studio.view==='tasks'?studioTasks(snapshot):studioNetwork(snapshot)}${selected||task?`<aside class="studio-inspect" aria-label="${task?'任务':'Agent'}详情"><button class="studio-inspect-close" data-action="studio-dismiss" aria-label="收起详情">×</button>${task?studioTaskDetail(goal,task,snapshot):studioAgentDetail(snapshot,selected.id)}</aside>`:''}</div>
     <footer class="studio-bottom-hud"><div class="studio-status-counts"><span><i class="count-busy"></i>${busy} 工作</span><span><i class="count-ready"></i>${active.filter(a=>a.state==='ready').length} 待命</span><span><i class="count-queued"></i>${queued} 排队</span></div><span class="studio-bottom-note">${studio.view==='architecture'?'结构示意':studio.view==='tasks'?'连线 任务拆分':'点选队员'}</span><a href="#board" class="studio-log-link" title="发布任务">${icon('plus')}<span class="sr-only">发布任务</span></a></footer>
+    ${studioSwarmStrip()}
   </div>`;
+}
+
+// 场景下方的群体动态：最近 5 条一句话，让观察者不看机制也能读懂协作。
+function studioSwarmStrip(){
+  const snapshot=studio.paused?.data||data,feed=swarmFeed(studio.paused?.events||events,5,snapshot);
+  if(!feed.length)return '';
+  return `<div class="studio-swarm-strip" role="log" aria-label="群体动态"><span class="studio-swarm-label">群体动态</span><ul>${feed.map(item=>`<li><span>${esc(item.text)}</span><small>${time(item.at)}</small></li>`).join('')}</ul><a href="#colony">全部动态 →</a></div>`;
 }
 
 function studioEventName(kind){
@@ -100,7 +108,7 @@ function studioNetwork(snapshot){
     if(!groups.has(key))groups.set(key,[]);groups.get(key).push(m);
   }
   const selected=agents.some(a=>a.id===studio.selected)?studio.selected:null;
-  const wires=(snapshot.board?.tasks||[]).filter(t=>t.state==='running'&&t.instance_id&&positions.has(t.instance_id)).map(t=>{const p=positions.get(t.instance_id);return `<path class="station-conduit conduit-active" d="M640 510Q640 ${p.y+165} ${p.x+95} ${p.y+165}"><title>已认领任务：${esc(t.title)} ${esc(t.instance_id)}</title></path>`;}).join('');
+  const wires=(snapshot.board?.tasks||[]).filter(t=>t.state==='running'&&t.instance_id&&positions.has(t.instance_id)).map(t=>{const p=positions.get(t.instance_id);return `<path class="station-conduit conduit-active" d="M640 510Q640 ${p.y+165} ${p.x+95} ${p.y+165}"><title>正在处理：${esc(t.title)} ${esc(t.instance_id)}</title></path>`;}).join('');
   const messages=[...groups.values()].map(list=>{
     const m=list[0],a=positions.get(m.sender_instance_id),b=positions.get(m.recipient_id),flowing=list.some(m=>['queued','running'].includes(m.inbox_state));
     const x=a.x+95,y=a.y+170,tx=b.x+95,ty=b.y+170;
@@ -162,11 +170,12 @@ function studioTasks(snapshot){
 }
 
 function studioTaskDetail(root,t,snapshot){
-  const a=snapshot.instances.find(a=>a.id===t.instance_id),waiting=t.state==='pending'?(t.preset_name?'等待认领':'等待选型'):t.state==='waiting'?'等待子任务':studioStates[t.state]||labels[t.state]||t.state;
-  const trace=t.trace?`<div class="studio-detail-meta">痕迹 ${esc(boardTraceKinds[t.trace.kind]||t.trace.kind)} 浓度 ${boardTraceStrength(t.trace).toFixed(1)}</div>`:'';
+  const a=snapshot.instances.find(a=>a.id===t.instance_id),waiting=t.state==='pending'?(t.preset_name?'等待开工':'等待接活'):t.state==='waiting'?'子任务进行中':studioStates[t.state]||labels[t.state]||t.state;
+  const reuse=Number(t.reuse_count)||0;
+  const trace=reuse?`<div class="studio-detail-meta">成果被同伴参考 ${reuse} 次</div>`:'';
   const audits=t.audits||[],audit=audits[audits.length-1];
-  const auditSummary=audit?`<div class="studio-detail-meta">独立验证 第 ${esc(audit.attempt)} 次 · ${esc(auditStates[audit.state]||audit.state)}${audit.verdict?` ${esc(audit.verdict.status)}`:''}</div>`:'';
-  return `${studioPerson(t.state,t.instance_id||t.key)}<h2>${esc(t.display_title||t.title||t.key)}</h2><div class="studio-detail-meta">${esc(waiting)} ${esc(a?.preset_name||t.preset_name||'待选型')}</div>${trace}${auditSummary}<p class="studio-full-text">${esc(t.instructions)}</p>${t.acceptance?`<details id="studio-task-acceptance"><summary>验收标准</summary><p class="studio-full-text">${esc(t.acceptance)}</p></details>`:''}<div class="studio-inspect-actions">${t.run_id?button('运行详情','run-detail',false,`data-id="${esc(t.run_id)}"`):''}<a class="button" href="#board/${esc(t.id)}">任务详情</a></div>`;
+  const auditSummary=audit?`<div class="studio-detail-meta">独立质检 第 ${esc(audit.attempt)} 次 · ${esc(auditStates[audit.state]||audit.state)}${audit.verdict?` ${esc(audit.verdict.status)}`:''}</div>`:'';
+  return `${studioPerson(t.state,t.instance_id||t.key)}<h2>${esc(t.display_title||t.title||t.key)}</h2><div class="studio-detail-meta">${esc(waiting)} ${esc(a?.preset_name||t.preset_name||'等待安排')}</div>${trace}${auditSummary}<p class="studio-full-text">${esc(t.instructions)}</p>${t.acceptance?`<details id="studio-task-acceptance"><summary>验收标准</summary><p class="studio-full-text">${esc(t.acceptance)}</p></details>`:''}<div class="studio-inspect-actions">${t.run_id?button('运行详情','run-detail',false,`data-id="${esc(t.run_id)}"`):''}<a class="button" href="#board/${esc(t.id)}">任务详情</a></div>`;
 }
 
 function studioModule(kind){
@@ -183,8 +192,8 @@ function studioModule(kind){
 }
 
 function studioArchitecture(){
-  const modules=[['target','任务板','board',130,270],['scheduler','控制面 选型 / 生命周期','presets',530,190],['agents','对等 Agent','agents',930,270],['messages','消息','messages',130,565],['storage','存储','workspaces',530,580],['tools','Ant 模型 / 工具','plugins',930,565]];
-  return `<section class="studio-stage studio-architecture" aria-label="系统结构示意"><span class="studio-structure-label">系统剖面</span><svg class="studio-map" viewBox="0 0 1280 870" role="group" aria-label="任务板、控制面选型、对等 Agent 与标准 Ant 的结构关系">${studioBackdrop()}<g class="module-rails"><path d="M240 445 640 365 1040 445M240 445v295l400 15 400-15V445M640 365v390M240 740l800-295"/></g>${modules.map(([kind,title,href,x,y])=>`<foreignObject x="${x}" y="${y}" width="220" height="235"><div xmlns="http://www.w3.org/1999/xhtml" class="studio-machine-wrap"><a class="studio-machine" href="#${href}" title="查看${esc(title)}">${studioModule(kind)}<span>${title}</span></a></div></foreignObject>`).join('')}</svg></section>`;
+  const modules=[['target','任务板','board',130,270],['scheduler','控制面 安排 / 生命周期','presets',530,190],['agents','对等 Agent','researcher',930,270],['messages','消息','researcher',130,565],['storage','存储','deliveries',530,580],['tools','Ant 模型 / 工具','plugins',930,565]];
+  return `<section class="studio-stage studio-architecture" aria-label="系统结构示意"><span class="studio-structure-label">系统剖面</span><svg class="studio-map" viewBox="0 0 1280 870" role="group" aria-label="任务板、控制面安排、对等 Agent 与标准 Ant 的结构关系">${studioBackdrop()}<g class="module-rails"><path d="M240 445 640 365 1040 445M240 445v295l400 15 400-15V445M640 365v390M240 740l800-295"/></g>${modules.map(([kind,title,href,x,y])=>`<foreignObject x="${x}" y="${y}" width="220" height="235"><div xmlns="http://www.w3.org/1999/xhtml" class="studio-machine-wrap"><a class="studio-machine" href="#${href}" title="查看${esc(title)}">${studioModule(kind)}<span>${title}</span></a></div></foreignObject>`).join('')}</svg></section>`;
 }
 
 async function studioAction(action,element){

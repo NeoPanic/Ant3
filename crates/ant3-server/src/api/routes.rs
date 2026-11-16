@@ -15,6 +15,42 @@ pub fn router(app: App) -> Router {
                 )
             }),
         )
+        .route(
+            "/colony.js",
+            get(|| async {
+                (
+                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
+                    include_str!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/../../web/src/features/colony/colony.js"
+                    )),
+                )
+            }),
+        )
+        .route(
+            "/inbox.js",
+            get(|| async {
+                (
+                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
+                    include_str!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/../../web/src/features/inbox/inbox.js"
+                    )),
+                )
+            }),
+        )
+        .route(
+            "/researcher.js",
+            get(|| async {
+                (
+                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
+                    include_str!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/../../web/src/features/researcher/researcher.js"
+                    )),
+                )
+            }),
+        )
         .route("/api/board", get(board_list))
         .route("/api/board/tasks", post(board_create))
         .route("/api/board/tasks/{id}", get(board_show))

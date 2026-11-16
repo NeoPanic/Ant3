@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const {readFileSync}=require('node:fs');
 const {resolve}=require('node:path');
 const vm=require('node:vm');
-const context=vm.createContext({location:{hash:'#board'}});
+const context=vm.createContext({location:{hash:'#board'},time:()=>'',short:value=>String(value??'').slice(0,15)});
 Object.assign(context,{
   esc:(value='')=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
   badge:(state,text)=>`<span>${text}</span>`,button:(label,action,primary,attributes='')=>`<button data-action="${action}" ${attributes}>${label}</button>`,
@@ -49,7 +49,7 @@ test('评审通过与取消归入历史，待评审、失败和结果未知任�
   ]}};
   const html=vm.runInContext('boardPage()',context),[current,history]=html.split('<details id="board-history"');
   for(const title of ['需要排查','需要核对','需要解除阻断','等待执行','等待人类检查'])assert(current.includes(title));
-  assert(current.includes('待人类评审'));
+  assert(current.includes('等你验收'));
   assert(!current.includes('已交付'));
   assert(history.includes('已交付'));
   assert(history.includes('已撤回'));
@@ -61,7 +61,7 @@ test('成果、进度和人类评审意见可见且转义，评审绑定当前 R
   context.location.hash='#board/review';
   context.data={board:{tasks:[{id:'review',title:'检查',state:'completed',review_state:'pending',run_id:'run-current',result:{output:'<img src=x>成果'},progress:{message:'<script>进度</script>'},reviews:[{decision:'changes_requested',feedback:'<b>补充证据</b>',run_id:'run-previous'}]}]}};
   const html=vm.runInContext('boardPage()',context);
-  assert(html.includes('人类评审'));
+  assert(html.includes('等你验收'));
   assert(html.includes('board-review'));
   assert(html.includes('data-run="run-current"'));
   assert(html.includes('&lt;b&gt;补充证据&lt;/b&gt;'));
@@ -69,13 +69,21 @@ test('成果、进度和人类评审意见可见且转义，评审绑定当前 R
   assert(!html.includes('<script>'));
 });
 
-test('已选型未认领和执行中状态分开显示',()=>{
+test('已安排未开工和执行中状态分开显示，全部使用人话',()=>{
   context.task={state:'pending'};
-  assert.equal(vm.runInContext('boardStatus(task)',context),'等待选型');
+  assert.equal(vm.runInContext('boardStatus(task)',context),'等待接活');
   context.task.preset_name='analyst';
-  assert.equal(vm.runInContext('boardStatus(task)',context),'等待认领');
+  assert.equal(vm.runInContext('boardStatus(task)',context),'等待开工');
   context.task.state='running';
-  assert.equal(vm.runInContext('boardStatus(task)',context),'执行中');
+  assert.equal(vm.runInContext('boardStatus(task)',context),'进行中');
+  context.task={state:'completed',review_state:'pending'};
+  assert.equal(vm.runInContext('boardStatus(task)',context),'等你验收');
+  context.task={state:'completed',review_state:'accepted'};
+  assert.equal(vm.runInContext('boardStatus(task)',context),'已交付');
+  context.task={state:'pending',review_state:'changes_requested'};
+  assert.equal(vm.runInContext('boardStatus(task)',context),'按意见修改中');
+  context.task={state:'failed',error:'energy_exhausted'};
+  assert.equal(vm.runInContext('boardStatus(task)',context),'预算耗尽');
 });
 
 test('任务详情显示拆分来源与子任务，同时转义任务内容',()=>{
@@ -93,16 +101,47 @@ test('任务详情显示拆分来源与子任务，同时转义任务内容',()=
   assert(vm.runInContext('boardPage()',context).includes('拆分来源'));
 });
 
-test('父任务重新选型时不把历史 preset 显示成已分配',()=>{
+test('父任务重新安排时不把历史 preset 显示成已分配',()=>{
   context.task={state:'pending',preset_name:'old-preset',route_state:'unassigned'};
-  assert.equal(vm.runInContext('boardStatus(task)',context),'等待选型');
+  assert.equal(vm.runInContext('boardStatus(task)',context),'等待接活');
   assert.equal(vm.runInContext('boardPreset(task)',context),null);
 });
 
-test('选型失败显示重试原因，不会伪装为执行中',()=>{
+test('安排受阻显示人话原因，原始错误码不出现在用户文案',()=>{
   context.location.hash='#board';
   context.data={board:{tasks:[{id:'retry',title:'待重试任务',state:'pending',route_state:'unassigned'}],routing:[{task_id:'retry',state:'waiting',error:'router_unavailable',attempts:2}]}};
   const html=vm.runInContext('boardPage()',context);
-  assert(html.includes('选型待重试'));
-  assert(html.includes('router_unavailable'));
+  assert(html.includes('安排受阻，稍后重试'));
+  assert(!html.includes('router_unavailable'));
+});
+
+test('列表行用人话徽章展示被参考次数，不显示浓度徽章',()=>{
+  context.location.hash='#board';
+  context.data={board:{tasks:[
+    {id:'reused',title:'被参考的工作',state:'running',reuse_count:3,trace:{kind:'result',strength:88}},
+    {id:'plain',title:'普通工作',state:'running',trace:{kind:'result',strength:12}},
+  ]}};
+  const html=vm.runInContext('boardPage()',context);
+  assert(html.includes('被参考 3 次'));
+  assert(!html.includes('trace-badge'));
+  assert(!html.includes('浓度'));
+});
+
+test('任务详情默认区无机制词汇，机制细节收进研究者折叠',()=>{
+  context.location.hash='#board/root';
+  context.data={board:{tasks:[{id:'root',root_id:'root',title:'工作',instructions:'目标',acceptance:'标准',state:'running',route_reason:'原始选型依据',trace:{kind:'result',strength:66},reuse_count:2,energy:{budget:100000,spent:4000,refunded:0,available:96000}}]}};
+  const html=vm.runInContext('boardPage()',context);
+  const [visible,researcher]=html.split('<details class="researcher"');
+  assert(researcher,'研究者折叠区存在');
+  assert(!visible.includes('浓度'));
+  assert(!visible.includes('阈值'));
+  assert(!visible.includes('账本'));
+  assert(!visible.includes('半衰期'));
+  assert(!visible.includes('原始选型依据'));
+  assert(visible.includes('被同伴参考 2 次'));
+  assert(visible.includes('花费'));
+  assert(researcher.includes('信息素痕迹场'));
+  assert(researcher.includes('能量账本'));
+  assert(researcher.includes('黑板裁决历史'));
+  assert(researcher.includes('原始选型依据'));
 });

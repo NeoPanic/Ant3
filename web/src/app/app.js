@@ -26,7 +26,11 @@ const iconPaths = {
   search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
   arrow:'<path d="M5 12h14m-5-5 5 5-5 5"/>',
   storage:'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/>',
-  plus:'<path d="M12 5v14M5 12h14"/>'
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  colony:'<circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="12" r="2.5"/><circle cx="12" cy="19" r="2.5"/><path d="M12 7.5v9M7.5 12h9"/>',
+  inbox:'<path d="M3 13h5l2 3h4l2-3h5"/><path d="M5 5h14l2 8v6H3v-6Z"/>',
+  deliveries:'<path d="M4 8h16v12H4Z"/><path d="M4 8l2-4h12l2 4M12 8v12M9 12h6"/>',
+  researcher:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5M8 10.5h5M10.5 8v5"/>'
 };
 function icon(name, cls='') { return `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconPaths[name]||iconPaths.overview}</svg>`; }
 const filters = {agents:{query:'',state:'all'},runs:{query:'',state:'all'}};
@@ -36,7 +40,7 @@ function filterBar(kind) {
   return `<div class="toolbar"><label class="search-field">${icon('search')}<input id="directory-search" data-filter="query" type="search" value="${esc(f.query)}" placeholder="${kind==='agents'?'搜索实例 ID、母体或模型协议':'搜索运行 ID、实例或输入'}" aria-label="${kind==='agents'?'搜索实例':'搜索运行'}" autocomplete="off"></label><label class="state-field"><span>状态</span><select id="directory-state" data-filter="state" aria-label="筛选状态"><option value="all">全部状态</option>${states.map(state=>`<option value="${state}" ${f.state===state?'selected':''}>${labels[state]}</option>`).join('')}</select></label><span class="filter-note" role="status">${resultCount(kind)}</span>${f.query||f.state!=='all'?button('清除筛选','clear-filters'):''}</div>`;
 }
 function resultCount(kind) { const list=kind==='agents'?data.instances:data.runs;return `${filtered(kind,list).length} / ${list.length} 条结果`; }
-function filtered(kind,list) { const f=filters[kind],q=f.query.trim().toLocaleLowerCase();return list.filter(item=>(f.state==='all'||item.state===f.state)&&(!q||[item.id,item.preset_name,item.snapshot?.protocol,item.instance_id,item.input].filter(Boolean).join(' ').toLocaleLowerCase().includes(q))); }
+function filtered(kind,list) { const f=filters[kind]||{query:'',state:'all'},q=f.query.trim().toLocaleLowerCase();return list.filter(item=>(f.state==='all'||item.state===f.state)&&(!q||[item.id,item.preset_name,item.snapshot?.protocol,item.instance_id,item.input].filter(Boolean).join(' ').toLocaleLowerCase().includes(q))); }
 function directory(kind) {
   const source=kind==='agents'?data.instances:data.runs,list=filtered(kind,source);
   return list.length?(kind==='agents'?agentsTable(list):runsTable(list)):(source.length?empty('没有符合条件的结果','试试其他关键词，或使用上方的“清除筛选”。'):kind==='agents'?agentsTable([]):runsTable([]));
@@ -66,7 +70,20 @@ async function api(path, body, method = 'POST', key = null) {
   }
   return value;
 }
-function page() { return boardId()?'board':fleetId()?'fleets':['board','studio','overview','workspaces','agents','fleets','messages','presets','runs','plugins','capabilities','events'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'board'; }
+// 旧 hash 全部重定向，保持历史链接可用；默认首页是人类观察者的工作现场。
+const pageRedirects={overview:'studio',agents:'researcher',fleets:'researcher',messages:'researcher',runs:'researcher',events:'researcher',capabilities:'researcher',workspaces:'deliveries'};
+function page() {
+  if(boardId())return 'board';
+  if(fleetId())return 'researcher';
+  const hash=location.hash.slice(1);
+  if(pageRedirects[hash])return pageRedirects[hash];
+  return ['studio','colony','deliveries','board','inbox','presets','plugins','researcher'].includes(hash)?hash:'studio';
+}
+function applyPageRedirect(){
+  const hash=location.hash.slice(1);
+  if(pageRedirects[hash])location.replace(`#${pageRedirects[hash]}`);
+  else if(hash.startsWith('fleet/'))location.replace('#researcher');
+}
 function head(title, buttons = '') { return `<div class="page-head"><div><h1>${title}</h1></div>${buttons?`<div class="head-actions">${buttons}</div>`:''}</div>`; }
 function button(label, action, primary = false, extra = '') { return `<button type="button" class="button ${primary ? 'primary' : ''}" data-action="${action}" ${extra}>${label}</button>`; }
 function empty(title, text, action = '') { return `<div class="empty"><b>${title}</b><p>${text}</p>${action}</div>`; }
@@ -106,25 +123,21 @@ function progressPage() {
 }
 function render() {
   if (!data || composing) return;
-  const p=page(), names={overview:'总览',agents:'Agent 实例',fleets:'Agent 池',workspaces:'文件工作区',messages:'协作消息',presets:'母体 Presets',runs:'执行记录',plugins:'插件与能力',capabilities:'实现进度',events:'事件日志'};
-  names.studio='Agent 工作现场';names.board='共享任务板';
-  $('#nav-count').textContent=data.instances.filter(a=>a.state!=='terminated').length;
+  const p=page(), names={studio:'工作现场',colony:'蚁群',deliveries:'成果库',board:'任务板',inbox:'需要你处理',presets:'母体 Presets',plugins:'插件与能力',researcher:'研究者视图'};
+  const inboxCount=typeof inboxItems==='function'&&data?inboxItems().length:0;
+  const inboxBadge=$('#inbox-count');
+  if(inboxBadge){inboxBadge.textContent=inboxCount;inboxBadge.hidden=!inboxCount;}
   document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.dataset.page===p);if(a.dataset.page===p)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
   document.title=`${names[p]} Ant³`;
   let html='';
   if(p==='board') html=`<div class="board-page">${boardPage()}</div>`;
   if(p==='studio') html=studioPage();
-  if(p==='overview') html=overview();
-  if(p==='workspaces') html=workspacePage();
-  if(p==='messages') html=messagesPage();
-  if(p==='fleets') html=fleetsPage();
-  if(p==='agents') html=head('Agent 实例', button('批量创建','spawn',true))+filterBar('agents')+panel('实例目录',`<div id="directory-results">${directory('agents')}</div>`,badge('neutral',`共 ${data.instances.length} 个实例`));
+  if(p==='colony') html=colonyPage();
+  if(p==='deliveries') html=deliveriesPage();
+  if(p==='inbox') html=inboxPage();
+  if(p==='researcher') html=researcherPage();
   if(p==='presets') html=head('母体 Presets', button('发布母体','preset-form',true))+panel('母体版本',data.presets.length?table(['母体 / 版本','用途与目标','模型协议','操作'],data.presets.map(p=>`<tr><td><div class="primary-text">${esc(p.name)}</div><div class="secondary-text mono">${esc(p.version)}</div></td><td><div class="primary-text">${esc(p.definition.purpose)}</div><details class="table-detail"><summary>查看目标</summary><p class="record-text">${esc(p.definition.objective)}</p></details></td><td><span class="protocol">${esc(p.definition.protocol)}</span></td><td><button class="text-button" data-action="preset-detail" data-id="${esc(p.name)}" data-version="${esc(p.version)}">查看定义</button><button class="text-button" data-action="spawn" data-id="${esc(p.name)}" data-version="${esc(p.version)}">创建实例</button></td></tr>`)):empty('尚无母体版本','点击“发布母体”，填写用途、目标和模型协议。'),`<span class="board-count">${data.presets.length} 个版本</span>`);
-  if(p==='runs') html=head('执行记录')+filterBar('runs')+panel('运行历史',`<div id="directory-results">${directory('runs')}</div>`,badge('neutral',`${data.runs.length} 条`));
   if(p==='plugins') html=pluginsPage();
-  if(p==='capabilities') html=progressPage();
-
-  if(p==='events') html=head('事件日志')+panel('平台事件',events.length?table(['序号','事件','对象','时间','载荷'],events.slice(-150).reverse().map(e=>`<tr><td class="mono">#${e.seq}</td><td class="mono">${esc(e.kind)}</td><td class="mono">${esc(short(e.subject))}</td><td>${time(e.at)}</td><td><button class="text-button" data-action="event-detail" data-id="${e.seq}">检查 ↗</button></td></tr>`)):empty('暂无事件','开始操作后查看完整变化。'),badge('neutral',`cursor ${cursor}`));
   // Do not replace an unchanged view during polling: preserve focus and scroll.
   if(renderedMarkup!==html) {
     const focused=document.activeElement, focusId=focused?.id, action=focused?.dataset.action, itemId=focused?.dataset.id;
@@ -275,6 +288,7 @@ async function handleAction(action, element) {
     return;
   }
   if(await studioAction(action,element))return;
+  if(await colonyAction(action,element))return;
   if(await processAction(action,element))return;
   const id=element.dataset.id;
   if(action==='fleet-nav') {$('#modal').close();location.hash=`fleet/${id}`;return;}
@@ -283,13 +297,13 @@ async function handleAction(action, element) {
     try {await navigator.clipboard.writeText(element.dataset.value);element.textContent='已复制';setTimeout(()=>{if(element.isConnected)element.textContent='复制';},1800);}
     catch {throw new Error('浏览器未允许复制，请选中 ID 后手动复制。');}return;
   }
-  if(action==='goto-agents') {location.hash='agents';return;}
-  if(action==='clear-filters') {filters[page()]={query:'',state:'all'};render();$('#directory-search')?.focus();return;}
+  if(action==='goto-agents') {location.hash='researcher';return;}
+  if(action==='clear-filters') {const kind=page()==='researcher'?(researcherSections.has('agents')?'agents':'runs'):page();if(!filters[kind])return;filters[kind]={query:'',state:'all'};render();$('#directory-search')?.focus();return;}
   if(await workspaceAction(action,element))return;
   if(await boardAction(action,element))return;
   if(await messageAction(action,element))return;
   if(action==='close') {if(!$('#modal form[aria-busy="true"]'))$('#modal').close();return;}
-  if(action==='capabilities') {location.hash='capabilities';return;}
+  if(action==='capabilities') {location.hash='researcher';return;}
   if(action==='spawn') return spawnForm(id,element.dataset.version);
   if(action==='preset-form') return presetForm();
   if(action==='run-form') return runForm(id);
@@ -382,7 +396,7 @@ document.addEventListener('submit',async event=>{
     if(form.dataset.form==='message-send') {
       if(new TextEncoder().encode(values.text).length>8000)throw new Error('消息超过 8,000 个 UTF-8 字节。');
       const input={text:values.text};for(const field of ['correlation_id','causation_id'])if(values[field])input[field]=values[field];
-      result=await api(`/api/v1/agent-instances/${encodeURIComponent(values.recipient_id)}/messages`,input,'POST',form.dataset.commandKey);location.hash='messages';
+      result=await api(`/api/v1/agent-instances/${encodeURIComponent(values.recipient_id)}/messages`,input,'POST',form.dataset.commandKey);location.hash='researcher';
     }
     if(form.dataset.form==='message-action') {
       if(new TextEncoder().encode(values.note).length>2000)throw new Error('处置说明超过 2,000 个 UTF-8 字节。');
@@ -390,18 +404,18 @@ document.addEventListener('submit',async event=>{
     }
     if(form.dataset.form==='drain') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/actions`,{action:'drain'});}
     if(form.dataset.form==='terminate') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/actions`,{action:'terminate'});}
-    if(form.dataset.form==='spawn') {const preset=JSON.parse(values.preset);result=await api('/api/v1/agent-fleets',{preset_name:preset.name,preset_version:preset.version,count:Number(values.count),mode:values.mode,parameters:instanceParameters(form),ttl_seconds:values.ttl_minutes?Number(values.ttl_minutes)*60:null},'POST',form.dataset.commandKey);location.hash=`fleet/${result.fleet_id}`;}
+    if(form.dataset.form==='spawn') {const preset=JSON.parse(values.preset);result=await api('/api/v1/agent-fleets',{preset_name:preset.name,preset_version:preset.version,count:Number(values.count),mode:values.mode,parameters:instanceParameters(form),ttl_seconds:values.ttl_minutes?Number(values.ttl_minutes)*60:null},'POST',form.dataset.commandKey);location.hash=`fleet/${result.fleet_id}`;researcherSections.add('fleets');}
     if(form.dataset.form==='fleet-action') {result=await api(`/api/v1/agent-fleets/${encodeURIComponent(form.dataset.id)}/actions`,{action:form.dataset.operation,expected_revision:Number(form.dataset.revision),...(form.dataset.operation==='scale'?{count:Number(values.count)}:{})},'POST',form.dataset.commandKey);}
     if(form.dataset.form==='preset') {result=await api('/api/v1/presets',presetPayload(form));location.hash='presets';}
     if(form.dataset.form==='process-state') {result=await api(`/api/v1/process-plugins/${encodeURIComponent(form.dataset.id)}/${encodeURIComponent(form.dataset.version)}/actions`,{action:form.dataset.state});}
-    if(form.dataset.form==='run') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/runs`,{text:values.text},'POST',form.dataset.commandKey);location.hash='runs';}
+    if(form.dataset.form==='run') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/runs`,{text:values.text},'POST',form.dataset.commandKey);location.hash='researcher';researcherSections.add('runs');}
     $('#modal').close();await refresh(true);
     if(form.dataset.form==='run-cancel'){await runDetail(form.dataset.id);toast('取消请求已提交，运行将协作收尾。');return;}
-    if(form.dataset.form==='board-publish'){toast('任务已发布，等待控制面选型。');return;}
+    if(form.dataset.form==='board-publish'){toast('任务已发布，群体会自行安排合适的成员。');return;}
     if(form.dataset.form==='board-cancel'){toast('取消请求已保存。');return;}
-    if(form.dataset.form==='board-review'){toast(result.review_state==='accepted'?'评审通过，任务已归档。':'评审意见已保存，任务重新等待选型。');return;}
+    if(form.dataset.form==='board-review'){toast(result.review_state==='accepted'?'评审通过，成果已交付归档。':'评审意见已保存，成员将按意见重新开工。');return;}
     if(form.dataset.form==='run'&&data.runs.some(r=>r.id===result.id)){await runDetail(result.id);}
-    toast(form.dataset.form==='message-send'?'消息已接纳；投递与消费状态见协作消息页。':form.dataset.form==='message-action'?'处置记录已保存。':form.dataset.form==='process-state'?(result.state==='disabled'?'插件版本已禁用，新的调用将被拒绝。':'健康检查通过，插件版本已启用。'):result?.operation_id ? '操作已接纳，协调进度见Agent 池详情。' : result?.count ? `已创建 ${result.count} 个独立实例` : form.dataset.form==='run'?'任务已接纳，可在执行详情中检查结果。':form.dataset.form==='drain'?'排空请求已保存，活动任务结算后终止。':form.dataset.form==='terminate'?'实例已终止，历史记录已保留。':'版本已保存');
+    toast(form.dataset.form==='message-send'?'消息已接纳；投递与消费状态见研究者视图。':form.dataset.form==='message-action'?'处置记录已保存。':form.dataset.form==='process-state'?(result.state==='disabled'?'插件版本已禁用，新的调用将被拒绝。':'健康检查通过，插件版本已启用。'):result?.operation_id ? '操作已接纳，协调进度见Agent 池详情。' : result?.count ? `已创建 ${result.count} 个独立实例` : form.dataset.form==='run'?'任务已接纳，可在执行详情中检查结果。':form.dataset.form==='drain'?'排空请求已保存，活动任务结算后终止。':form.dataset.form==='terminate'?'实例已终止，历史记录已保留。':'版本已保存');
   }catch(error){const target=form.querySelector('#form-error');if(target){target.textContent=error.message;target.tabIndex=-1;target.focus();}}
   finally {submit.disabled=false;submit.textContent=label;form.removeAttribute('aria-busy');}
 });
@@ -409,7 +423,7 @@ document.querySelectorAll('nav a').forEach(a=>{a.title=a.textContent.replace(/[�
 document.addEventListener('compositionstart',()=>{composing=true;});
 document.addEventListener('compositionend',()=>{composing=false;});
 document.addEventListener('input',event=>{
-  const type=event.target.dataset.filter,kind=page();
+  const type=event.target.dataset.filter,kind=page()==='researcher'?(researcherSections.has('agents')?'agents':'runs'):page();
   if(!type||!filters[kind])return;
   filters[kind][type]=event.target.value;
   $('#directory-results').innerHTML=directory(kind);
@@ -429,6 +443,7 @@ $('#login-dialog').addEventListener('cancel',event=>event.preventDefault());
 $('.skip-link').addEventListener('click',event=>{event.preventDefault();$('#content').focus();});
 function closeNavigation(){ $('#shell').classList.remove('navigation-open');$('#navigation-toggle').setAttribute('aria-expanded','false'); }
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&$('#shell').classList.contains('navigation-open')){closeNavigation();$('#navigation-toggle').focus();}});
-window.addEventListener('hashchange',()=>{inspectionRequest++;if($('#modal').open&&!$('#modal form[aria-busy="true"]'))$('#modal').close();closeNavigation();render();if(boardId()||fleetId())refresh(true);$('#content').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});});
+window.addEventListener('hashchange',()=>{applyPageRedirect();inspectionRequest++;if($('#modal').open&&!$('#modal form[aria-busy="true"]'))$('#modal').close();closeNavigation();render();if(boardId()||fleetId())refresh(true);$('#content').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});});
+applyPageRedirect();
 refresh();setInterval(()=>{if(authenticated&&!document.hidden)refresh();},1500);
 window.addEventListener('focus',()=>{if(authenticated)refresh();});
