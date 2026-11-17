@@ -29,7 +29,7 @@ function inboxCard(item){
   if(item.kind==='audit')actions=`<a class="button" href="#board/${esc(item.id)}">查看任务与质检结论</a>${item.task?.review_state==='pending'?button('人工评审','board-review',true,`data-id="${esc(item.id)}" data-run="${esc(item.task?.run_id||'')}"`):''}`;
   if(item.kind==='energy')actions=`<span class="hint">追加预算功能即将提供。</span>${button('取消任务','board-cancel',false,`data-id="${esc(item.id)}"`)}`;
   if(item.kind==='run')actions=`<a class="button" href="#researcher">到研究者视图处置</a>${button('执行详情','run-detail',false,`data-id="${esc(item.id)}"`)}`;
-  return `<div class="work-item inbox-card"><div class="work-item-head"><div><h3>${esc(item.title)}</h3></div>${badge('awaiting-review','需要你')}</div><div class="work-item-meta"><span class="record-text">${esc(item.text)}</span></div><div class="task-form-actions">${actions}</div></div>`;
+  return `<div class="work-item inbox-card inbox-${esc(item.kind)}"><div class="work-item-head"><div><h3>${esc(item.title)}</h3></div>${badge('awaiting-review','需要你')}</div><div class="work-item-meta"><span class="record-text">${esc(item.text)}</span></div><div class="task-form-actions">${actions}</div></div>`;
 }
 function inboxPage(){
   const items=inboxItems();

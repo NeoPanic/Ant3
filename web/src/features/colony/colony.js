@@ -85,7 +85,7 @@ function colonyMemberRows(snapshot=data){
     return {id:a.id,nickname:`${a.preset_name} #${String(a.id).slice(-4)}`,purpose:preset?.definition?.purpose||'未记录擅长方向',
       done:exp?`${exp.successes||0} 单成功${exp.failures?` / ${exp.failures} 单未成`:''}`:'还没有记录',
       rate:total?`${Math.round((exp.successes||0)/total*100)}%`:'—',
-      state:colonyMemberStates[a.state]||a.state,task:task?.title||'',preset_version:a.preset_version};
+      state:colonyMemberStates[a.state]||a.state,rawState:a.state,task:task?.title||'',preset_version:a.preset_version};
   });
 }
 function colonyDuration(ms){
@@ -115,9 +115,9 @@ function colonyPage(){
     <details class="raw-data"><summary>原始 peers JSON</summary>${dataView(colonyPool?.peers||[])}</details></div></details>`;
   return head('蚁群', button(colonyLoading?'正在刷新…':'刷新','colony-refresh',false,colonyLoading?'disabled':''))+
     (colonyLoadError?`<div class="callout" role="alert">${esc(colonyLoadError)}。${button('重试','colony-refresh')}</div>`:'')+
-    panel('成员花名册',members.length?table(['成员','擅长','干了几单','成功率','当前状态','正在做'],members.map(m=>`<tr><td><div class="primary-text">${esc(m.nickname)}</div><div class="secondary-text mono">${esc(short(m.id))}</div></td><td class="wrap">${esc(m.purpose)}</td><td>${esc(m.done)}</td><td>${esc(m.rate)}</td><td>${esc(m.state)}</td><td class="wrap">${m.task?esc(m.task):'<span class="hint">—</span>'}</td></tr>`)):empty('还没有成员','发布任务后，群体会自行召集合适的成员。'),`<span class="board-count">${members.length} 名在场</span>`)+
+    panel('成员花名册',members.length?table(['成员','擅长','干了几单','成功率','当前状态','正在做'],members.map(m=>`<tr><td><div class="primary-text">${esc(m.nickname)}</div><div class="secondary-text mono">${esc(short(m.id))}</div></td><td class="wrap">${esc(m.purpose)}</td><td>${esc(m.done)}</td><td>${esc(m.rate)}</td><td>${badge(m.rawState==='busy'?'running':m.rawState==='ready'?'ready':m.rawState==='draining'?'draining':'terminated',m.state)}</td><td class="wrap">${m.task?esc(m.task):'<span class="hint">—</span>'}</td></tr>`)):empty('还没有成员','发布任务后，群体会自行召集合适的成员。'),`<span class="board-count">${members.length} 名在场</span>`)+
     panel('群体动态',feed.length?`<div class="panel-body"><div class="swarm-timeline">${feed.map(item=>`<div class="swarm-line"><span class="swarm-line-text">${esc(item.text)}</span><span class="swarm-line-time">${time(item.at)}</span></div>`).join('')}</div></div>`:empty('群体还很安静','成员开始协作后，这里会出现它们的一举一动。'))+
-    panel('开销',`<div class="panel-body">${budget?`<div class="energy-progress"><span>群体总预算还剩 ${remaining.toLocaleString()} / ${budget.toLocaleString()}</span><div class="progress-track" role="img" aria-label="群体预算已用 ${Math.round(percent)}%"><i style="width:${percent.toFixed(1)}%"></i></div></div>`:'<p class="hint">群体池尚未启用，暂无总预算。</p>'}
+    panel('开销',`<div class="panel-body">${budget?`<div class="energy-progress"><span>群体总预算还剩 ${remaining.toLocaleString()} / ${budget.toLocaleString()}</span><div class="progress-track ${percent>=66?'is-low':percent>=33?'is-mid':''}" role="img" aria-label="群体预算已用 ${Math.round(percent)}%"><i style="width:${percent.toFixed(1)}%"></i></div></div>`:'<p class="hint">群体池尚未启用，暂无总预算。</p>'}
       ${costs.length?table(['工作','已花费','从发布到交付'],costs.map(c=>`<tr><td class="wrap"><a href="#board/${esc(c.id)}">${esc(c.title)}</a></td><td class="mono">${Number(c.spent).toLocaleString()}${c.budget?` <span class="hint">/ 预算 ${Number(c.budget).toLocaleString()}</span>`:''}</td><td>${c.delivered?esc(c.duration):`<span class="hint">${esc(c.duration)}</span>`}</td></tr>`)):'<p class="hint">还没有已发布的工作。</p>'}</div>`)+
     researcher;
 }

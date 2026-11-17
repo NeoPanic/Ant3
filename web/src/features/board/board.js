@@ -51,6 +51,15 @@ function boardRoutingMessage(code){return ({board_no_suitable_preset:'暂时没�
 function boardProvisioned(task){return task.route_state?task.route_state==='provisioned':Boolean(task.instance_id||task.preset_name);}
 function boardPreset(task){return task.state==='pending'&&!boardProvisioned(task)?null:task.preset_name;}
 function boardAuditing(task){const a=task.audits?.[task.audits.length-1];return a&&['pending','running'].includes(a.state)?a:null;}
+function boardBadgeClass(task){
+  if(boardAuditing(task))return 'running';
+  if(task.state==='completed')return task.review_state==='accepted'?'accepted':'awaiting-review';
+  if(task.review_state==='changes_requested'&&task.state!=='cancelled')return 'changes_requested';
+  if(task.state==='failed')return 'failed';
+  if(['running','waiting'].includes(task.state))return 'running';
+  if(task.state==='cancelled')return 'cancelled';
+  return 'queued';
+}
 function boardStatus(task,route){
   if(boardAuditing(task))return '独立质检中';
   if(task.state==='completed')return task.review_state==='accepted'?'已交付':'等你验收';
@@ -62,7 +71,7 @@ function boardStatus(task,route){
 function boardArchived(task){return task.state==='cancelled'||(task.state==='completed'&&task.review_state==='accepted');}
 function boardTaskRow(task){
   const route=boardRoute(task.id);
-  return `<a class="board-task-row" href="#board/${esc(task.id)}"><span class="board-task-copy"><strong>${esc(task.title)}</strong>${task.instructions?`<span class="board-task-preview">${esc(task.instructions)}</span>`:''}<span>${esc(boardPreset(task)?`由 ${task.preset_name} 负责`:route?.error?boardRoutingMessage(route.error):'群体自行安排合适的成员')}${task.parent_id?' 子任务':''}</span></span>${boardReuseBadge(task)}${badge(task.state,boardStatus(task,route))}<span aria-hidden="true">→</span></a>`;
+  return `<a class="board-task-row" href="#board/${esc(task.id)}"><span class="board-task-copy"><strong>${esc(task.title)}</strong>${task.instructions?`<span class="board-task-preview">${esc(task.instructions)}</span>`:''}<span>${esc(boardPreset(task)?`由 ${task.preset_name} 负责`:route?.error?boardRoutingMessage(route.error):'群体自行安排合适的成员')}${task.parent_id?' 子任务':''}</span></span>${boardReuseBadge(task)}${badge(boardBadgeClass(task),boardStatus(task,route))}<span aria-hidden="true">→</span></a>`;
 }
 // —— 研究者折叠区：机制参数与原始记录 ——
 function boardTraceFieldPanel(task,tasks){
@@ -122,7 +131,7 @@ function boardEnergySummary(task){
   if(!task.energy)return '';
   const budget=Number(task.energy.budget)||0,available=Number(task.energy.available)||0;
   const used=budget?Math.max(0,Math.min(100,(budget-available)/budget*100)):0;
-  return `<div><span>花费</span><strong title="已耗 ${esc(task.energy.spent)} · 验收回充 ${esc(task.energy.refunded)}"><span class="progress-track energy-inline" role="img" aria-label="预算已用 ${Math.round(used)}%"><i style="width:${used.toFixed(1)}%"></i></span><small class="hint"> 还剩 ${available.toLocaleString()} / ${budget.toLocaleString()}</small></strong></div>`;
+  return `<div><span>花费</span><strong title="已耗 ${esc(task.energy.spent)} · 验收回充 ${esc(task.energy.refunded)}"><span class="progress-track energy-inline ${used>=80?'is-low':used>=50?'is-mid':''}" role="img" aria-label="预算已用 ${Math.round(used)}%"><i style="width:${used.toFixed(1)}%"></i></span><small class="hint"> 还剩 ${available.toLocaleString()} / ${budget.toLocaleString()}</small></strong></div>`;
 }
 function boardDetail(task,tasks){
   const children=tasks.filter(t=>t.parent_id===task.id),parent=tasks.find(t=>t.id===task.parent_id);
@@ -130,7 +139,7 @@ function boardDetail(task,tasks){
   const report=task.result||task.previous_result,result=typeof report==='string'?report:report?.output||report;
   const reuse=Number(task.reuse_count)||0;
   return `<a class="back-link" href="#board">← 任务板</a>`+head(esc(task.title), !boardTerminal.has(task.state)?button('取消任务','board-cancel',false,`data-id="${esc(task.id)}"`):'')+
-    `<div class="goal-summary"><div><span>进度</span>${badge(task.state,boardStatus(task,route))}</div><div><span>由谁负责</span><strong>${esc(boardPreset(task)?task.preset_name:'群体安排中')}</strong></div><div><span>子任务</span><strong>${children.filter(t=>t.state==='completed').length} / ${children.length}</strong></div>${boardEnergySummary(task)}</div>`+
+    `<div class="goal-summary"><div><span>进度</span>${badge(boardBadgeClass(task),boardStatus(task,route))}</div><div><span>由谁负责</span><strong>${esc(boardPreset(task)?task.preset_name:'群体安排中')}</strong></div><div><span>子任务</span><strong>${children.filter(t=>t.state==='completed').length} / ${children.length}</strong></div>${boardEnergySummary(task)}</div>`+
     (reuse?`<p class="hint">这份工作的成果已被同伴参考 ${reuse} 次。</p>`:'')+
     (routingError?`<div class="callout" role="status">${esc(boardRoutingMessage(route.error))}${route.retry_at?`。下次尝试 ${esc(time(route.retry_at))}`:''}${route.attempts?`，已尝试 ${esc(route.attempts)} 次`:''}。</div>`:'')+
     (task.error?`<div class="callout" role="status">${task.error==='energy_exhausted'?'预算耗尽，工作已停止。可取消后以更高预算重新发布。':esc(task.error)}</div>`:'')+
