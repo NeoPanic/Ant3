@@ -17,7 +17,7 @@
 
 `platform.board.read` 默认返回局部邻域（目标任务、已认领任务及其祖先与直接子任务），体现蚂蚁的局部视野；传 `scope:"all"` 可显式读取整根任务板。控制面与操作员视图不受此限制。
 
-发布根任务时可选启用**独立验证**：指定验证器母体与自动返工上限（0–2）。根任务执行成功后，平台冻结结果并启动一个全新实例（绝不复用产出者）按验收标准审计：验证器只能分页读取冻结结果（不可信证据）并提交一次不可变裁决。`passed` 须完整读完证据，自动写入验证器署名的通过评审并归档、沉积验收痕迹；`failed` 附结构化意见退回任务板，在预算内有界返工；`unknown` 与验证器失败/超时不算通过，预算耗尽交回人类评审。人类随时保留最终评审权。审计历史见任务详情与 `GET /api/board/tasks/{id}/audits`。
+发布根任务时可选启用**独立验证**：指定验证器 Preset 与自动返工上限（0–2）。根任务执行成功后，平台冻结结果并启动一个全新实例（绝不复用产出者）按验收标准审计：验证器只能分页读取冻结结果（不可信证据）并提交一次不可变裁决。`passed` 须完整读完证据，自动写入验证器署名的通过评审并归档、沉积验收痕迹；`failed` 附结构化意见退回任务板，在预算内有界返工；`unknown` 与验证器失败/超时不算通过，预算耗尽交回人类评审。人类随时保留最终评审权。审计历史见任务详情与 `GET /api/board/tasks/{id}/audits`。
 
 任务板同时维护[信息素痕迹场](traces.zh-CN.md)：完成、验收与复用自动增强任务痕迹，Agent 可沉积有界的 finding/path/blocker 信号，浓度随时间蒸发，供后来者按浓度分配注意力。痕迹场、能量账本与黑板裁决历史不内嵌于任务详情，统一在控制台"研究者视图"按任务展开查看。
 
@@ -43,7 +43,7 @@ CLI 共用 `--port`、`--data-dir` 配置，输出 JSON：
 ./target/debug/ant3 board review TASK_ID --file review.json --key review-1
 ```
 
-任务板尚未添加 MCP 工具；已有 MCP 入口提供实例、Run、消息、母体与插件操作。
+任务板尚未添加 MCP 工具；已有 MCP 入口提供实例、Run、消息、Preset 与插件操作。
 
 请求示例见 [board-task.json](../crates/ant3-cli/examples/board-task.json)：
 
@@ -80,7 +80,7 @@ export ANT3_ROUTER_BASE_URL=http://127.0.0.1:8000/v1
 cargo run --locked -p ant3-cli -- up
 ```
 
-未单独配置时，优先复用已配置的 Responses、OpenAI-compatible 或 Anthropic 服务。没有可用模型时显示未配置，不会回退到演示路由。启动不自动发布 Preset，需先在母体页发布适合任务的母体。
+未单独配置时，优先复用已配置的 Responses、OpenAI-compatible 或 Anthropic 服务。没有可用模型时显示未配置，不会回退到演示路由。启动不自动发布 Preset，需先在 Preset 页发布适合任务的 Preset。
 
 候选目录只包含能够使用默认参数实例化、执行模型已配置且所需进程插件允许运行的 Preset。任务板的 `read`、`claim`、`split`、`result`、`progress` 工具由运行时统一注入，无需在 Preset 中额外绑定。
 

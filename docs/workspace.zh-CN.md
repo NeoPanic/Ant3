@@ -18,7 +18,7 @@
 | `ant3-client` | 类型化 HTTP 客户端 | domain |
 | `ant3-cli` | 命令解析、输出与启动服务入口 | domain、client、server |
 
-domain 不依赖 SQLite、HTTP、异步执行或平台实现。存储错误由 storage 错误类型转换，HTTP 状态响应由 server 适配；错误代码和响应结构保持不变。需要读取已发布母体的策略校验仍在平台内执行。
+domain 不依赖 SQLite、HTTP、异步执行或平台实现。存储错误由 storage 错误类型转换，HTTP 状态响应由 server 适配；错误代码和响应结构保持不变。需要读取已发布 Preset 的策略校验仍在平台内执行。
 
 插件宿主依赖 `ant3_plugins::Repository`，平台 Store 实现六个操作：内置 ID 检查、插件读取、事务安装、健康记录、启停状态和事件记录。禁用状态提交与活动调用取消继续共用原有宿主锁；SQL 事务不移入插件 crate。
 

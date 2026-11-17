@@ -16,7 +16,7 @@
 
 ## 身份与第一方组织插件
 
-母体可显式绑定 `platform.messaging@1.0.0`，内置目录返回种类 `organization`、工具契约及内容摘要。发布时固定完整快照；同 ID 的外部包会被拒绝。无需开启 `--allow-process-plugins`，但没有绑定的 Agent 不会获得发送工具。
+Preset 可显式绑定 `platform.messaging@1.0.0`，内置目录返回种类 `organization`、工具契约及内容摘要。发布时固定完整快照；同 ID 的外部包会被拒绝。无需开启 `--allow-process-plugins`，但没有绑定的 Agent 不会获得发送工具。
 
 `platform.messaging.send({recipient_id,text,key})` 只接受接收者、正文和幂等 key。发送实例、来源 Run 与因果关系由宿主推导；Agent 不能在参数中自称其他身份。当前来源必须为未请求取消的运行中 Run，实例为 busy，并绑定宿主支持的精确能力快照。
 
@@ -51,4 +51,4 @@
 
 HTTP 写请求需要 `Idempotency-Key`。发送返回 202；正文是 `{"text":"请检查交接资料"}`，可增加 `correlation_id`、`causation_id`。处置正文为 `{"action":"discard","note":"取消这个尚未派发的请求"}` 或 `resolve`。MCP 写操作需要 `--allow-write`；发送可能触发付费模型调用。
 
-Web **协作消息**提供结构化发送表单、独立投递/消费列、因果封套、原始消息、消费 Run 链接和处置表单。列表轮询，详情手动刷新。母体发布表单可直接选择内置组织插件；点对点消息不自动寻找伙伴，向池外实例发送即按板根招募协作成员。
+Web **协作消息**提供结构化发送表单、独立投递/消费列、因果封套、原始消息、消费 Run 链接和处置表单。列表轮询，详情手动刷新。Preset 发布表单可直接选择内置组织插件；点对点消息不自动寻找伙伴，向池外实例发送即按板根招募协作成员。

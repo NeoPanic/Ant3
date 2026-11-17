@@ -33,11 +33,11 @@ Python 示例使用 `/usr/bin/python3`，不需要第三方包。其他语言可
 | files | 最多 32 个相对文件路径及对应小写 SHA-256；不列 manifest.json 自身 |
 | tools | 1–16 个 Tool；声明输入/输出 schema、mutates、parallel_safe |
 | timeout_ms | 单次工具调用 100–30,000 ms；握手另限 5 秒 |
-| instructions | 绑定该包时加入母体运行指令的文本 |
+| instructions | 绑定该包时加入 Preset 运行指令的文本 |
 
 包内禁止绝对路径、`.` / `..`、符号链接和特殊文件；声明文件合计最多 8 MiB，manifest 最多 128 KiB。安装先读取并校验字节，再写入 `.ant3/plugins/<digest>/`；缓存只包含 manifest 与明确列出的文件，未列出的源文件不参与运行。包摘要对规范化 manifest 计算，manifest 固定每个文件的摘要。缓存损坏或丢失会拒绝执行，需要操作者修复/重新部署缓存，不自动退回未验证源路径。
 
-安装成功后，发布 Preset 时用 `plugin: {id, version}` 或 `plugins` 数组引用。平台将完整 manifest、工具 schema、文件摘要与包摘要物化到 `plugin_snapshot`，既有实例和 Session 不随安装新版本变化。母体可使用 plugins 数组绑定多个提示词包与进程包；同 ID 只允许一个版本，工具重名会拒绝发布。继承、参数与多个绑定规则见 [母体组合](presets.zh-CN.md)。提示词包与进程包不能占用相同 ID。
+安装成功后，发布 Preset 时用 `plugin: {id, version}` 或 `plugins` 数组引用。平台将完整 manifest、工具 schema、文件摘要与包摘要物化到 `plugin_snapshot`，既有实例和 Session 不随安装新版本变化。Preset 可使用 plugins 数组绑定多个提示词包与进程包；同 ID 只允许一个版本，工具重名会拒绝发布。继承、参数与多个绑定规则见 [Preset 组合](presets.zh-CN.md)。提示词包与进程包不能占用相同 ID。
 
 每次工具调用前再次核验缓存摘要、版本和禁用状态。每次调用有独立进程与工作目录，同一包多个版本可并存。新版本健康检查失败不会修改已安装版本；切换/回滚通过发布引用目标版本的新 Preset 并创建新实例完成，不修改旧 Session 或撤销外部效果。
 
@@ -54,7 +54,7 @@ Python 示例使用 `/usr/bin/python3`，不需要第三方包。其他语言可
 ./target/debug/ant3 runs show run_REPLACE
 ```
 
-Web 的“插件与能力”可完成安装、检查契约、健康检查、启用/禁用；“母体 Presets”可选择进程包版本；Run 的请求快照、工具回执和运行事件可检查实际调用。`demo-inspector` 固定调用内置 `text.inspect`，不能用它证明模型会选择外部工具。
+Web 的“插件与能力”可完成安装、检查契约、健康检查、启用/禁用；“Presets”可选择进程包版本；Run 的请求快照、工具回执和运行事件可检查实际调用。`demo-inspector` 固定调用内置 `text.inspect`，不能用它证明模型会选择外部工具。
 
 ## RPC 与生命周期
 

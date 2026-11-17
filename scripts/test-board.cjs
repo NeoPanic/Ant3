@@ -15,7 +15,7 @@ Object.assign(context,{
 });
 vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/board/board.js'),'utf8'),context);
 
-test('发布表单只收集任务；执行母体不可选，验证器为可选细节',()=>{
+test('发布表单只收集任务；执行 Preset 不可选，验证器为可选细节',()=>{
   context.data={presets:[{name:'auditor',version:'1'}]};
   vm.runInContext('boardPublishForm()',context);
   assert(context.form.includes('name="instructions"'));

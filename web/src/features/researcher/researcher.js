@@ -17,7 +17,7 @@ function researcherFleetsSection(){
   if(id)return selectedFleet?.id===id?(selectedFleet.loadError?`<div class="callout" role="alert">${esc(selectedFleet.loadError)}</div>`:fleetPage(selectedFleet)):'<div class="loading">正在读取 Agent 池与操作…</div>';
   const fleets=data.fleets||[],capacity=data.capacity;
   return `<div class="quota-summary"><span>已占用或预留 <strong>${capacity.reserved} <span>/ ${capacity.limit}</span></strong></span><span>${capacity.active} 个实例未终止</span>${button('创建 Agent 池','spawn')}</div>`+
-    (fleets.length?table(['Agent 池 / 母体','策略','目标 / 当前','就绪 / 排空','状态','操作'],fleets.map(f=>`<tr><td><div class="primary-text">${esc(f.preset_name)} <span class="mono">@ ${esc(f.preset_version)}</span></div><div class="secondary-text mono">${esc(short(f.id))}</div></td><td>${f.mode==='maintain'?'持续维持':'有限批次'}</td><td class="mono">${f.desired_count} / ${f.current_count}</td><td class="mono">${f.ready_count} / ${f.draining_count}</td><td>${badge(f.state)}</td><td><a class="text-button" href="#fleet/${esc(f.id)}">查看成员</a></td></tr>`)):empty('还没有 Agent 池','群体自行召集成员时也会创建 Agent 池。'));
+    (fleets.length?table(['Agent 池 / Preset','策略','目标 / 当前','就绪 / 排空','状态','操作'],fleets.map(f=>`<tr><td><div class="primary-text">${esc(f.preset_name)} <span class="mono">@ ${esc(f.preset_version)}</span></div><div class="secondary-text mono">${esc(short(f.id))}</div></td><td>${f.mode==='maintain'?'持续维持':'有限批次'}</td><td class="mono">${f.desired_count} / ${f.current_count}</td><td class="mono">${f.ready_count} / ${f.draining_count}</td><td>${badge(f.state)}</td><td><a class="text-button" href="#fleet/${esc(f.id)}">查看成员</a></td></tr>`)):empty('还没有 Agent 池','群体自行召集成员时也会创建 Agent 池。'));
 }
 // —— 群体机制参数：游走池、经验阈值、模式开关 ——
 function researcherSwarmSection(){
@@ -25,9 +25,9 @@ function researcherSwarmSection(){
   const pool=colonyPool,experience=colonyExperience?.experience||[];
   const budget=Number(pool?.colony_budget)||0,spent=Number(pool?.colony_spent)||0;
   const poolTable=`<dl class="detail-kv"><dt>自选模式</dt><dd>${pool?.enabled?'开启':'关闭'}</dd><dt>待命池上限 / 实际</dt><dd class="mono">${esc(pool?.pool_max??'—')} / ${esc((pool?.peers||[]).length)}</dd><dt>选型模式</dt><dd class="mono">${esc(data.board?.router?.mode||'未提供')}</dd><dt>待命消耗</dt><dd class="mono">${esc(pool?.idle_burn_per_min??'—')} / 分钟</dd><dt>群体能量</dt><dd class="mono">${esc(Math.max(0,budget-spent))} / ${esc(budget)}</dd></dl>`;
-  const expTable=experience.length?table(['母体 / 版本','成功 / 失败','能量花费','能量效率','响应阈值'],experience.map(e=>`<tr><td class="mono wrap">${esc(e.preset_name)} @ ${esc(e.preset_version)}</td><td class="mono">${esc(e.successes)} / ${esc(e.failures)}</td><td class="mono">${esc(e.energy_spent)}</td><td class="mono">${esc(e.cost_efficiency)}</td><td class="mono">${esc(e.response_threshold)}</td></tr>`)):'<p class="hint">尚无经验记录。</p>';
+  const expTable=experience.length?table(['Preset / 版本','成功 / 失败','能量花费','能量效率','响应阈值'],experience.map(e=>`<tr><td class="mono wrap">${esc(e.preset_name)} @ ${esc(e.preset_version)}</td><td class="mono">${esc(e.successes)} / ${esc(e.failures)}</td><td class="mono">${esc(e.energy_spent)}</td><td class="mono">${esc(e.cost_efficiency)}</td><td class="mono">${esc(e.response_threshold)}</td></tr>`)):'<p class="hint">尚无经验记录。</p>';
   const peers=pool?.peers||[];
-  return poolTable+panel('母体经验与阈值',`<div class="panel-body">${expTable}</div>`)+(peers.length?`<details class="raw-data"><summary>游走池成员 JSON</summary>${dataView(peers)}</details>`:'');
+  return poolTable+panel('Preset 经验与阈值',`<div class="panel-body">${expTable}</div>`)+(peers.length?`<details class="raw-data"><summary>游走池成员 JSON</summary>${dataView(peers)}</details>`:'');
 }
 
 // —— 任务机制详情：按需读取单个根任务的痕迹场/能量账本/裁决历史 ——

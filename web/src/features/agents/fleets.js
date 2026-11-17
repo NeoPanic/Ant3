@@ -7,7 +7,7 @@ function fleetsPage(){
   const fleets=data.fleets||[],capacity=data.capacity;
   return head('Agent 池', button('创建 Agent 池','spawn',true))+
     `<div class="quota-summary"><span>已占用或预留 <strong>${capacity.reserved} <span>/ ${capacity.limit}</span></strong></span><span>${capacity.active} 个实例未终止 ${capacity.reserved-capacity.active} 个槽位待创建</span></div>`+
-    panel('最近 200 个 Agent 池',fleets.length?table(['Agent 池 / 母体','策略','目标 / 当前','就绪 / 排空','状态','操作'],fleets.map(f=>`<tr><td><div class="primary-text">${esc(f.preset_name)} <span class="mono">@ ${esc(f.preset_version)}</span></div><div class="secondary-text mono">${esc(short(f.id))}</div></td><td>${f.mode==='maintain'?'持续维持':'有限批次'}</td><td class="mono">${f.desired_count} / ${f.current_count}</td><td class="mono">${f.ready_count} / ${f.draining_count}</td><td>${badge(f.state)}</td><td><a class="text-button" href="#fleet/${esc(f.id)}">查看成员</a></td></tr>`)):empty('还没有 Agent 池','点击“创建 Agent 池”，选择固定母体版本及有限批次或持续维持策略。'));
+    panel('最近 200 个 Agent 池',fleets.length?table(['Agent 池 / Preset','策略','目标 / 当前','就绪 / 排空','状态','操作'],fleets.map(f=>`<tr><td><div class="primary-text">${esc(f.preset_name)} <span class="mono">@ ${esc(f.preset_version)}</span></div><div class="secondary-text mono">${esc(short(f.id))}</div></td><td>${f.mode==='maintain'?'持续维持':'有限批次'}</td><td class="mono">${f.desired_count} / ${f.current_count}</td><td class="mono">${f.ready_count} / ${f.draining_count}</td><td>${badge(f.state)}</td><td><a class="text-button" href="#fleet/${esc(f.id)}">查看成员</a></td></tr>`)):empty('还没有 Agent 池','点击“创建 Agent 池”，选择固定 Preset 版本及有限批次或持续维持策略。'));
 }
 function fleetPage(f){
   const terminal=['draining','terminated'].includes(f.state),pending=f.pending_operations>0;

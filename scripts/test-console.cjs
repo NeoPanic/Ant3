@@ -83,7 +83,7 @@ test('离开页面或关闭后，过期的产物与文件请求不再打开弹�
   }
 });
 
-test('母体独立定义默认选择可用协议，继承切换恢复必填状态并清除过期错误',()=>{
+test('Preset 独立定义默认选择可用协议，继承切换恢复必填状态并清除过期错误',()=>{
   const context=consoleContext();
   context.document={addEventListener(){},querySelector(){return null}};
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/presets/presets.js'),'utf8'),context);

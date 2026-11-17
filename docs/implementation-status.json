@@ -18,7 +18,7 @@
   },
   {
     "id": "preset-version",
-    "name": "不可变母体发布",
+    "name": "不可变 Preset 发布",
     "phase": "P1",
     "status": "implemented",
     "detail": "用途、目标、指令、模型协议与插件按版本锁定；保存原始发布定义、单继承来源和能力摘要。",
@@ -36,7 +36,7 @@
   },
   {
     "id": "preset-compose",
-    "name": "母体继承与参数化",
+    "name": "Preset 继承与参数化",
     "phase": "P2",
     "status": "partial",
     "detail": "固定版本单继承最多 16 层，参数 schema/默认值与创建时模板展开，最多 16 个插件的能力锁及冲突校验。没有主体权限收窄、预算/资源锁或在线升级。",
@@ -111,7 +111,7 @@
     "name": "受限 Agent 派生",
     "phase": "P2",
     "status": "partial",
-    "detail": "Agent 按批准母体/参数派生子任务，宿主绑定父任务、Run 和实例；最多 6 层、单次 8 项、每根 48 个后代，板根共 64 项。没有任意子树授权、迁移或分布式租约。",
+    "detail": "Agent 按批准 Preset/参数派生子任务，宿主绑定父任务、Run 和实例；最多 6 层、单次 8 项、每根 48 个后代，板根共 64 项。没有任意子树授权、迁移或分布式租约。",
     "source": [],
     "target": [
       "crates/ant3-domain/src/agents/"
@@ -177,7 +177,7 @@
     "name": "内置工具与提示词包",
     "phase": "P1",
     "status": "implemented",
-    "detail": "内置 text.inspect、web.fetch、web.search；搜索需配置 Brave API 密钥。插件页仅展示内置能力，母体绑定固定版本与摘要。",
+    "detail": "内置 text.inspect、web.fetch、web.search；搜索需配置 Brave API 密钥。插件页仅展示内置能力，Preset 绑定固定版本与摘要。",
     "source": [
       "plugins/src/lib.rs",
       "plugins/text/mod.rs",
@@ -220,7 +220,7 @@
     "name": "外部插件与热加载",
     "phase": "P2",
     "status": "partial",
-    "detail": "底层兼容接口支持本地进程包安装、内容寻址、调用前摘要检查、版本并存、母体快照、健康检查及禁用/取消。需显式启用，以系统用户运行；没有 MCP loader、watch、进程池、rollout、沙箱或作用域授权。",
+    "detail": "底层兼容接口支持本地进程包安装、内容寻址、调用前摘要检查、版本并存、Preset 快照、健康检查及禁用/取消。需显式启用，以系统用户运行；没有 MCP loader、watch、进程池、rollout、沙箱或作用域授权。",
     "source": [
       "crates/ant3-plugins/src/lib.rs",
       "crates/ant3-plugins/src/package.rs",
@@ -308,7 +308,7 @@
     "phase": "P2",
     "status": "implemented",
     "path": "emergence",
-    "detail": "母体经验自适应响应阈值（成功×1/1.25、确定失败×1.25，夹[0.05,0.95]基线0.5；结果未知与取消不计经验），并按能量效率缩放（每成功均耗能/预留单位，夹0.25–4）：便宜专家响应更弱刺激，昂贵母体需更强收益证据，经验统计随能力目录进入选型证据，操作员可查 /api/presets/experience。任务供给刺激=浓度/(1+同根活跃工作者数)，拥挤分支降权、跨分支分散；可选种子化概率探索（splitmix64）按刺激+1 抽样防锁死。选型接收最强 8 条痕迹的稀释刺激与拥挤数。阈值是证据不是权威，能力匹配优先。",
+    "detail": "Preset 经验自适应响应阈值（成功×1/1.25、确定失败×1.25，夹[0.05,0.95]基线0.5；结果未知与取消不计经验），并按能量效率缩放（每成功均耗能/预留单位，夹0.25–4）：便宜专家响应更弱刺激，昂贵 Preset 需更强收益证据，经验统计随能力目录进入选型证据，操作员可查 /api/presets/experience。任务供给刺激=浓度/(1+同根活跃工作者数)，拥挤分支降权、跨分支分散；可选种子化概率探索（splitmix64）按刺激+1 抽样防锁死。选型接收最强 8 条痕迹的稀释刺激与拥挤数。阈值是证据不是权威，能力匹配优先。",
     "source": [
       "crates/ant3-domain/src/division.rs",
       "crates/ant3-platform/src/scheduling/division.rs",
@@ -327,7 +327,7 @@
     "phase": "P2",
     "status": "implemented",
     "path": "emergence",
-    "detail": "ANT3_SELF_SELECT=1 时中央选型分类器完全退位：游走待命池（上限 8）按验证经验繁殖（Laplace 平滑份额，持续失败母体退役），空闲游走消耗群体能量（20/实例/分钟，群体池 20 万，耗尽退役全池）。每个待命个体按自己的成本调整阈值对开放任务做 s²/(s²+θ²) 概率响应（splitmix64 种子化），响应者原子竞争认领（先插 Run 后 UPDATE 门控，败者回滚）；控制面只保留容量/能量/原子性物理法则。自选 Run 幂等认领自己的工作；swarm.self_selected/peer_spawned/peer_retired/colony_starved 事件可审计；操作员视图 /api/swarm/pool。默认关闭，与选型模式可对照。",
+    "detail": "ANT3_SELF_SELECT=1 时中央选型分类器完全退位：游走待命池（上限 8）按验证经验繁殖（Laplace 平滑份额，持续失败 Preset 退役），空闲游走消耗群体能量（20/实例/分钟，群体池 20 万，耗尽退役全池）。每个待命个体按自己的成本调整阈值对开放任务做 s²/(s²+θ²) 概率响应（splitmix64 种子化），响应者原子竞争认领（先插 Run 后 UPDATE 门控，败者回滚）；控制面只保留容量/能量/原子性物理法则。自选 Run 幂等认领自己的工作；swarm.self_selected/peer_spawned/peer_retired/colony_starved 事件可审计；操作员视图 /api/swarm/pool。默认关闭，与选型模式可对照。",
     "source": [
       "crates/ant3-domain/src/division.rs",
       "crates/ant3-platform/src/scheduling/selfselect.rs",
@@ -403,7 +403,7 @@
     "name": "Web 执行证据检查",
     "phase": "P1",
     "status": "implemented",
-    "detail": "控制台以\"人类观察蚁群\"视角组织：观察（工作现场默认/蚁群花名册+一句话群体动态+开销收敛/成果库）、工作（任务板人话状态+被参考次数/需要你处理聚合人类决策点带角标）、设置（母体/插件/研究者视图）。机制参数（痕迹场/能量账本/裁决历史/原始 runs/events/实例/池/实现进度）默认折叠于研究者视图；旧 hash 重定向。任务板展示信息素痕迹浓度徽章与根任务痕迹场面板（按强度排序、沉积次数、半衰期），随轮询刷新；能力页按涌现路径分类展示进度。",
+    "detail": "控制台以\"人类观察蚁群\"视角组织：观察（工作现场默认/蚁群花名册+一句话群体动态+开销收敛/成果库）、工作（任务板人话状态+被参考次数/需要你处理聚合人类决策点带角标）、设置（Preset/插件/研究者视图）。机制参数（痕迹场/能量账本/裁决历史/原始 runs/events/实例/池/实现进度）默认折叠于研究者视图；旧 hash 重定向。任务板展示信息素痕迹浓度徽章与根任务痕迹场面板（按强度排序、沉积次数、半衰期），随轮询刷新；能力页按涌现路径分类展示进度。",
     "source": [
       "web/src/app/app.js",
       "web/src/features/studio/studio.js",

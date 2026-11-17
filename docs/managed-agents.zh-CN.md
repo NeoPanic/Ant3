@@ -45,7 +45,7 @@ Ant 是包含模型 / 工具循环、会话和回执的标准运行件；Preset 
 
 “收集 → 认领 → 行动 → 验证 → 整合”适合作为组织协作的逻辑阶段。阶段允许回退和并发，不能强制所有任务按固定五步选择工具。工具策略与任务分解可由模型决定，权限、状态转移、费用边界和证据校验由平台执行。
 
-规格覆盖母体/实例对象与状态、插件与三类模型协议、消息与委派、故障与恢复、权限/预算与评估。任务分配算法、复杂规划和长期记忆应作为可替换策略，与平台状态约束分离。
+规格覆盖 Preset/实例对象与状态、插件与三类模型协议、消息与委派、故障与恢复、权限/预算与评估。任务分配算法、复杂规划和长期记忆应作为可替换策略，与平台状态约束分离。
 
 参考入口：[ReAct](https://arxiv.org/abs/2210.03629)、[Actor Model of Computation](https://arxiv.org/abs/1008.1459)、[Lamport：Time, Clocks, and the Ordering of Events](https://lamport.azurewebsites.net/pubs/time-clocks.pdf)。这些是设计背景，不构成对 Ant³ 正确性或性能的证明。
 
@@ -64,7 +64,7 @@ Ant 是包含模型 / 工具循环、会话和回执的标准运行件；Preset 
 | 选型接入痕迹证据（不可信、能力匹配优先） | 环境梯度引导 | [自选](selfselect.zh-CN.md) |
 | 单/多 Agent 同任务对照与信息复用度量 | 群体收益的科学验证 | [评估](evaluation.zh-CN.md) |
 | 局部感知：Agent 默认只见邻域（目标/认领/祖先/子任务），scope=all 可选退出 | 蚂蚁的局部视野 | [任务板](task-board.zh-CN.md) |
-| 响应阈值分工：母体经验自适应阈值（成功降/失败升），选型按刺激-阈值响应 | 分工的响应阈值模型 | [自选](selfselect.zh-CN.md) |
+| 响应阈值分工：Preset 经验自适应阈值（成功降/失败升），选型按刺激-阈值响应 | 分工的响应阈值模型 | [自选](selfselect.zh-CN.md) |
 | 负反馈：失败路径降权、黑板冲突裁决、振荡抑制 | 死路放弃与反振荡 | [痕迹场](traces.zh-CN.md) |
 | 个体损失鲁棒性：有界重试、新个体接手 | 蚁群损失个体后仍收敛 | [任务板](task-board.zh-CN.md) |
 | 拥挤规避：同根活跃工作者稀释任务刺激，供给跨分支分散 | 拥挤与路径放弃 | [痕迹场](traces.zh-CN.md) |
@@ -109,9 +109,9 @@ flowchart TB
 
 | 对象 | 职责 |
 | --- | --- |
-| AgentPreset / PresetVersion | 用户定义的母体 Agent：主要功能、默认目标、指令、模型、插件、权限和资源配置；发布版本不可变，可有显式继承关系 |
+| AgentPreset / PresetVersion | 用户定义的 Preset Agent：主要功能、默认目标、指令、模型、插件、权限和资源配置；发布版本不可变，可有显式继承关系 |
 | SpawnOperation / AgentFleet | 一次批量创建的进度与结果，以及持续管理 N 个同类实例的实例组；记录期望数量、当前数量和扩缩容策略 |
-| AgentInstance | PresetVersion 的独立实例，含唯一 ID、实例参数、工作区、身份、生命周期与派生来源；不可变母体快照不与兄弟实例共享可变会话 |
+| AgentInstance | PresetVersion 的独立实例，含唯一 ID、实例参数、工作区、身份、生命周期与派生来源；不可变 Preset 快照不与兄弟实例共享可变会话 |
 | PluginPackage / PluginVersion / PluginBinding | 外部插件包、内容寻址的不可变版本，以及某 Preset/实例获准使用的能力和配置绑定 |
 | Worker / WorkerSlot | 执行容量与所有者身份；一个 Worker 可执行多个 Agent 的不同会话，不能把 Worker ID 当作 Agent ID |
 | BoardTask | 发布时无实例绑定的任务，包含要求、验收标准、根任务和拆分来源；选型、实例启动和认领分别留痕 |
@@ -168,15 +168,15 @@ stateDiagram-v2
 
 恢复至少区分三种情况：尚未开始的工作可重新认领；有完整回执的操作复用证据；已开始且结果未知的操作先对账或等待人工裁决。中断结算只是恢复协议的一步：宿主先证明旧运行已停止，再结算中断记录，之后显式创建续行事件。恢复记录与自动断点续跑需要分别定义。
 
-## 7. 母体 Agent、批量实例化与生命周期
+## 7. Preset Agent、批量实例化与生命周期
 
-### 7.1 Preset 是可发布的母体定义
+### 7.1 Preset 是可发布的 Preset 定义
 
-母体 Agent 用 `AgentPreset` 表达，是用户可维护的定义；`PresetVersion` 是校验后发布的不可变版本。定义包含主要功能、适用范围、预期目标/验收模板、系统指令、模型引用、插件依赖、工具与资源权限、默认预算以及实例参数 schema。Preset 与实例是定义和运行的关系；任务拆分来源保存在任务记录中，不定义平台通用的 Agent 权限等级。
+Preset Agent 用 `AgentPreset` 表达，是用户可维护的定义；`PresetVersion` 是校验后发布的不可变版本。定义包含主要功能、适用范围、预期目标/验收模板、系统指令、模型引用、插件依赖、工具与资源权限、默认预算以及实例参数 schema。Preset 与实例是定义和运行的关系；任务拆分来源保存在任务记录中，不定义平台通用的 Agent 权限等级。
 
-Preset 可以基于一个已发布版本衍生：发布时解析继承与参数，生成完整快照与依赖锁，保留 `extends` 来源以便比较。采用固定版本单继承，禁止循环；衍生版本只能在发布者获准的权限内调整能力。升级母体不自动改写既有实例的版本。实例化默认不复制母体作者或父实例的私有会话、凭证和外部操作身份；需要种子上下文时，必须显式提供获准的数据快照及来源。
+Preset 可以基于一个已发布版本衍生：发布时解析继承与参数，生成完整快照与依赖锁，保留 `extends` 来源以便比较。采用固定版本单继承，禁止循环；衍生版本只能在发布者获准的权限内调整能力。升级 Preset 不自动改写既有实例的版本。实例化默认不复制 Preset 作者或父实例的私有会话、凭证和外部操作身份；需要种子上下文时，必须显式提供获准的数据快照及来源。
 
-下面的声明式结构表达目标配置关系；具体可执行 JSON 格式见[母体定义](presets.zh-CN.md)：
+下面的声明式结构表达目标配置关系；具体可执行 JSON 格式见[Preset 定义](presets.zh-CN.md)：
 
 ```yaml
 api_version: ant3/v1
@@ -214,7 +214,7 @@ spec:
     ttl_seconds: 86400
 ```
 
-默认目标是可参数化的任务意图，实例创建不会自动宣告正在处理某项任务。调用者可以只创建待命实例，由任务板选型与认领绑定实际工作。平台将实例参数、实际目标与最终配置快照记录下来；具体任务的验收标准可以比母体模板更严格。
+默认目标是可参数化的任务意图，实例创建不会自动宣告正在处理某项任务。调用者可以只创建待命实例，由任务板选型与认领绑定实际工作。平台将实例参数、实际目标与最终配置快照记录下来；具体任务的验收标准可以比 Preset 模板更严格。
 
 ### 7.2 控制面对外提供 N 实例启动 API
 
@@ -237,7 +237,7 @@ Content-Type: application/json
 
 控制面先校验 Preset 与插件锁、参数、调用者权限、实例数配额和预算范围，持久化 SpawnOperation/AgentFleet 与实例槽位，再由协调循环逐步创建实例。幂等键约束请求作用域与内容指纹，`(fleet_id, slot, generation)` 唯一键避免重试时重复创建。大批量创建按有界批次推进，API 必须暴露部分就绪、失败原因和当前数量。
 
-`desired_count` 表示用户希望保有的非终结实例数量；实际正在执行的数量还受 Worker 容量和队列限制。实例参数和生命周期覆盖项只能在母体允许的范围内收窄权限与资源，不能借创建请求扩大能力。实例创建后处于待命，不强制常驻模型连接或占用 Worker。扩容调整 desired_count；缩容先标记选中实例 drain，停止派发新工作，按可配置期限等待收尾，必要时进入取消/未知结果处理，随后退休。缩容到零仍保留实例组、历史与产物。
+`desired_count` 表示用户希望保有的非终结实例数量；实际正在执行的数量还受 Worker 容量和队列限制。实例参数和生命周期覆盖项只能在 Preset 允许的范围内收窄权限与资源，不能借创建请求扩大能力。实例创建后处于待命，不强制常驻模型连接或占用 Worker。扩容调整 desired_count；缩容先标记选中实例 drain，停止派发新工作，按可配置期限等待收尾，必要时进入取消/未知结果处理，随后退休。缩容到零仍保留实例组、历史与产物。
 
 实例组策略区分 `maintain` 与 `finite`，创建请求显式选择，交互界面默认 finite：maintain 持续补足非终结实例数量；finite 只创建本批指定数量，完成或 TTL 到期后不补建，报告批次终态。显式终止整个实例组会停止其协调循环；单独终止 maintain 组中的实例会触发补建，必须在 API/UI 明示。实例初始化失败按有界重试处理，权限不足或配置错误不会无限补建。
 
@@ -343,11 +343,11 @@ permissions:
 
 | 操作 | HTTP 目标接口 | CLI 目标命令 | MCP 目标工具 | Web |
 | --- | --- | --- | --- | --- |
-| 发布母体版本 | `POST /v1/presets/{name}/versions` | `presets publish -f preset.yaml` | `presets_publish` | Preset 编辑、版本比较 |
-| 批量启动 N 个实例 | `POST /v1/agent-fleets` | `agents spawn --preset researcher@1.0.0 --count 20` | `agents_spawn` | 母体选择、数量、实例参数 |
+| 发布 Preset 版本 | `POST /v1/presets/{name}/versions` | `presets publish -f preset.yaml` | `presets_publish` | Preset 编辑、版本比较 |
+| 批量启动 N 个实例 | `POST /v1/agent-fleets` | `agents spawn --preset researcher@1.0.0 --count 20` | `agents_spawn` | Preset 选择、数量、实例参数 |
 | 查询实例组 | `GET /v1/agent-fleets/{id}` | `agents fleet inspect ID` | `agent_fleets_get` | 期望/当前数量、就绪进度 |
 | 扩缩容 | `POST /v1/agent-fleets/{id}/scale` | `agents scale ID --count 5` | `agents_scale` | 数量调整、drain 进度 |
-| 查询实例 | `GET /v1/agent-instances/{id}` | `agents inspect ID` | `agents_get` | 身份、母体版本、生命周期 |
+| 查询实例 | `GET /v1/agent-instances/{id}` | `agents inspect ID` | `agents_get` | 身份、Preset 版本、生命周期 |
 | 实例生命周期动作 | `POST /v1/agent-instances/{id}/actions` | `agents suspend/resume/stop/start/terminate ID` | `agents_transition` | 暂停、恢复、终止与操作进度 |
 | 安装/发布插件 | `POST /v1/plugins` | `plugins install ./plugin` | `plugins_install` | 来源、版本、能力、权限审查 |
 | 切换插件绑定 | `POST /v1/plugin-rollouts` | `plugins rollout --fleet ID --lock bindings.lock` | `plugins_rollout` | 分批切换、排空、回滚 |
@@ -358,7 +358,7 @@ permissions:
 | 取消任务 | `POST /board/tasks/{id}/cancel` | `board cancel ID` | 任务板工具（规划中） | 取消与收尾状态 |
 | 读取工作区快照 | `GET /v1/workspace-artifacts/{id}` | 暂未提供 | 暂未提供 | 预览、下载、来源 |
 
-安装插件、发布母体、扩缩容与运行任务分别授权。MCP 客户端获得普通任务权限时不能顺带获得插件进程启动或平台管理权限。客户端可查询 `GET /v1/operations/{id}` 并通过持久事件追踪操作结果。
+安装插件、发布 Preset、扩缩容与运行任务分别授权。MCP 客户端获得普通任务权限时不能顺带获得插件进程启动或平台管理权限。客户端可查询 `GET /v1/operations/{id}` 并通过持久事件追踪操作结果。
 
 写命令返回 receipt 与对象 ID；后续查询负责读取运行结果。HTTP 对异步接受返回 202，MCP tool call 返回结构化 receipt，CLI 可通过 `--wait` 追踪；三者不能混淆“已接受”和“已完成”。错误结构统一包含 code、message、retryability、operation_id，区分确定失败和结果未知。
 
@@ -368,11 +368,11 @@ MCP Server 的 stdio 与 Streamable HTTP 传输映射到同一应用服务。std
 
 ## 11. 本地启动与首次体验
 
-本地交付以单个守护进程装配 SQLite、嵌入式 Worker pool、静态 Web、插件宿主和演示母体。默认监听 loopback，生成或复用本地访问凭证；重复启动复用数据目录，重启保留已提交状态。平台 token 与模型 API Key 分离，不把长期凭证放入 URL、启动日志或对象快照。启动不依赖外部数据库、Node 开发服务器、云账号或向量库。
+本地交付以单个守护进程装配 SQLite、嵌入式 Worker pool、静态 Web、插件宿主和演示 Preset。默认监听 loopback，生成或复用本地访问凭证；重复启动复用数据目录，重启保留已提交状态。平台 token 与模型 API Key 分离，不把长期凭证放入 URL、启动日志或对象快照。启动不依赖外部数据库、Node 开发服务器、云账号或向量库。
 
 确定性演示与真实模型使用同一控制面、调度和证据链路，但界面必须明确区分：演示验证执行契约，真实模型执行研究或行动。模型配置限定三类协议，密钥从环境变量或受保护配置读取。可执行启动命令见[使用指南](getting-started.zh-CN.md)。
 
-Web 面向桌面操作，按 **场景 → 协作 → 运行 → 配置** 分层。默认从任务板发布工作，观察选型、启动、认领、拆分和结果。详情按需下钻到实例、Run、工具回执和事件。同板根的消息、工作区快照与独立验证在对应页面展示。Agent 池表达同一母体实例的供应与生命周期。
+Web 面向桌面操作，按 **场景 → 协作 → 运行 → 配置** 分层。默认从任务板发布工作，观察选型、启动、认领、拆分和结果。详情按需下钻到实例、Run、工具回执和事件。同板根的消息、工作区快照与独立验证在对应页面展示。Agent 池表达同一 Preset 实例的供应与生命周期。
 
 首个体验应覆盖目标提交、并行执行、证据交接、验证与验收，并可检查取消和重启后的状态。界面区分操作已接纳、正在执行、等待依赖、待验收和结果未知，提供来源 Run 与不可变产物链接。API、CLI、MCP 与 Web 使用相同对象 ID，不能为演示维护另一套业务状态。
 
@@ -404,7 +404,7 @@ ant3/
 │   │       └── policy.rs / trace.rs / transport.rs / work.rs
 │   ├── ant3-domain/               # 平台对象、状态机、不变量；不依赖 HTTP/SQL
 │   │   └── src/
-│   │       ├── presets/               # 母体、版本、继承、参数与发布规则
+│   │       ├── presets/               # Preset、版本、继承、参数与发布规则
 │   │       ├── agents/                # 实例、实例组、谱系与生命周期状态
 │   │       ├── operations/            # 批量创建、扩缩容、升级等异步操作
 │   │       ├── board/                 # BoardTask、拆分来源、认领与评审状态
@@ -416,7 +416,7 @@ ant3/
 │   │       └── events/                # 平台事件、审计事实、幂等键与错误分类
 │   ├── ant3-platform/             # 应用服务与控制面协调，不直接实现入口协议
 │   │   └── src/
-│   │       ├── commands/              # 发布母体、SpawnFleet、ScaleFleet 等用例
+│   │       ├── commands/              # 发布 Preset、SpawnFleet、ScaleFleet 等用例
 │   │       ├── queries/               # 列表、详情、分页、快照与操作进度
 │   │       ├── control/
 │   │       │   ├── presets.rs / spawn.rs / lineage.rs
@@ -497,7 +497,7 @@ ant3/
 │   ├── text/                          # 文本统计
 │   ├── web-fetch/                     # 公开网页读取
 │   └── web-search/                    # Brave Search 接入
-├── presets/                           # 开箱可用的母体，可在用户空间衍生
+├── presets/                           # 开箱可用的 Preset，可在用户空间衍生
 │   ├── coordinator/                   # 每项含 preset.yaml、instructions.md、参数 schema
 │   ├── researcher/
 │   └── reviewer/
@@ -527,7 +527,7 @@ ant3/
 │   └── governance/                    # 身份、预算、审计、保留期与评估协议
 ├── crates/ant3-core/examples/
 │   ├── quickstart.rs                  # 保留独立内核示例
-│   ├── presets/researcher/            # 自定义母体、参数与发布/启动示例
+│   ├── presets/researcher/            # 自定义 Preset、参数与发布/启动示例
 │   ├── plugins/
 │   │   ├── text-inspector/           # 本地进程文本统计示例
 │   │   │   └── worker.py / manifest.json
@@ -555,7 +555,7 @@ ant3/
     ├── implementation-status.json / capabilities.zh-CN.md
     ├── task-board.zh-CN.md / traces.zh-CN.md / workspaces.zh-CN.md
     ├── getting-started/               # 安装、demo、三类模型配置、真实模型运行
-    ├── concepts/                      # 母体/实例/Worker/会话/插件/组织模型
+    ├── concepts/                      # Preset/实例/Worker/会话/插件/组织模型
     ├── guides/                        # 批量启动、衍生、扩缩容、插件开发/热加载
     ├── reference/                     # API、CLI、MCP、配置与错误码
     └── operations/                    # 备份、恢复、升级、预算与故障处置

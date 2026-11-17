@@ -4,7 +4,7 @@
 
 ## 文件交接流程
 
-1. 使用绑定 `platform.workspace@1.0.0` 的母体创建两个或更多实例。
+1. 使用绑定 `platform.workspace@1.0.0` 的 Preset 创建两个或更多实例。
 2. 研究 Agent 用 `platform.workspace.write` 写入 `research/evidence.md`。
 3. 用 `platform.workspace.publish` 发布该文件，获得稳定的 `fileartifact_...` ID，并在任务输出或消息里引用这个 ID。
 4. 同板根 Agent 用 `platform.workspace.artifacts` 查找文件产物，用 `platform.workspace.read_artifact` 读取原文和来源状态。
@@ -12,7 +12,7 @@
 
 工作区工具也适用于普通独立 Run；没有共享板根时，工具只能读取本实例发布的文件快照。Web 操作者可检查所有实例工作区与已发布快照。
 
-## 母体绑定与工具
+## Preset 绑定与工具
 
 ```json
 {
@@ -29,7 +29,7 @@
 }
 ```
 
-`demo` 仅用于离线工具链演示，真实调研应采用已配置模型的母体。
+`demo` 仅用于离线工具链演示，真实调研应采用已配置模型的 Preset。
 
 | 工具 | 输入 | 作用 |
 |---|---|---|

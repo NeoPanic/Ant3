@@ -2,7 +2,7 @@
 
 Ant³ 将共同目标、Agent 身份、能力、贡献与评审组织成可管理的执行过程。持久工作流为这些过程提供执行基础：保存已完成工作，协调依赖和等待，处理取消、重启与结果未知。两者的关系是领域模型与执行机制的组合。
 
-[Temporal 的 Durable AI 文档](https://docs.temporal.io/ai) 将 Agent 应用、处理流水线和内部 Agent 平台列为典型场景。Ant³ 的组织与调度需求与内部 Agent 平台重合，但 Agent 身份、母体、能力绑定和证据验收仍由平台领域定义。
+[Temporal 的 Durable AI 文档](https://docs.temporal.io/ai) 将 Agent 应用、处理流水线和内部 Agent 平台列为典型场景。Ant³ 的组织与调度需求与内部 Agent 平台重合，但 Agent 身份、Preset、能力绑定和证据验收仍由平台领域定义。
 
 | 工作流概念 | Ant³ 领域对应 | 需要明确的契约 |
 | --- | --- | --- |

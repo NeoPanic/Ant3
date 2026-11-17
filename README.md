@@ -71,7 +71,7 @@ cargo run --locked -p ant3-cli -- up
 
 Open [localhost:7333](http://127.0.0.1:7333) and sign in with the contents of `.ant3/token`. Then:
 
-1. Configure a model provider and publish a Preset in **母体 Presets**.
+1. Configure a model provider and publish a Preset in **Presets**.
 2. Publish work + acceptance criteria in **任务板** (Task Board).
 3. Watch the colony take it from there; collect results in **成果库** and handle the few things that need you in **需要你处理**.
 

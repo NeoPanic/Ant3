@@ -5,7 +5,7 @@
 ## 启动与使用
 
 - [入门指南](getting-started.zh-CN.md)：本地启动、模型配置与任务发布。
-- 控制台以"人类观察蚁群"视角组织：观察（工作现场/蚁群/成果库）、工作（任务板/需要你处理）、设置（母体/插件/研究者视图）；机制参数默认折叠于研究者视图。
+- 控制台以"人类观察蚁群"视角组织：观察（工作现场/蚁群/成果库）、工作（任务板/需要你处理）、设置（Preset/插件/研究者视图）；机制参数默认折叠于研究者视图。
 - [共享任务板](task-board.zh-CN.md)：任务先发布，控制面动态选型，Agent 认领、拆分与回投。
 - [客户端示例](../crates/ant3-cli/examples/)：CLI 计划文件与 MCP 配置。
 
@@ -28,7 +28,7 @@
 
 | 主题 | 内容 |
 | --- | --- |
-| [母体组合](presets.zh-CN.md) | 固定版本继承、参数和插件绑定 |
+| [Preset 组合](presets.zh-CN.md) | 固定版本继承、参数和插件绑定 |
 | [共享任务板](task-board.zh-CN.md) | 无实例绑定发布、Preset 选型、原子认领与拆分 |
 | [信息素痕迹场](traces.zh-CN.md) | 浓度、增强、蒸发与有界 Agent 信号 |
 | [涌现评估基线](evaluation.zh-CN.md) | 单/多 Agent 同任务对照与信息复用指标 |
@@ -38,7 +38,7 @@
 | [文件工作区](workspaces.zh-CN.md) | 私有文件与同板根快照共享 |
 | [进程插件](process-plugins.zh-CN.md) | 包格式、安装、绑定与执行契约 |
 
-插件示例：[文本统计](../crates/ant3-plugins/examples/text-inspector/)、[HTTP 读取](../crates/ant3-plugins/examples/http-reader/)、[文件交接母体](../crates/ant3-plugins/examples/workspace-preset/)。
+插件示例：[文本统计](../crates/ant3-plugins/examples/text-inspector/)、[HTTP 读取](../crates/ant3-plugins/examples/http-reader/)、[文件交接 Preset](../crates/ant3-plugins/examples/workspace-preset/)。
 
 官方内置插件（文本统计、网页读取、网页搜索）统一放在根目录 [`plugins/`](../plugins/README.md)，与协议、SDK、宿主实现及教学示例分开维护。
 
