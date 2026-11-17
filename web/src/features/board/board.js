@@ -102,7 +102,7 @@ function boardDetail(task,tasks){
     `<div class="goal-summary"><div><span>进度</span>${badge(boardBadgeClass(task),boardStatus(task,route))}</div><div><span>由谁负责</span><strong>${esc(boardPreset(task)?task.preset_name:'群体安排中')}</strong></div><div><span>子任务</span><strong>${children.filter(t=>t.state==='completed').length} / ${children.length}</strong></div>${boardEnergySummary(task)}</div>`+
     (reuse?`<p class="hint">这份工作的成果已被同伴参考 ${reuse} 次。</p>`:'')+
     (routingError?`<div class="callout" role="status">${esc(boardRoutingMessage(route.error))}${route.retry_at?`。下次尝试 ${esc(time(route.retry_at))}`:''}${route.attempts?`，已尝试 ${esc(route.attempts)} 次`:''}。</div>`:'')+
-    (task.error?`<div class="callout" role="status">${task.error==='energy_exhausted'?'预算耗尽，工作已停止。可取消后以更高预算重新发布。':esc(task.error)}</div>`:'')+
+    (task.error?`<div class="callout" role="status">${task.error==='energy_exhausted'?'预算耗尽，工作已停止。可取消后以更高预算重新发布。':task.error==='board_run_failed'?'这次执行没有完成，工作已重新开放给群体。':task.error==='interrupted_outcome_unknown'?'执行结果无法确认，请核对后再决定。':task.error==='board_agent_did_not_claim'?'成员没有接下这项工作，已重新开放。':esc('这次工作未能完成，已记录以便排查。')}</div>`:'')+
     (task.progress?panel('工作进展',`<div class="panel-body record-text">${esc(task.progress.message)}</div>`):'')+
     panel('任务要求',`<div class="panel-body"><dl class="definition"><dt>目标</dt><dd>${esc(task.instructions)}</dd><dt>验收标准</dt><dd>${esc(task.acceptance)}</dd>${parent?`<dt>拆分来源</dt><dd><a href="#board/${esc(parent.id)}">${esc(parent.title)}</a></dd>`:''}</dl></div>`)+
     (children.length?panel('拆分后的任务',`<div class="board-task-list">${children.map(boardTaskRow).join('')}</div>`):'')+

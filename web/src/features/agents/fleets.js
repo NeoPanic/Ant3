@@ -17,7 +17,7 @@ function fleetPage(f){
     (pending?'<p role="status">操作协调中，完成后可调整数量。</p>':'')+
     panel('成员与补建记录',table(['位置','创建代次','是否补足','当前实例','状态','检查'],f.slots.map(s=>`<tr><td class="mono">${s.slot}</td><td class="mono">${s.generation}</td><td>${s.enabled?'纳入目标数量':'已移出'}</td><td class="mono wrap">${esc(s.instance_id||'等待创建')}</td><td>${s.state?badge(s.state):badge('pending','等待创建')}</td><td>${s.instance_id&&data.instances.some(a=>a.id===s.instance_id)?`<button class="text-button" data-action="agent-detail" data-id="${esc(s.instance_id)}">实例 ↗</button>`:'—'}</td></tr>`)))+
     panel('最近 20 次操作',f.operations.length?table(['操作 ID','动作','目标数 / 配置版本','状态','接纳时间','结算时间'],f.operations.map(o=>`<tr><td class="mono wrap">${esc(o.id)}</td><td>${esc({create:'创建',scale:'扩缩容',terminate:'终止'}[o.kind]||o.kind)}</td><td class="mono">${o.target_count} / ${o.revision}</td><td>${badge(o.state,o.state==='pending'?'等待协调':undefined)}</td><td>${time(o.created_at)}</td><td>${time(o.finished_at)}</td></tr>`)):empty('历史批次','由早期版本迁移的 Agent 池保留槽位与实例历史，没有伪造操作回执。'))+
-    `<details class="raw-data" id="fleet-metadata"><summary>Agent 池身份与协调状态</summary>${identity('Fleet ID',f.id)}${dataView(f)}</details>`;
+    `<details class="raw-data" id="fleet-metadata"><summary>Agent 池身份与协调状态</summary><dl class="detail-kv"><dt>Fleet ID</dt><dd class="mono wrap">${esc(f.id)}</dd><dt>模版</dt><dd class="mono wrap">${esc(f.preset_name)} @ ${esc(f.preset_version)}</dd><dt>策略</dt><dd>${f.mode==='maintain'?'持续维持':'有限批次'} · 目标 ${esc(f.desired_count)} · 当前 ${esc(f.current_count)}</dd><dt>创建时间</dt><dd>${time(f.created_at)}</dd></dl></details>`;
 }
 function fleetActionForm(id,stop){
   const f=selectedFleet?.id===id?selectedFleet:(data.fleets||[]).find(f=>f.id===id);if(!f)return;
