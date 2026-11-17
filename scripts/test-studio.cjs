@@ -175,29 +175,11 @@ test('接力默认选中活跃板根，详情展示验收标准、被参考次�
   vm.runInContext('studio.selectedTask=null',context);
 });
 
-test('现场底部展示最近 5 条群体动态一句话，忽略待命消耗',()=>{
+test('工作现场不展示群体动态条，动态归属蚁群页',()=>{
   context.data=sceneFixture();
-  context.events=[
-    {kind:'board.task_claimed',subject:'t2',data:{instance_id:'agent-b'},at:1},
-    {kind:'board.trace_deposited',subject:'t2',data:{reason:'reuse'},at:2},
-    {kind:'board.energy_posted',subject:'colony',data:{kind:'idle_burn'},at:3},
-    {kind:'swarm.peer_spawned',subject:'f',data:{},at:4},
-    {kind:'run.started',subject:'r',data:{},at:5},
-    {kind:'board.task_split',subject:'t2',data:{parent_id:'t2',task_ids:['a','b']},at:6},
-    {kind:'swarm.colony_starved',subject:'colony',data:{},at:7},
-    {kind:'board.audit_settled',subject:'t2',data:{state:'passed'},at:8},
-  ];
-  context.input=sceneFixture();
-  context.input.board={tasks:[{id:'t2',root_id:'t2',title:'检查数据',state:'running',instance_id:'agent-b'}]};
-  context.data=context.input;
+  context.events=[{kind:'board.task_claimed',subject:'t2',data:{instance_id:'agent-b'},at:1}];
   const html=vm.runInContext('studioPage()',context);
-  assert(html.includes('群体动态'));
-  assert(html.includes('独立质检通过'));
-  assert(html.includes('群体预算耗尽，成员休息'));
-  assert(html.includes('被拆成2份独立工作'));
-  assert(html.includes('群体补充了新成员'));
-  assert(html.includes('一份成果被同伴参考'));
-  assert(!html.includes('idle_burn'));
-  assert.equal((html.match(/<li>/g)||[]).length,5);
-  context.events=[];
+  assert(!html.includes('群体动态'));
+  assert(!html.includes('studio-swarm-strip'));
 });
+

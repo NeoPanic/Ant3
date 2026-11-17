@@ -76,15 +76,7 @@ function studioPage(){
     <header class="studio-hud"><div class="studio-station-name"><span class="studio-station-mark" aria-hidden="true">◉</span><h1>夜航工作站</h1></div><div class="studio-tabs" role="group" aria-label="现场视图">${[['network','工作舱'],['tasks','接力'],['architecture','系统']].map(([key,title])=>`<button id="studio-view-${key}" data-action="studio-view" data-id="${key}" aria-pressed="${studio.view===key}" class="${studio.view===key?'active':''}">${title}</button>`).join('')}</div><div class="studio-live"><span id="studio-sync" role="status"></span><button class="studio-icon-button" data-action="studio-pause" title="${studio.paused?'继续实时同步':'暂停画面'}" aria-label="${studio.paused?'继续实时同步':'暂停画面'}">${studio.paused?'▶':'Ⅱ'}</button><button class="studio-icon-button" data-action="studio-fullscreen" title="全屏 / 退出全屏" aria-label="全屏 / 退出全屏">⛶</button></div></header>
     <div class="studio-scene-wrap">${studio.view==='architecture'?studioArchitecture(snapshot):studio.view==='tasks'?studioTasks(snapshot):studioNetwork(snapshot)}${selected||task?`<aside class="studio-inspect" aria-label="${task?'任务':'Agent'}详情"><button class="studio-inspect-close" data-action="studio-dismiss" aria-label="收起详情">×</button>${task?studioTaskDetail(goal,task,snapshot):studioAgentDetail(snapshot,selected.id)}</aside>`:''}</div>
     <footer class="studio-bottom-hud"><div class="studio-status-counts"><span><i class="count-busy"></i>${busy} 工作</span><span><i class="count-ready"></i>${active.filter(a=>a.state==='ready').length} 待命</span><span><i class="count-queued"></i>${queued} 排队</span></div><span class="studio-bottom-note">${studio.view==='architecture'?'结构示意':studio.view==='tasks'?'连线 任务拆分':'点选队员'}</span><a href="#board" class="studio-log-link" title="发布任务">${icon('plus')}<span class="sr-only">发布任务</span></a></footer>
-    ${studioSwarmStrip()}
   </div>`;
-}
-
-// 场景下方的群体动态：最近 5 条一句话，让观察者不看机制也能读懂协作。
-function studioSwarmStrip(){
-  const snapshot=studio.paused?.data||data,feed=swarmFeed(studio.paused?.events||events,5,snapshot);
-  if(!feed.length)return '';
-  return `<div class="studio-swarm-strip" role="log" aria-label="群体动态"><span class="studio-swarm-label">群体动态</span><ul>${feed.map(item=>`<li><span>${esc(item.text)}</span><small>${time(item.at)}</small></li>`).join('')}</ul><a href="#colony">全部动态 →</a></div>`;
 }
 
 function studioEventName(kind){
