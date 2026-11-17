@@ -6,6 +6,7 @@ pub use ant3_domain::limits;
 pub use ant3_models as models;
 pub use ant3_plugins as plugins;
 pub mod scheduling;
+pub mod settings;
 pub mod storage;
 pub mod workspaces;
 

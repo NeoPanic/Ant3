@@ -31,3 +31,9 @@ CREATE INDEX IF NOT EXISTS messages_sender ON messages(sender_instance_id,seq);
 CREATE INDEX IF NOT EXISTS messages_source_run ON messages(source_run_id);
 CREATE TABLE IF NOT EXISTS workspace_artifacts(id TEXT PRIMARY KEY,instance_id TEXT NOT NULL REFERENCES instances(id),run_id TEXT NOT NULL REFERENCES runs(id),kind TEXT NOT NULL,name TEXT NOT NULL,path TEXT,media_type TEXT NOT NULL,content TEXT NOT NULL,digest TEXT NOT NULL,bytes INTEGER NOT NULL,created_at INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS workspace_commands(run_id TEXT NOT NULL REFERENCES runs(id),command_key TEXT NOT NULL,fingerprint TEXT NOT NULL,response TEXT NOT NULL,PRIMARY KEY(run_id,command_key));
+-- Operator-tunable runtime mechanics (see ant3_platform::settings).
+CREATE TABLE IF NOT EXISTS settings(
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);

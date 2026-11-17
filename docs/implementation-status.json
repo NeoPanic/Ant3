@@ -556,5 +556,22 @@
     "verification": "existing-tests",
     "scope": "deferred",
     "path": "support"
+  },
+  {
+    "id": "runtime-settings",
+    "name": "运行时机制参数",
+    "phase": "P3",
+    "status": "implemented",
+    "detail": "痕迹半衰期、上限与感知阈值，探索排序，自选池容量与待命消耗，能量默认值与回充等参数持久化；保存后从下一次调度、沉积或结算生效。",
+    "source": [
+      "crates/ant3-platform/src/settings.rs",
+      "web/src/features/researcher/researcher.js"
+    ],
+    "target": [
+      "crates/ant3-platform/src/settings.rs"
+    ],
+    "verification": "native-tests-and-browser",
+    "scope": "current",
+    "path": "support"
   }
 ]

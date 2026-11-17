@@ -190,7 +190,7 @@ impl Router {
         processes: bool,
         cancel: CancellationToken,
     ) -> PResult<()> {
-        if std::env::var("ANT3_SELF_SELECT").is_ok_and(|v| v == "1") {
+        if store.settings_config()?.self_select.enabled {
             // Self-selection mode: peers claim work themselves; the central
             // classifier stands down entirely.
             return Ok(());

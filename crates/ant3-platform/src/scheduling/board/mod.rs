@@ -2,6 +2,7 @@
 mod tools;
 use crate::{
     domain::*,
+    settings::Settings,
     store::{Store, event},
 };
 use rusqlite::{OptionalExtension, Transaction, TransactionBehavior, params};
@@ -110,7 +111,7 @@ fn task(tx: &Transaction<'_>, id: &str) -> PResult<Value> {
         json!(rows)
     } else { json!([]) };
     value["energy"] = if value["parent_id"].is_null() {
-        let (budget,reserved,spent,refunded):(i64,i64,i64,i64)=tx.query_row("SELECT budget,reserved,spent,refunded FROM board_energy WHERE root_id=?",[id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?))).optional()?.unwrap_or((crate::energy::ENERGY_DEFAULT,0,0,0));
+        let (budget,reserved,spent,refunded):(i64,i64,i64,i64)=tx.query_row("SELECT budget,reserved,spent,refunded FROM board_energy WHERE root_id=?",[id],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?))).optional()?.unwrap_or((Settings::load(tx)?.energy.default_budget,0,0,0));
         json!({"budget":budget,"spent":spent,"refunded":refunded,"available":budget+refunded-spent-reserved})
     } else { Value::Null };
     value["trace"] = crate::traces::trace_view(tx, value["root_id"].as_str().unwrap(), id)?
@@ -178,7 +179,7 @@ fn insert_task(
         tx.execute("UPDATE board_tasks SET verification=? WHERE id=?",params![serde_json::to_string(v)?,id])?;
     }
     if parent.is_none() {
-        crate::energy::init(tx,id,input.energy_budget.unwrap_or(crate::energy::ENERGY_DEFAULT))?;
+        crate::energy::init(tx,id,input.energy_budget.unwrap_or(Settings::load(tx)?.energy.default_budget))?;
     }
     event(
         tx,
@@ -288,6 +289,7 @@ impl Store {
     }
     pub fn board_pending(&self) -> PResult<Vec<Value>> {
         self.board_transaction(|tx| {
+            let settings=Settings::load(tx)?;
             let mut stmt=tx.prepare("SELECT id,root_id,created_at FROM board_tasks WHERE state='pending' AND route_state='unassigned' ORDER BY created_at,rowid LIMIT 64")?;
             let candidates=stmt.query_map([],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,i64>(2)?)))?.collect::<Result<Vec<_>,_>>()?;
             drop(stmt);
@@ -313,10 +315,10 @@ impl Store {
             let mut funded=Vec::new();
             for entry in entries {
                 let root:String=tx.query_row("SELECT root_id FROM board_tasks WHERE id=?",[&entry.0],|r|r.get(0))?;
-                if crate::energy::available(tx,&root)?>=crate::energy::ENERGY_RESERVE && cooled(tx,&entry.0)? { funded.push(entry); }
+                if crate::energy::available(tx,&root)?>=settings.energy.reserve && cooled(tx,&entry.0)? { funded.push(entry); }
             }
             let entries=funded;
-            let explore=std::env::var("ANT3_BOARD_EXPLORATION").is_ok_and(|v|v=="1");
+            let explore=settings.traces.exploration;
             let order=crate::domain::traces::offer_order(&entries,explore,now() as u64);
             order.iter().map(|id|task(tx,id)).collect()
         })
@@ -557,7 +559,7 @@ impl Store {
                         tx.execute("UPDATE board_tasks SET result=? WHERE id=?",params![report,claimed])?;
                         if state=="completed" {
                             let cost:Option<i64>=tx.query_row("SELECT amount FROM energy_ledger WHERE run_id=? AND kind IN ('settle','settle_unknown')",[&run],|r|r.get(0)).optional()?;
-                            crate::division::record_outcome(tx,&preset_name,&preset_version,true,cost.unwrap_or(crate::energy::ENERGY_UNKNOWN_COST))?;
+                            crate::division::record_outcome(tx,&preset_name,&preset_version,true,cost.unwrap_or(Settings::load(tx)?.energy.unknown_cost))?;
                             crate::traces::deposit(tx,t["root_id"].as_str().unwrap(),claimed,crate::domain::traces::RESULT_TRACE_KIND,crate::domain::traces::TRACE_COMPLETION_AMOUNT,"completion",Some(&run))?;
                             // Recruitment: success amplifies the trails this Run
                             // signposted, recruiting peers toward used paths.
@@ -575,7 +577,7 @@ impl Store {
                                 event(tx,"board.children_activated",claimed,json!({"source_run_id":run,"count":activated}))?;
                             } else {
                                 settle(tx,claimed,"completed",None)?;
-                                crate::energy::refund(tx,t["root_id"].as_str().unwrap(),Some(&run),"complete_refund",crate::energy::ENERGY_COMPLETE_REFUND)?;
+                                crate::energy::refund(tx,t["root_id"].as_str().unwrap(),Some(&run),"complete_refund",Settings::load(tx)?.energy.complete_refund)?;
                                 if t["parent_id"].is_null() {
                                     let fresh=task(tx,claimed)?;
                                     crate::audit::maybe_start(tx,claimed,&fresh["verification"],fresh["acceptance"].as_str().unwrap(),&fresh["result"])?;
@@ -589,7 +591,7 @@ impl Store {
                             // path. Outcome-unknown Runs are not definite failures.
                             if failed_state=="failed" {
                                 let cost:Option<i64>=tx.query_row("SELECT amount FROM energy_ledger WHERE run_id=? AND kind IN ('settle','settle_unknown')",[&run],|r|r.get(0)).optional()?;
-                                crate::division::record_outcome(tx,&preset_name,&preset_version,false,cost.unwrap_or(crate::energy::ENERGY_UNKNOWN_COST))?;
+                                crate::division::record_outcome(tx,&preset_name,&preset_version,false,cost.unwrap_or(Settings::load(tx)?.energy.unknown_cost))?;
                                 crate::traces::penalize_failure(tx,root,claimed,Some(&run))?;
                             }
                             // Individual-loss robustness: a definitely-failed task

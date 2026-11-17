@@ -1,7 +1,7 @@
 use super::status::capabilities;
 use super::*;
 pub(super) async fn snapshot(State(app): State<App>) -> PResult<Json<Value>> {
-    let mut value = json!({"messages":app.store.recent_messages()?,"builtin_plugins":ant3_platform::organization::packages(),"builtin_plugin_status":ant3_builtin_plugins::status(),"process_plugins":app.store.process_plugins()?,"process_plugin_execution":app.plugins.is_enabled(),"capacity":app.store.capacity()?,"fleets":app.store.fleets()?,"presets":app.store.list("presets")?,"plugins":app.store.list("plugins")?,"instances":app.store.list("instances")?,"runs":app.store.list("runs")?,"capabilities":capabilities(),"models":app.models.describe(),"limits":{"instances":ant3_platform::limits::INSTANCES,"workers":ant3_platform::limits::WORKERS,"runs_displayed":100,"collection_limit":200,"board_tasks_per_root":ant3_platform::limits::BOARD_TASKS_PER_ROOT,"board_split_depth":ant3_platform::limits::BOARD_SPLIT_DEPTH,"board_split_children":ant3_platform::limits::BOARD_SPLIT_CHILDREN},"version":env!("CARGO_PKG_VERSION")});
+    let mut value = json!({"messages":app.store.recent_messages()?,"builtin_plugins":ant3_platform::organization::packages(),"builtin_plugin_status":ant3_builtin_plugins::status(),"process_plugins":app.store.process_plugins()?,"process_plugin_execution":app.plugins.is_enabled(),"capacity":app.store.capacity()?,"fleets":app.store.fleets()?,"presets":app.store.list("presets")?,"plugins":app.store.list("plugins")?,"instances":app.store.list("instances")?,"runs":app.store.list("runs")?,"capabilities":capabilities(),"models":app.models.describe(),"limits":{"instances":ant3_platform::limits::INSTANCES,"workers":ant3_platform::limits::WORKERS,"runs_displayed":100,"collection_limit":200,"board_tasks_per_root":ant3_platform::limits::BOARD_TASKS_PER_ROOT,"board_split_depth":ant3_platform::limits::BOARD_SPLIT_DEPTH,"board_split_children":ant3_platform::limits::BOARD_SPLIT_CHILDREN},"settings":app.store.settings()?,"version":env!("CARGO_PKG_VERSION")});
     value["board"] = board_value(&app)?;
     Ok(Json(value))
 }
@@ -223,6 +223,17 @@ pub(super) async fn preset_delete(
     Path((name, version)): Path<(String, String)>,
 ) -> PResult<Json<Value>> {
     Ok(Json(app.store.delete_preset(&name, &version)?))
+}
+
+pub(super) async fn settings(State(app): State<App>) -> PResult<Json<Value>> {
+    Ok(Json(app.store.settings()?))
+}
+
+pub(super) async fn update_settings(
+    State(app): State<App>,
+    Json(input): Json<Value>,
+) -> PResult<Json<Value>> {
+    Ok(Json(app.store.update_settings(input)?))
 }
 
 pub(super) async fn events(

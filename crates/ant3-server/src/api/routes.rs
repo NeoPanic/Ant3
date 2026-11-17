@@ -267,6 +267,7 @@ pub fn router(app: App) -> Router {
             }),
         )
         .route("/api/v1/events", get(events))
+        .route("/api/v1/settings", get(settings).post(update_settings))
         .fallback(spa_fallback)
         .layer(DefaultBodyLimit::max(128 * 1024))
         .layer(middleware::from_fn_with_state(app.clone(), guard))

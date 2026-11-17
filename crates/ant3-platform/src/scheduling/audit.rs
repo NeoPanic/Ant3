@@ -9,6 +9,7 @@
 //! can review any result, and exhausted budgets fall back to human review.
 use crate::{
     domain::*,
+    settings::Settings,
     store::{Store, event},
 };
 use ant3::{CancellationToken, Context, Error, Result as HResult, Tool, ToolOutput, ToolSpec};
@@ -303,7 +304,7 @@ fn advance(tx: &Transaction<'_>, id: &str) -> PResult<()> {
             )?;
             settle(tx, &job, "passed", None)?;
             tx.execute("DELETE FROM board_rework_chains WHERE task_id=?", [&task_id])?;
-            crate::energy::refund(tx, task["root_id"].as_str().unwrap(), job["run_id"].as_str(), "accept_refund", crate::energy::ENERGY_ACCEPT_REFUND)?;
+            crate::energy::refund(tx, task["root_id"].as_str().unwrap(), job["run_id"].as_str(), "accept_refund", Settings::load(tx)?.energy.accept_refund)?;
             crate::traces::deposit(
                 tx,
                 task["root_id"].as_str().unwrap(),

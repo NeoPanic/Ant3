@@ -85,7 +85,7 @@ impl Store {
             // Roots predating energy pools (or created before this fix) get
             // the default budget; idempotent on every open.
             tx.execute("INSERT OR IGNORE INTO board_energy(root_id,budget) SELECT id,? FROM board_tasks WHERE parent_id IS NULL",[crate::energy::ENERGY_DEFAULT])?;
-            tx.execute_batch("PRAGMA user_version=27;")?;
+            tx.execute_batch("PRAGMA user_version=28;")?;
             Ok(())
         })?;
         Ok(store)

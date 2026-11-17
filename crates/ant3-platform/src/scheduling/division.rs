@@ -3,7 +3,7 @@
 //! Successes lower a preset's response threshold, definite failures raise it;
 //! outcome-unknown and cancelled Runs are not experience. The selector reads
 //! these statistics as evidence — the threshold model never grants authority.
-use crate::{domain::*, store::Store};
+use crate::{domain::*, settings::Settings, store::Store};
 use rusqlite::{OptionalExtension, Transaction, params};
 use serde_json::{Value, json};
 
@@ -38,18 +38,18 @@ fn stats(tx: &Transaction<'_>, name: &str, version: &str) -> PResult<(u32, u32, 
 
 /// Mean energy per success relative to the reservation unit; neutral 1.0
 /// until a preset has both successes and recorded spend.
-fn efficiency(successes: u32, energy_spent: i64) -> f64 {
+fn efficiency(successes: u32, energy_spent: i64, reserve: i64) -> f64 {
     if successes == 0 || energy_spent <= 0 {
         return 1.0;
     }
-    (energy_spent as f64 / successes as f64) / crate::energy::ENERGY_RESERVE as f64
+    (energy_spent as f64 / successes as f64) / reserve.max(1) as f64
 }
 
 /// Experience evidence for one catalog entry: counts, adaptive threshold.
 pub(crate) fn evidence(tx: &Transaction<'_>, name: &str, version: &str) -> PResult<Value> {
     let (successes, failures, energy_spent) = stats(tx, name, version)?;
     let base = response_threshold(successes, failures);
-    let eff = efficiency(successes, energy_spent);
+    let eff = efficiency(successes, energy_spent, Settings::load(tx)?.energy.reserve);
     Ok(json!({
         "successes": successes,
         "failures": failures,
@@ -67,6 +67,7 @@ impl Store {
             let mut stmt = tx.prepare(
                 "SELECT preset_name,preset_version,successes,failures,energy_spent FROM preset_experience ORDER BY preset_name,preset_version",
             )?;
+            let reserve = Settings::load(tx)?.energy.reserve;
             let rows = stmt
                 .query_map([], |r| {
                     Ok((
@@ -79,7 +80,7 @@ impl Store {
                 })?
                 .map(|row| {
                     let (name, version, successes, failures, energy_spent) = row?;
-                    let eff = efficiency(successes, energy_spent);
+                    let eff = efficiency(successes, energy_spent, reserve);
                     Ok(json!({
                         "preset_name": name,
                         "preset_version": version,

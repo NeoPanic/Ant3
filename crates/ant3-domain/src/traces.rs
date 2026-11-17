@@ -58,13 +58,24 @@ impl TraceInput {
 /// Quantized to six decimals: pheromone signals are low-bandwidth, and short
 /// decimal values round-trip exactly through JSON session storage.
 pub fn effective_strength(strength: f64, updated_at: i64, now: i64) -> f64 {
+    effective_strength_with(strength, updated_at, now, TRACE_HALF_LIFE_MS)
+}
+
+/// Configurable evaporation: `half_life_ms` comes from operator settings.
+pub fn effective_strength_with(strength: f64, updated_at: i64, now: i64, half_life_ms: i64) -> f64 {
+    let life = half_life_ms.max(1) as f64;
     let age = now.saturating_sub(updated_at).max(0) as f64;
-    quantize((strength * 0.5_f64.powf(age / TRACE_HALF_LIFE_MS as f64)).max(0.0))
+    quantize((strength * 0.5_f64.powf(age / life)).max(0.0))
 }
 
 /// Reinforce with saturation. Callers must evaporate the old strength first.
 pub fn reinforce(strength: f64, amount: f64) -> f64 {
-    quantize((strength + amount).clamp(0.0, TRACE_MAX_STRENGTH))
+    reinforce_with(strength, amount, TRACE_MAX_STRENGTH)
+}
+
+/// Configurable saturation cap.
+pub fn reinforce_with(strength: f64, amount: f64, max_strength: f64) -> f64 {
+    quantize((strength + amount).clamp(0.0, max_strength))
 }
 
 /// Negative feedback: penalize a failed path, floored at zero.

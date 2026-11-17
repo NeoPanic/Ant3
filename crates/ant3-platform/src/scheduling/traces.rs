@@ -7,6 +7,7 @@
 use crate::{
     board::{active_scope, receipt, replay},
     domain::*,
+    settings::Settings,
     store::{Store, event},
 };
 use rusqlite::{OptionalExtension, Transaction, params};
@@ -34,10 +35,11 @@ fn apply(
             |r| Ok((r.get(0)?, r.get(1)?)),
         )
         .optional()?;
+    let cfg = Settings::load(tx)?.traces;
     let base = existing
-        .map(|(strength, updated_at)| effective_strength(strength, updated_at, at))
+        .map(|(strength, updated_at)| effective_strength_with(strength, updated_at, at, cfg.half_life_ms()))
         .unwrap_or(0.0);
-    let strength = reinforce(base, amount);
+    let strength = reinforce_with(base, amount, cfg.max_strength);
     tx.execute(
         "INSERT INTO board_traces(root_id,key,kind,strength,deposits,created_at,updated_at) VALUES(?,?,?,?,1,?,?)
          ON CONFLICT(root_id,key) DO UPDATE SET strength=excluded.strength,deposits=deposits+1,updated_at=excluded.updated_at",
@@ -147,8 +149,9 @@ pub(crate) fn penalize_failure(
             |r| Ok((r.get(0)?, r.get(1)?)),
         )
         .optional()?;
+    let half_life = Settings::load(tx)?.traces.half_life_ms();
     let base = existing
-        .map(|(strength, updated_at)| effective_strength(strength, updated_at, at))
+        .map(|(strength, updated_at)| effective_strength_with(strength, updated_at, at, half_life))
         .unwrap_or(0.0);
     let strength = penalize(base, TRACE_FAILURE_PENALTY);
     tx.execute(
@@ -176,11 +179,12 @@ pub(crate) fn trace_view(tx: &Transaction<'_>, root: &str, key: &str) -> PResult
             |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
         )
         .optional()?;
+    let half_life = Settings::load(tx)?.traces.half_life_ms();
     Ok(row.map(|(kind, strength, deposits, created_at, updated_at)| {
         json!({
             "key": key,
             "kind": kind,
-            "strength": effective_strength(strength, updated_at, now()),
+            "strength": effective_strength_with(strength, updated_at, now(), half_life),
             "raw_strength": strength,
             "deposits": deposits,
             "created_at": created_at,
@@ -202,6 +206,7 @@ fn traces_in(tx: &Transaction<'_>, root: &str) -> PResult<Value> {
         "SELECT key,kind,strength,deposits,created_at,updated_at FROM board_traces WHERE root_id=?",
     )?;
     let at = now();
+    let cfg = Settings::load(tx)?.traces;
     let mut entries = stmt
         .query_map([root], |r| {
             Ok((
@@ -218,7 +223,7 @@ fn traces_in(tx: &Transaction<'_>, root: &str) -> PResult<Value> {
             Ok(json!({
                 "key": key,
                 "kind": kind,
-                "strength": effective_strength(strength, updated_at, at),
+                "strength": effective_strength_with(strength, updated_at, at, cfg.half_life_ms()),
                 "raw_strength": strength,
                 "deposits": deposits,
                 "created_at": created_at,
@@ -235,8 +240,8 @@ fn traces_in(tx: &Transaction<'_>, root: &str) -> PResult<Value> {
     Ok(json!({
         "root_id": root,
         "traces": entries,
-        "half_life_ms": TRACE_HALF_LIFE_MS,
-        "max_strength": TRACE_MAX_STRENGTH,
+        "half_life_ms": cfg.half_life_ms(),
+        "max_strength": cfg.max_strength,
     }))
 }
 
@@ -249,8 +254,9 @@ impl Store {
     /// trails at or above `min_strength` are returned; `None` means the
     /// default perception threshold. Pass 0.0 to see everything.
     pub fn read_board_traces(&self, run: &str, min_strength: Option<f64>) -> PResult<Value> {
-        let threshold = min_strength.unwrap_or(PERCEPTION_THRESHOLD);
-        if !(0.0..=TRACE_MAX_STRENGTH).contains(&threshold) {
+        let cfg = self.settings_config()?.traces;
+        let threshold = min_strength.unwrap_or(cfg.perception_threshold);
+        if !(0.0..=cfg.max_strength).contains(&threshold) {
             return Err(fault(400, "invalid_perception_threshold"));
         }
         self.board_transaction(|tx| {

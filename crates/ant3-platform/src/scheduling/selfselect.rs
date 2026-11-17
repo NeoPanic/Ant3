@@ -8,19 +8,13 @@
 //! burns energy from a colony pool; sustained-failure presets are retired.
 use crate::{
     domain::*,
+    settings::{SelfSelectSettings, Settings},
     store::{Store, event},
 };
 use rusqlite::{OptionalExtension, Transaction, params};
 use serde_json::{Value, json};
 
-pub use ant3_domain::division::{IDLE_BURN_PER_MIN, POOR_PRESET_FAILURES, SELF_SELECT_POOL_MAX, pool_targets, responds};
-
-/// Colony energy pool for idle wandering (root_id NULL ledger rows).
-const COLONY_BUDGET: i64 = 200_000;
-
-fn enabled() -> bool {
-    std::env::var("ANT3_SELF_SELECT").is_ok_and(|v| v == "1")
-}
+pub use ant3_domain::division::{pool_targets, responds};
 
 fn experience(tx: &Transaction<'_>) -> PResult<Vec<(String, u32, u32)>> {
     // Only presets whose model protocol can actually run are eligible; the
@@ -38,9 +32,9 @@ fn experience(tx: &Transaction<'_>) -> PResult<Vec<(String, u32, u32)>> {
 
 /// Maintain the wandering pool toward reproduction targets. Returns the
 /// number of standing idle instances after maintenance.
-fn maintain_pool(tx: &Transaction<'_>) -> PResult<usize> {
+fn maintain_pool(tx: &Transaction<'_>, cfg: &SelfSelectSettings) -> PResult<usize> {
     let exp = experience(tx)?;
-    let targets = pool_targets(&exp, SELF_SELECT_POOL_MAX);
+    let targets = pool_targets(&exp, cfg.pool_max as usize);
     // Retire idle instances of presets no longer targeted.
     let mut stmt = tx.prepare(
         "SELECT i.id,i.preset_name FROM instances i WHERE i.state='ready' AND EXISTS(SELECT 1 FROM wander_stock w JOIN fleet_slots s ON s.instance_id=i.id WHERE w.fleet_id=s.fleet_id)",
@@ -120,16 +114,22 @@ fn maintain_pool(tx: &Transaction<'_>) -> PResult<usize> {
 /// One self-selection sweep: maintain the pool, burn idle energy, and let
 /// each idle peer respond to open tasks by its own threshold.
 pub(crate) fn sweep(tx: &Transaction<'_>) -> PResult<()> {
-    sweep_with(tx, enabled())
+    let settings = Settings::load(tx)?;
+    sweep_with_settings(tx, settings.self_select.enabled, &settings)
 }
 
 /// Explicit-mode sweep (tests and operator overrides pass the flag directly).
 pub(crate) fn sweep_with(tx: &Transaction<'_>, on: bool) -> PResult<()> {
+    let settings = Settings::load(tx)?;
+    sweep_with_settings(tx, on, &settings)
+}
+
+fn sweep_with_settings(tx: &Transaction<'_>, on: bool, settings: &Settings) -> PResult<()> {
     if !on {
         return Ok(());
     }
-    let standing = maintain_pool(tx)?;
-    burn_idle(tx, standing)?;
+    let standing = maintain_pool(tx, &settings.self_select)?;
+    burn_idle(tx, standing, &settings.self_select)?;
     // Open tasks: pending, unassigned, funded, cooled — same physics as routing.
     let mut stmt = tx.prepare(
         "SELECT id,root_id FROM board_tasks WHERE state='pending' AND route_state='unassigned' ORDER BY created_at,rowid LIMIT 32",
@@ -161,7 +161,7 @@ pub(crate) fn sweep_with(tx: &Transaction<'_>, on: bool) -> PResult<()> {
         z as f64 / u64::MAX as f64
     };
     for (task_id, root) in &open {
-        if crate::energy::available(tx, root)? < crate::energy::ENERGY_RESERVE {
+        if crate::energy::available(tx, root)? < settings.energy.reserve {
             continue;
         }
         if !crate::board::cooled(tx, task_id)? {
@@ -243,7 +243,7 @@ fn claim_open(tx: &Transaction<'_>, c: Claim<'_>) -> PResult<()> {
 }
 
 /// Idle wandering burns colony energy; a starved colony retires its pool.
-fn burn_idle(tx: &Transaction<'_>, standing: usize) -> PResult<()> {
+fn burn_idle(tx: &Transaction<'_>, standing: usize, cfg: &SelfSelectSettings) -> PResult<()> {
     if standing == 0 {
         return Ok(());
     }
@@ -258,13 +258,13 @@ fn burn_idle(tx: &Transaction<'_>, standing: usize) -> PResult<()> {
         return Ok(());
     }
     let minutes = elapsed / 60_000;
-    let cost = (standing as i64) * IDLE_BURN_PER_MIN * minutes;
+    let cost = (standing as i64) * cfg.idle_burn_per_min * minutes;
     let spent: i64 = tx.query_row(
         "SELECT coalesce(sum(amount),0) FROM energy_ledger WHERE root_id='colony' AND kind='idle_burn'",
         [],
         |r| r.get(0),
     )?;
-    if spent + cost > COLONY_BUDGET {
+    if spent + cost > cfg.colony_budget {
         // Colony starved: retire all wandering stock.
         let mut stmt = tx.prepare(
             "SELECT i.id FROM instances i WHERE i.state='ready' AND EXISTS(SELECT 1 FROM wander_stock w JOIN fleet_slots s ON s.instance_id=i.id WHERE w.fleet_id=s.fleet_id)",
@@ -274,14 +274,14 @@ fn burn_idle(tx: &Transaction<'_>, standing: usize) -> PResult<()> {
         for agent in agents {
             crate::lifecycle::drain(tx, &agent, false)?;
         }
-        event(tx, "swarm.colony_starved", "colony", json!({"budget":COLONY_BUDGET,"spent":spent}))?;
+        event(tx, "swarm.colony_starved", "colony", json!({"budget":cfg.colony_budget,"spent":spent}))?;
         return Ok(());
     }
     tx.execute(
         "INSERT INTO energy_ledger(root_id,run_id,kind,amount,balance,created_at) VALUES('colony',NULL,'idle_burn',?,?,?)",
-        params![cost, COLONY_BUDGET - spent - cost, at],
+        params![cost, cfg.colony_budget - spent - cost, at],
     )?;
-    event(tx, "board.energy_posted", "colony", json!({"kind":"idle_burn","amount":cost,"standing":standing,"available":COLONY_BUDGET - spent - cost}))?;
+    event(tx, "board.energy_posted", "colony", json!({"kind":"idle_burn","amount":cost,"standing":standing,"available":cfg.colony_budget - spent - cost}))?;
     Ok(())
 }
 
@@ -305,13 +305,14 @@ impl Store {
                 [],
                 |r| r.get(0),
             )?;
+            let settings = Settings::load(tx)?;
             Ok(json!({
-                "enabled": enabled(),
+                "enabled": settings.self_select.enabled,
                 "peers": peers,
-                "pool_max": SELF_SELECT_POOL_MAX,
-                "colony_budget": COLONY_BUDGET,
+                "pool_max": settings.self_select.pool_max,
+                "colony_budget": settings.self_select.colony_budget,
                 "colony_spent": spent,
-                "idle_burn_per_min": IDLE_BURN_PER_MIN,
+                "idle_burn_per_min": settings.self_select.idle_burn_per_min,
             }))
         })
     }

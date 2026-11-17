@@ -6,6 +6,7 @@
 //! being offered and its pending tasks are culled with an explicit reason.
 use crate::{
     domain::*,
+    settings::Settings,
     store::{Store, event},
 };
 use rusqlite::{OptionalExtension, Transaction, params};
@@ -58,14 +59,15 @@ fn ledger(
 
 /// Reserve energy for a dispatched Run. Fails when the pool is starved.
 pub(crate) fn reserve(tx: &Transaction<'_>, root: &str, run: &str) -> PResult<()> {
-    if available(tx, root)? < ENERGY_RESERVE {
+    let reserve = Settings::load(tx)?.energy.reserve;
+    if available(tx, root)? < reserve {
         return Err(fault(409, "energy_exhausted"));
     }
     tx.execute(
         "UPDATE board_energy SET reserved=reserved+? WHERE root_id=?",
-        params![ENERGY_RESERVE, root],
+        params![reserve, root],
     )?;
-    ledger(tx, root, Some(run), "reserve", ENERGY_RESERVE)
+    ledger(tx, root, Some(run), "reserve", reserve)
 }
 
 /// Settle a finished Run: release the reservation and bill actual usage.
@@ -102,10 +104,11 @@ pub(crate) fn settle(tx: &Transaction<'_>, run: &str, report: &Value) -> PResult
         [run],
         |r| r.get(0),
     )?;
+    let settings = Settings::load(tx)?.energy;
     if reserved {
         tx.execute(
             "UPDATE board_energy SET reserved=MAX(reserved-?,0) WHERE root_id=?",
-            params![ENERGY_RESERVE, root],
+            params![settings.reserve, root],
         )?;
     }
     let usage = &report["usage"];
@@ -113,9 +116,9 @@ pub(crate) fn settle(tx: &Transaction<'_>, run: &str, report: &Value) -> PResult
         let input = usage["input"].as_u64().unwrap_or(0);
         let output = usage["output"].as_u64().unwrap_or(0);
         let cached = usage["cached_input"].as_u64();
-        (usage_cost(input, output, cached), "settle")
+        (usage_cost_with(input, output, cached, settings.tokens_per_energy), "settle")
     } else {
-        (ENERGY_UNKNOWN_COST, "settle_unknown")
+        (settings.unknown_cost, "settle_unknown")
     };
     tx.execute(
         "UPDATE board_energy SET spent=spent+? WHERE root_id=?",
@@ -137,7 +140,7 @@ pub(crate) fn refund(tx: &Transaction<'_>, root: &str, run: Option<&str>, kind: 
 /// A starved root stops being offered: pending unassigned tasks are culled
 /// with an explicit reason; running work settles normally (already reserved).
 pub(crate) fn cull_if_starved(tx: &Transaction<'_>, root: &str) -> PResult<()> {
-    if available(tx, root)? >= ENERGY_RESERVE {
+    if available(tx, root)? >= Settings::load(tx)?.energy.reserve {
         return Ok(());
     }
     let mut stmt = tx.prepare(
@@ -180,7 +183,7 @@ impl Store {
                 "spent": spent,
                 "refunded": refunded,
                 "available": budget + refunded - spent - reserved,
-                "reserve_per_run": ENERGY_RESERVE,
+                "reserve_per_run": Settings::load(tx)?.energy.reserve,
                 "ledger": entries,
             }))
         })

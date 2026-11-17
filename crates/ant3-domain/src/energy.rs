@@ -25,8 +25,13 @@ pub const TOKENS_PER_ENERGY: i64 = 10;
 
 /// Energy cost of a model usage report. Unknown usage bills conservatively.
 pub fn usage_cost(input: u64, output: u64, cached_input: Option<u64>) -> i64 {
+    usage_cost_with(input, output, cached_input, TOKENS_PER_ENERGY)
+}
+/// Configurable variant of `usage_cost` (tokens per energy from settings).
+pub fn usage_cost_with(input: u64, output: u64, cached_input: Option<u64>, tokens_per_energy: i64) -> i64 {
+    let per = tokens_per_energy.max(1);
     let billable = input.saturating_sub(cached_input.unwrap_or(0)) + output;
-    let cost = (billable as i64 + TOKENS_PER_ENERGY - 1) / TOKENS_PER_ENERGY;
+    let cost = (billable as i64 + per - 1) / per;
     cost.max(1)
 }
 

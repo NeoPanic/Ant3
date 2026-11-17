@@ -42,6 +42,7 @@
 | API / CLI / MCP 入口 | 部分实现 | 原生测试 + Web 联调 | HTTP/Web、共享本地客户端、CLI 与 MCP stdio 共用状态；40 个 MCP 工具，默认开放 20 个查询工具。没有 MCP resources、Streamable HTTP、细粒度授权、并发取消或 CLI --wait。 |
 | 实时事件与查询 | 部分实现 | 原生测试 | 持久事件游标与 Web 轮询；没有 SSE、通用列表游标或统一事件订阅契约。 |
 | 发行、生态与验收套件 | 部分实现 | 原生测试 | 提供社区文档、CI 和源码本地启动；没有完整发行物/容器交付或插件分发生态；单/多 Agent 确定性对照基线已落地，真实模型对照未实现。 |
+| 运行时机制参数 | 已实现 | 原生测试 + Web 联调 | 痕迹半衰期、上限与感知阈值，探索排序，自选池容量与待命消耗，能量默认值与回充等参数持久化；保存后从下一次调度、沉积或结算生效。 |
 
 ## 治理与规模化
 
@@ -86,6 +87,7 @@
 | 远程控制面与 PostgreSQL | 尚无实现模块 | `crates/ant3-storage/src/`<br>`crates/ant3-worker/src/backends/` |
 | 涌现评估基线 | `crates/ant3-server/tests/evaluation.rs`<br>`docs/evaluation.zh-CN.md` | `tests/evaluation/` |
 | 发行、生态与验收套件 | `.github/workflows/check.yml`<br>`docs/getting-started.zh-CN.md` | `deploy/`<br>`examples/`<br>`tests/`<br>`docs/` |
+| 运行时机制参数 | `crates/ant3-platform/src/settings.rs`<br>`web/src/features/researcher/researcher.js` | `crates/ant3-platform/src/settings.rs` |
 
 ## 当前源码目录
 
@@ -184,7 +186,8 @@ crates/
 │   │   ├── workspaces/
 │   │   │   ├── mod.rs
 │   │   │   └── tools.rs
-│   │   └── lib.rs
+│   │   ├── lib.rs
+│   │   └── settings.rs
 │   ├── tests/
 │   │   └── support/
 │   │       └── routing.rs
@@ -250,6 +253,7 @@ crates/
 │   │   ├── process_plugins.rs
 │   │   ├── routing.rs
 │   │   ├── selfselect.rs
+│   │   ├── settings.rs
 │   │   ├── traces.rs
 │   │   └── workspaces.rs
 │   └── Cargo.toml
