@@ -6,3 +6,6 @@
 # Legacy workspace retained until its owner migrates it.
 /.harness3/
 .ant3-daemon.log
+
+# IDE input images
+.qoder-input-images/
