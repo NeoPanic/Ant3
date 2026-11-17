@@ -153,7 +153,7 @@ test('任务拆分图来自任务板父子记录，无固定规划或汇总身�
   assert(!html.includes('#research'));
 });
 
-test('接力默认选中活跃板根，详情展示验收标准、被参考次数与质检摘要',()=>{
+test('接力默认选中活跃根任务，详情展示验收标准、被参考次数与质检摘要',()=>{
   context.input=sceneFixture();
   context.input.board={tasks:[
     {id:'done',root_id:'done',title:'已归档任务',state:'completed',review_state:'accepted'},

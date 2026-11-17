@@ -1,16 +1,16 @@
 # 实例文件工作区与共享文件产物
 
-本地 daemon 在数据目录的 `workspaces/<instance_id>/` 保存实例文件。每个 Agent 通过 `platform.workspace` 插件读写自己的相对路径；需要让同一板根任务的其他 Agent 使用某份文件时，发布不可变快照。文件工具不会直接共享整个实例目录。
+本地 daemon 在数据目录的 `workspaces/<instance_id>/` 保存实例文件。每个 Agent 通过 `platform.workspace` 插件读写自己的相对路径；需要让同一个根任务的其他 Agent 使用某份文件时，发布不可变快照。文件工具不会直接共享整个实例目录。
 
 ## 文件交接流程
 
 1. 使用绑定 `platform.workspace@1.0.0` 的 Preset 创建两个或更多实例。
 2. 研究 Agent 用 `platform.workspace.write` 写入 `research/evidence.md`。
 3. 用 `platform.workspace.publish` 发布该文件，获得稳定的 `fileartifact_...` ID，并在任务输出或消息里引用这个 ID。
-4. 同板根 Agent 用 `platform.workspace.artifacts` 查找文件产物，用 `platform.workspace.read_artifact` 读取原文和来源状态。
+4. 同一个根任务 Agent 用 `platform.workspace.artifacts` 查找文件产物，用 `platform.workspace.read_artifact` 读取原文和来源状态。
 5. 后续修改原工作区文件不会改变已发布的快照。汇总任务仍需返回最终文本结果，按任务板评审流程交付。
 
-工作区工具也适用于普通独立 Run；没有共享板根时，工具只能读取本实例发布的文件快照。Web 操作者可检查所有实例工作区与已发布快照。
+工作区工具也适用于普通独立 Run；没有共享根任务时，工具只能读取本实例发布的文件快照。Web 操作者可检查所有实例工作区与已发布快照。
 
 ## Preset 绑定与工具
 
@@ -19,7 +19,7 @@
   "name": "file-researcher",
   "version": "1.0.0",
   "purpose": "研究资料并交付文件",
-  "objective": "为同板根成员发布可追溯的研究证据",
+  "objective": "为同一个根任务内的成员发布可追溯的研究证据",
   "instructions": "把关键发现保存到 research/evidence.md，发布文件快照，在最终输出中引用快照 ID。使用其他成员证据时检查 source_state。",
   "protocol": "demo",
   "plugins": [
@@ -37,7 +37,7 @@
 | `platform.workspace.read` | `path` | 读取 UTF-8 文件 |
 | `platform.workspace.write` | `path`、`content`、`command_key` | 创建或替换文件，自动创建父目录 |
 | `platform.workspace.publish` | `name`、`command_key`，以及 `path` / `value` 二选一 | 发布文件或结构化 JSON 快照 |
-| `platform.workspace.artifacts` | 空对象 | 查询本实例或同板根产物 |
+| `platform.workspace.artifacts` | 空对象 | 查询本实例或同一个根任务产物 |
 | `platform.workspace.read_artifact` | `artifact_id` | 读取不可变原文、摘要、来源 Run 与状态 |
 
 文件与 JSON 原文每份最多 1 MiB，列表每次最多 200 项（Agent 共享产物查询为最近 100 项）。写入采用完整替换，不提供删除和追加。相同 `command_key` 与相同输入重放取得原回执，改变输入返回冲突；发布回执重放不会重新读取已改变的原文件。

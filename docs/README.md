@@ -35,7 +35,7 @@
 | [预算即能量](energy.zh-CN.md) | 预留、usage 结算、验收回充与饥饿淘汰 |
 | [个体自选认领](selfselect.zh-CN.md) | 选型下沉：游走池、阈值响应、原子竞争 |
 | [点对点消息](messaging.zh-CN.md) | 投递、派发、消费和恢复 |
-| [文件工作区](workspaces.zh-CN.md) | 私有文件与同板根快照共享 |
+| [文件工作区](workspaces.zh-CN.md) | 私有文件与同一个根任务快照共享 |
 | [进程插件](process-plugins.zh-CN.md) | 包格式、安装、绑定与执行契约 |
 
 插件示例：[文本统计](../crates/ant3-plugins/examples/text-inspector/)、[HTTP 读取](../crates/ant3-plugins/examples/http-reader/)、[文件交接 Preset](../crates/ant3-plugins/examples/workspace-preset/)。
