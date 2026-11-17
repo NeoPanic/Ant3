@@ -361,8 +361,8 @@
     "id": "messaging",
     "name": "可靠协作消息",
     "phase": "P2",
-    "status": "partial",
-    "detail": "持久 Outbox/Inbox、稳定消息 ID、幂等去重、投递与消费分离、暂停积压和未知结果人工处置；Agent 使用 platform.messaging 直接交接。作用域=同 fleet 或同一个根任务；板上 Agent 可向任意活跃同伴发起交接，消息接受时把发送者根任务传播给收件人（招募台账 board_peer_roots），回复保持在作用域内。没有远程投递或 Grant 授权。",
+    "status": "implemented",
+    "detail": "持久 Outbox/Inbox、稳定消息 ID、幂等去重、投递与消费分离、暂停积压和未知结果人工处置；Agent 使用 platform.messaging 直接交接。作用域为同一 Agent 池或同一根任务；任务板 Agent 可向任意活跃同伴发起交接，接受时把发送者根任务传播给收件人（招募台账 board_peer_roots），回复保持作用域内。当前范围是本地单 daemon；远程投递与细粒度 Grant 授权不在范围内。",
     "source": [
       "crates/ant3-platform/src/collaboration/messaging/mod.rs",
       "crates/ant3-platform/src/collaboration/messaging/tools.rs",
