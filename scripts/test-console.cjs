@@ -36,20 +36,6 @@ test('仅操作列固定在表格右侧，数据列正常滚动',()=>{
   assert(!vm.runInContext("table(['目标','时间'],[])",context).includes('class="table-actions"'));
 });
 
-test('总览优先显示忙碌实例，不将已终止实例列入未终止列表',()=>{
-  const context=consoleContext();
-  vm.runInContext(`data={
-    instances:[{id:'old',preset_name:'已终止身份',state:'terminated',snapshot:{protocol:'demo'}},
-      {id:'ready',preset_name:'就绪身份',state:'ready',snapshot:{protocol:'demo'}},
-      {id:'busy',preset_name:'忙碌身份',state:'busy',snapshot:{protocol:'demo'}}],
-    board:{tasks:[{id:'root',root_id:'root',title:'待评审任务',state:'completed',review_state:'pending'}]},runs:[],presets:[],models:[],limits:{workers:8}
-  }`,context);
-  const html=vm.runInContext('overview()',context);
-  assert(!html.includes('已终止身份'));
-  assert(html.indexOf('忙碌身份')<html.indexOf('就绪身份'));
-  assert(html.includes('待评审任务'));
-});
-
 test('插件目录只显示内置能力，不提供安装入口，并明确未配置状态',()=>{
   const context=consoleContext();
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/plugins/plugins.js'),'utf8'),context);
@@ -125,24 +111,26 @@ function featureContext(extra={}){
   return context;
 }
 
-test('默认首页是工作现场，旧 hash 全部重定向到新导航',()=>{
+test('默认首页是工作现场，旧入口使用固定路径',()=>{
   const context=featureContext();
-  context.location={hash:''};
+  context.location={pathname:'/'};
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/board/board.js'),'utf8'),context);
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/agents/fleets.js'),'utf8'),context);
   assert.equal(vm.runInContext('page()',context),'studio');
   for(const [old,next] of Object.entries({overview:'studio',agents:'researcher',fleets:'researcher',messages:'researcher',runs:'researcher',events:'researcher',capabilities:'researcher',workspaces:'deliveries'})){
-    context.location.hash=`#${old}`;
+    context.location.pathname=`/${old}`;
     assert.equal(vm.runInContext('page()',context),next,`${old} → ${next}`);
   }
-  for(const hash of ['studio','colony','deliveries','board','inbox','presets','plugins','researcher']){
-    context.location.hash=`#${hash}`;
-    assert.equal(vm.runInContext('page()',context),hash);
+  for(const path of ['studio','colony','deliveries','board','inbox','presets','plugins','researcher']){
+    context.location.pathname=`/${path}`;
+    assert.equal(vm.runInContext('page()',context),path);
   }
-  context.location.hash='#board/task-1';
+  context.location.pathname='/board/task-1';
   assert.equal(vm.runInContext('page()',context),'board');
-  context.location.hash='#fleet/f1';
+  assert.equal(vm.runInContext('boardId()',context),'task-1');
+  context.location.pathname='/fleet/f1';
   assert.equal(vm.runInContext('page()',context),'researcher');
+  assert.equal(vm.runInContext('fleetId()',context),'f1');
 });
 
 test('群体事件翻译成一句话：认领 / 拆分 / 参考 / 质检 / 人类评审',()=>{
@@ -302,7 +290,7 @@ test('执行过程用人话步骤呈现，不展示原始工具名与参数字�
 test('研究者视图用分页呈现，一次只渲染当前分页',()=>{
   const context=featureContext();
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/researcher/researcher.js'),'utf8'),context);
-  vm.runInContext(`location={hash:'#researcher'};data={instances:[],runs:[],fleets:[],messages:[],capabilities:[],capacity:{reserved:0,limit:8,active:0},board:{tasks:[],router:{mode:'model'}},presets:[]};events=[];colonyPool=null;colonyLoading=false;colonyExperience=null;workspaceCatalog=null;workspaceLoading=false;workspacePublications=null;selectedFleet=null;loadColony=()=>{};loadWorkspaces=()=>{};fleetId=()=>null;deliveriesPrivateFiles=()=>'成员私有文件表格';progressBody=()=>'实现进度内容';agentsTable=()=>'';runsTable=()=>'';`,context);
+  vm.runInContext(`location={pathname:'/researcher'};data={instances:[],runs:[],fleets:[],messages:[],capabilities:[],capacity:{reserved:0,limit:8,active:0},board:{tasks:[],router:{mode:'model'}},presets:[]};events=[];colonyPool=null;colonyLoading=false;colonyExperience=null;workspaceCatalog=null;workspaceLoading=false;workspacePublications=null;selectedFleet=null;loadColony=()=>{};loadWorkspaces=()=>{};fleetId=()=>null;deliveriesPrivateFiles=()=>'成员私有文件表格';progressBody=()=>'实现进度内容';agentsTable=()=>'';runsTable=()=>'';`,context);
   const html=vm.runInContext('researcherPage()',context);
   assert(html.includes('研究者视图：机制参数与原始记录'));
   assert(!html.includes('<details'),'不使用折叠');

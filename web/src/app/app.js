@@ -107,19 +107,34 @@ async function api(path, body, method = 'POST', key = null) {
   }
   return value;
 }
-// 旧 hash 全部重定向，保持历史链接可用；默认首页是人类观察者的工作现场。
-const pageRedirects={overview:'studio',agents:'researcher',fleets:'researcher',messages:'researcher',runs:'researcher',events:'researcher',capabilities:'researcher',workspaces:'deliveries'};
+// 固定路径路由（/board、/colony…）；旧 hash 链接一次性重定向到对应路径。
+const routePages=['studio','colony','deliveries','board','inbox','presets','plugins','researcher'];
+const legacyRoutes={overview:'studio',agents:'researcher',fleets:'researcher',messages:'researcher',runs:'researcher',events:'researcher',capabilities:'researcher',workspaces:'deliveries'};
+function routeParts(){
+  return (location.pathname||'/').split('/').filter(Boolean).map(part=>{try{return decodeURIComponent(part);}catch{return part;}});
+}
 function page() {
   if(boardId())return 'board';
   if(fleetId())return 'researcher';
-  const hash=location.hash.slice(1);
-  if(pageRedirects[hash])return pageRedirects[hash];
-  return ['studio','colony','deliveries','board','inbox','presets','plugins','researcher'].includes(hash)?hash:'studio';
+  const first=routeParts()[0]||'studio';
+  return legacyRoutes[first]||(routePages.includes(first)?first:'studio');
+}
+function navigate(path,{replace=false}={}) {
+  const current=(location.pathname||'/')+(location.search||'');
+  if(current===path){routeChanged();return;}
+  if(replace)history.replaceState(null,'',path);else history.pushState(null,'',path);
+  routeChanged();
 }
 function applyPageRedirect(){
-  const hash=location.hash.slice(1);
-  if(pageRedirects[hash])location.replace(`#${pageRedirects[hash]}`);
-  else if(hash.startsWith('fleet/'))location.replace('#researcher');
+  const hash=(location.hash||'').slice(1);
+  if(hash){
+    if(hash==='content')return;
+    const parts=hash.split('/').filter(Boolean),base=legacyRoutes[parts[0]]||parts[0];
+    if(base)navigate('/'+[base,...parts.slice(1)].join('/'),{replace:true});
+    return;
+  }
+  const first=routeParts()[0];
+  if(first&&legacyRoutes[first])navigate('/'+legacyRoutes[first],{replace:true});
 }
 function head(title, buttons = '') { return `<div class="page-head"><div><h1>${title}</h1></div>${buttons?`<div class="head-actions">${buttons}</div>`:''}</div>`; }
 function button(label, action, primary = false, extra = '') { return `<button type="button" class="button ${primary ? 'primary' : ''}" data-action="${action}" ${extra}>${label}</button>`; }
@@ -137,20 +152,6 @@ function agentsTable(list,compact=false) {
   return list.length ? table(['AGENT / 实例','状态','Preset 版本','模型协议','创建时间','操作'],agentRows(list)) : empty('还没有 Agent 实例','选择一个 Preset，批量创建你的第一组实例。', button('＋ 创建实例','spawn',true)); }
 function runsTable(list) { return list.length ? table(['RUN / 运行','Agent','输入','状态','开始时间','操作'],list.map(r=>`<tr><td class="mono">${esc(short(r.id))}</td><td class="mono">${esc(short(r.instance_id))}</td><td class="run-input" title="${esc(r.input)}">${esc(r.input.slice(0,55))}</td><td>${badge(r.state)}</td><td>${time(r.started_at || r.created_at)}</td><td><button class="text-button" data-action="run-detail" data-id="${esc(r.id)}">检查 ↗</button></td></tr>`)) : empty('尚无执行记录','创建实例并提交一条输入，即可查看工具循环与持久回执。'); }
 function activity(list) { return list.length ? `<div class="activity">${list.map(e=>`<div class="activity-item"><span class="event-dot"></span><div><div class="activity-kind mono">${esc(e.kind)}</div><div class="activity-meta mono">${esc(short(e.subject))} #${e.seq}</div></div><span class="activity-time">${time(e.at)}</span></div>`).join('')}</div>` : empty('暂无事件','操作控制台后，持久事件将出现在这里。'); }
-function overview() {
-  const active = data.instances.filter(a=>a.state !== 'terminated'), busy = data.instances.filter(a=>a.state === 'busy'), complete = data.runs.filter(r=>r.state === 'completed');
-  const review=(data.board?.tasks||[]).filter(t=>!t.parent_id&&t.review_state==='pending'),failed=data.runs.filter(r=>['failed','interrupted'].includes(r.state));
-  const stats = [
-    ['执行中实例',busy.length,`/ ${active.length} 个未终止`,'agents','检查实例与运行状态'],
-    ['待评审任务',review.length,'项','board','核对结果与验收标准'],
-    ['失败 / 结果未知',failed.length,'次','runs','最近 100 条运行'],
-    ['已完成运行',complete.length,'次','runs','最近 100 条运行']
-  ];
-  return head('平台总览', button('发布任务','board-publish',true))+
-    `<div class="stats">${stats.map(([label,count,unit,target,detail])=>`<a class="stat" href="#${target}"><span class="stat-label">${label}</span><div class="stat-number">${count}<small>${unit}</small></div><div class="stat-detail">${detail}</div></a>`).join('')}</div>`+
-    `<div class="split"><div>${panel('未终止的 Agent',agentsTable([...busy,...active.filter(a=>a.state!=='busy')].slice(0,5),true),'<a href="#agents" class="panel-link">全部实例</a>',`<small>${active.length} 个</small>`)}${panel('最近执行',recentRuns(data.runs.slice(0,4)),'<a href="#runs" class="panel-link">全部执行记录</a>')}</div><div>${panel('模型配置',`<div class="panel-body">${data.models.map(m=>`<div class="model-row"><div><p>${esc(m.protocol)}</p><small>${esc(m.model || '未配置模型')}</small></div>${badge(m.configured?'good':'neutral',m.configured?'已配置':'未配置')}</div>`).join('')}<p class="hint">配置表示凭证已加载；实际连通情况见执行回执。</p></div>`)}${panel('最近活动',`<div class="panel-body">${activity(events.slice(-5).reverse())}</div>`,'<a href="#events" class="panel-link">全部事件</a>')}</div></div>`;
-
-}
 function progressBody() {
   const counts = status => data.capabilities.filter(c=>c.status===status).length;
   const pathMeta=[['emergence','涌现机制','北极星目标路径：stigmergy 痕迹、分工、自组织认领与整合'],['foundation','运行底座','支撑个体执行与持久状态'],['verification','证据与验证','可信交付与返工'],['support','支撑能力','入口、可视化与生态'],['governance','治理与规模化','预算、授权、隔离与远程，按需推进']];
@@ -210,9 +211,13 @@ async function readState() {
       try {selectedFleet=await api(`/api/v1/agent-fleets/${encodeURIComponent(fleetId())}`);}
       catch(error) {selectedFleet={id:fleetId(),loadError:error.message};}
     }
-    // Drain a bounded page per tick; the cursor always advances only after a successful read.
-    const chunk=await api(`/api/v1/events?after=${cursor}`);
-    if(chunk.events.length){events=events.concat(chunk.events).slice(-500);cursor=chunk.events.at(-1).seq;}
+    // Start from the newest page, then follow the cursor. Loading history
+    // forward from seq 0 made the live feed reshuffle for several seconds.
+    const chunk=await api(`/api/v1/events?${cursor?`after=${cursor}`:'tail=1'}`);
+    if(chunk.events.length){
+      events=cursor?events.concat(chunk.events).slice(-500):chunk.events;
+      cursor=chunk.events.at(-1).seq;
+    }
     studio.syncedAt=Date.now();studio.disconnected=false;
     $('#connection').className='connection-indicator connected'; $('#connection').setAttribute('aria-label','内核已连接'); $('#connection').title='内核已连接'; $('#notice').textContent='';
     render();
@@ -337,19 +342,19 @@ async function handleAction(action, element) {
   if(await colonyAction(action,element))return;
   if(await processAction(action,element))return;
   const id=element.dataset.id;
-  if(action==='fleet-nav') {$('#modal').close();location.hash=`fleet/${id}`;return;}
+  if(action==='fleet-nav') {$('#modal').close();navigate(`/fleet/${id}`);return;}
   if(action==='fleet-scale'||action==='fleet-stop')return fleetActionForm(id,action==='fleet-stop');
   if(action==='copy') {
     try {await navigator.clipboard.writeText(element.dataset.value);element.textContent='已复制';setTimeout(()=>{if(element.isConnected)element.textContent='复制';},1800);}
     catch {throw new Error('浏览器未允许复制，请选中 ID 后手动复制。');}return;
   }
-  if(action==='goto-agents') {location.hash='researcher';return;}
+  if(action==='goto-agents') {navigate('/researcher');return;}
   if(action==='clear-filters') {const kind=page();if(!filters[kind])return;filters[kind]={query:'',state:'all'};render();$('#directory-search')?.focus();return;}
   if(await workspaceAction(action,element))return;
   if(await boardAction(action,element))return;
   if(await messageAction(action,element))return;
   if(action==='close') {if(!$('#modal form[aria-busy="true"]'))$('#modal').close();return;}
-  if(action==='capabilities') {location.hash='researcher';return;}
+  if(action==='capabilities') {navigate('/researcher');return;}
   if(action==='spawn') return spawnForm(id,element.dataset.version);
   if(action==='preset-form') return presetForm();
   if(action==='run-form') return runForm(id);
@@ -384,6 +389,11 @@ async function handleAction(action, element) {
   if(['agent-tab','run-tab'].includes(action)) element.parentElement.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b===element);b.setAttribute('aria-pressed',String(b===element));});
 }
 document.addEventListener('click',async event=>{
+  const link=event.target.closest('a[href]');
+  if(link&&event.button===0&&!event.metaKey&&!event.ctrlKey&&!event.shiftKey&&!event.altKey&&!link.target&&!link.hasAttribute('download')){
+    const href=link.getAttribute('href');
+    if(href.startsWith('/')&&!href.startsWith('//')){event.preventDefault();navigate(href);return;}
+  }
   if(event.target.closest('nav a,.brand'))closeNavigation();
   const anchor=event.target.closest('[data-task-anchor]');
   if(anchor){event.preventDefault();const heading=document.getElementById(`task-heading-${anchor.dataset.taskAnchor}`);if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});heading.scrollIntoView({block:'center'});}return;}
@@ -438,7 +448,7 @@ document.addEventListener('submit',async event=>{
       const payload={title:values.title,instructions:values.instructions,acceptance:values.acceptance};
       if(values.verify_preset){const [name,version]=values.verify_preset.split('@');payload.verification={preset_name:name,preset_version:version,max_auto_reworks:Number(values.verify_reworks||'1')};}
       if(values.energy_budget)payload.energy_budget=Number(values.energy_budget);
-      result=await api('/api/board/tasks',payload,'POST',form.dataset.commandKey);location.hash=`board/${result.id}`;
+      result=await api('/api/board/tasks',payload,'POST',form.dataset.commandKey);navigate(`/board/${result.id}`);
     }
     if(form.dataset.form==='board-cancel')result=await api(`/api/board/tasks/${encodeURIComponent(form.dataset.id)}/cancel`,{});
     if(form.dataset.form==='board-review') {
@@ -449,7 +459,7 @@ document.addEventListener('submit',async event=>{
     if(form.dataset.form==='message-send') {
       if(new TextEncoder().encode(values.text).length>8000)throw new Error('消息超过 8,000 个 UTF-8 字节。');
       const input={text:values.text};for(const field of ['correlation_id','causation_id'])if(values[field])input[field]=values[field];
-      result=await api(`/api/v1/agent-instances/${encodeURIComponent(values.recipient_id)}/messages`,input,'POST',form.dataset.commandKey);location.hash='researcher';
+      result=await api(`/api/v1/agent-instances/${encodeURIComponent(values.recipient_id)}/messages`,input,'POST',form.dataset.commandKey);navigate('/researcher');
     }
     if(form.dataset.form==='message-action') {
       if(new TextEncoder().encode(values.note).length>2000)throw new Error('处置说明超过 2,000 个 UTF-8 字节。');
@@ -457,11 +467,11 @@ document.addEventListener('submit',async event=>{
     }
     if(form.dataset.form==='drain') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/actions`,{action:'drain'});}
     if(form.dataset.form==='terminate') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/actions`,{action:'terminate'});}
-    if(form.dataset.form==='spawn') {const preset=JSON.parse(values.preset);result=await api('/api/v1/agent-fleets',{preset_name:preset.name,preset_version:preset.version,count:Number(values.count),mode:values.mode,parameters:instanceParameters(form),ttl_seconds:values.ttl_minutes?Number(values.ttl_minutes)*60:null},'POST',form.dataset.commandKey);location.hash=`fleet/${result.fleet_id}`;researcherSections.add('fleets');}
+    if(form.dataset.form==='spawn') {const preset=JSON.parse(values.preset);result=await api('/api/v1/agent-fleets',{preset_name:preset.name,preset_version:preset.version,count:Number(values.count),mode:values.mode,parameters:instanceParameters(form),ttl_seconds:values.ttl_minutes?Number(values.ttl_minutes)*60:null},'POST',form.dataset.commandKey);navigate(`/fleet/${result.fleet_id}`);researcherSections.add('fleets');}
     if(form.dataset.form==='fleet-action') {result=await api(`/api/v1/agent-fleets/${encodeURIComponent(form.dataset.id)}/actions`,{action:form.dataset.operation,expected_revision:Number(form.dataset.revision),...(form.dataset.operation==='scale'?{count:Number(values.count)}:{})},'POST',form.dataset.commandKey);}
-    if(form.dataset.form==='preset') {result=await api('/api/v1/presets',presetPayload(form));location.hash='presets';}
+    if(form.dataset.form==='preset') {result=await api('/api/v1/presets',presetPayload(form));navigate('/presets');}
     if(form.dataset.form==='process-state') {result=await api(`/api/v1/process-plugins/${encodeURIComponent(form.dataset.id)}/${encodeURIComponent(form.dataset.version)}/actions`,{action:form.dataset.state});}
-    if(form.dataset.form==='run') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/runs`,{text:values.text},'POST',form.dataset.commandKey);location.hash='researcher';researcherSections.add('runs');}
+    if(form.dataset.form==='run') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/runs`,{text:values.text},'POST',form.dataset.commandKey);navigate('/researcher');researcherSections.add('runs');}
     $('#modal').close();await refresh(true);
     if(form.dataset.form==='run-cancel'){await runDetail(form.dataset.id);toast('取消请求已提交，运行将协作收尾。');return;}
     if(form.dataset.form==='board-publish'){toast('任务已发布，群体会自行安排合适的成员。');return;}
@@ -496,7 +506,15 @@ $('#login-dialog').addEventListener('cancel',event=>event.preventDefault());
 $('.skip-link').addEventListener('click',event=>{event.preventDefault();$('#content').focus();});
 function closeNavigation(){ $('#shell').classList.remove('navigation-open');$('#navigation-toggle').setAttribute('aria-expanded','false'); }
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&$('#shell').classList.contains('navigation-open')){closeNavigation();$('#navigation-toggle').focus();}});
-window.addEventListener('hashchange',()=>{applyPageRedirect();inspectionRequest++;if($('#modal').open&&!$('#modal form[aria-busy="true"]'))$('#modal').close();closeNavigation();render();if(boardId()||fleetId())refresh(true);$('#content').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});});
+function routeChanged(){
+  inspectionRequest++;
+  if($('#modal').open&&!$('#modal form[aria-busy="true"]'))$('#modal').close();
+  closeNavigation();render();
+  if(boardId()||fleetId())refresh(true);
+  $('#content').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});
+}
+window.addEventListener('popstate',routeChanged);
+window.addEventListener('hashchange',applyPageRedirect);
 applyPageRedirect();
 refresh();setInterval(()=>{if(authenticated&&!document.hidden)refresh();},1500);
 window.addEventListener('focus',()=>{if(authenticated)refresh();});

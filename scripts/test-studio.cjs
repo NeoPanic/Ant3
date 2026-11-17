@@ -171,7 +171,7 @@ test('接力默认选中活跃板根，详情展示验收标准、被参考次�
   assert(html.includes('成果被同伴参考 2 次'));
   assert(!html.includes('浓度'));
   assert(html.includes('独立质检 第 1 次 · 质检中'));
-  assert(html.includes('#board/child'));
+  assert(html.includes('/board/child'));
   vm.runInContext('studio.selectedTask=null',context);
 });
 

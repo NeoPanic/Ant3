@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const {readFileSync}=require('node:fs');
 const {resolve}=require('node:path');
 const vm=require('node:vm');
-const context=vm.createContext({location:{hash:'#board'},time:()=>'',short:value=>String(value??'').slice(0,15)});
+const context=vm.createContext({location:{pathname:'/board'},time:()=>'',short:value=>String(value??'').slice(0,15)});
 Object.assign(context,{
   esc:(value='')=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
   badge:(state,text)=>`<span>${text}</span>`,button:(label,action,primary,attributes='')=>`<button data-action="${action}" ${attributes}>${label}</button>`,
@@ -40,7 +40,7 @@ test('空任务板提供发布入口，快照尚无 board 时可正常显示',()
 });
 
 test('评审通过与取消归入历史，待评审、失败和结果未知任务保留在当前列表',()=>{
-  context.location.hash='#board';
+  context.location.pathname='/board';
   context.data={board:{tasks:[
     {id:'done',title:'已交付',state:'completed',review_state:'accepted'},
     {id:'review',title:'等待人类检查',state:'completed',review_state:'pending'},
@@ -65,7 +65,7 @@ test('评审通过与取消归入历史，待评审、失败和结果未知任�
 });
 
 test('成果、进度和人类评审意见可见且转义，评审绑定当前 Run',()=>{
-  context.location.hash='#board/review';
+  context.location.pathname='/board/review';
   context.data={board:{tasks:[{id:'review',title:'检查',state:'completed',review_state:'pending',run_id:'run-current',result:{output:'<img src=x>成果'},progress:{message:'<script>进度</script>'},reviews:[{decision:'changes_requested',feedback:'<b>补充证据</b>',run_id:'run-previous'}]}]}};
   const html=vm.runInContext('boardPage()',context);
   assert(html.includes('等你验收'));
@@ -94,7 +94,7 @@ test('已安排未开工和执行中状态分开显示，全部使用人话',()=
 });
 
 test('任务详情显示拆分来源与子任务，同时转义任务内容',()=>{
-  context.location.hash='#board/root';
+  context.location.pathname='/board/root';
   context.data={board:{tasks:[
     {id:'root',root_id:'root',title:'<script>bad</script>',instructions:'<img src=x>',acceptance:'完成',state:'waiting'},
     {id:'child',root_id:'root',parent_id:'root',title:'子任务',state:'pending'},
@@ -104,7 +104,7 @@ test('任务详情显示拆分来源与子任务，同时转义任务内容',()=
   assert(!html.includes('<img'));
   assert(html.includes('子任务'));
   assert(html.includes('board-cancel'));
-  context.location.hash='#board/child';
+  context.location.pathname='/board/child';
   assert(vm.runInContext('boardPage()',context).includes('拆分来源'));
 });
 
@@ -115,7 +115,7 @@ test('父任务重新安排时不把历史 preset 显示成已分配',()=>{
 });
 
 test('安排受阻显示人话原因，原始错误码不出现在用户文案',()=>{
-  context.location.hash='#board';
+  context.location.pathname='/board';
   context.data={board:{tasks:[{id:'retry',title:'待重试任务',state:'pending',route_state:'unassigned'}],routing:[{task_id:'retry',state:'waiting',error:'router_unavailable',attempts:2}]}};
   const html=vm.runInContext('boardPage()',context);
   assert(html.includes('安排受阻，稍后重试'));
@@ -123,7 +123,7 @@ test('安排受阻显示人话原因，原始错误码不出现在用户文案',
 });
 
 test('列表行用人话徽章展示被参考次数，不显示浓度徽章',()=>{
-  context.location.hash='#board';
+  context.location.pathname='/board';
   context.data={board:{tasks:[
     {id:'reused',title:'被参考的工作',state:'running',reuse_count:3,trace:{kind:'result',strength:88}},
     {id:'plain',title:'普通工作',state:'running',trace:{kind:'result',strength:12}},
@@ -135,7 +135,7 @@ test('列表行用人话徽章展示被参考次数，不显示浓度徽章',()=
 });
 
 test('任务详情只讲结果，机制数据全部在研究者页',()=>{
-  context.location.hash='#board/root';
+  context.location.pathname='/board/root';
   context.data={board:{tasks:[{id:'root',root_id:'root',title:'工作',instructions:'目标',acceptance:'标准',state:'running',route_reason:'原始选型依据',trace:{kind:'result',strength:66},reuse_count:2,energy:{budget:100000,spent:4000,refunded:0,available:96000}}]}};
   const html=vm.runInContext('boardPage()',context);
   assert(!html.includes('<details class="researcher"'),'任务板不再内嵌研究者折叠');

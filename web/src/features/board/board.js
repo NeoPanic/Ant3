@@ -4,7 +4,7 @@ const boardStates={staged:'等待前置工作完成',pending:'等待接活',runn
 const boardTerminal=new Set(['completed','failed','cancelled','blocked','interrupted']);
 let selectedBoard=null,boardTraces=null,boardEnergy=null,boardNotes=null;
 const boardTraceKinds={result:'结果',finding:'发现',path:'路径',blocker:'阻断'};
-function boardId(){return location.hash.startsWith('#board/')?location.hash.slice(7):null;}
+function boardId(){const parts=(location.pathname||'/').split('/').filter(Boolean);return parts[0]==='board'&&parts[1]?parts[1]:null;}
 function boardTraceStrength(trace){const value=Number(trace?.strength);return Number.isFinite(value)?Math.max(0,Math.min(100,value)):0;}
 // 浓度徽章只在研究者折叠区出现。
 function boardTraceBadge(trace){
@@ -64,7 +64,7 @@ function boardStatus(task,route){
 function boardArchived(task){return task.state==='cancelled'||(task.state==='completed'&&task.review_state==='accepted');}
 function boardTaskRow(task){
   const route=boardRoute(task.id);
-  return `<a class="board-task-row" href="#board/${esc(task.id)}"><span class="board-task-copy"><strong>${esc(task.title)}</strong>${task.instructions?`<span class="board-task-preview">${esc(task.instructions)}</span>`:''}<span>${esc(boardPreset(task)?`由 ${task.preset_name} 负责`:route?.error?boardRoutingMessage(route.error):'群体自行安排合适的成员')}${task.parent_id?' 子任务':''}</span></span>${boardReuseBadge(task)}${badge(boardBadgeClass(task),boardStatus(task,route))}<span aria-hidden="true">→</span></a>`;
+  return `<a class="board-task-row" href="/board/${esc(task.id)}"><span class="board-task-copy"><strong>${esc(task.title)}</strong>${task.instructions?`<span class="board-task-preview">${esc(task.instructions)}</span>`:''}<span>${esc(boardPreset(task)?`由 ${task.preset_name} 负责`:route?.error?boardRoutingMessage(route.error):'群体自行安排合适的成员')}${task.parent_id?' 子任务':''}</span></span>${boardReuseBadge(task)}${badge(boardBadgeClass(task),boardStatus(task,route))}<span aria-hidden="true">→</span></a>`;
 }
 // —— 研究者折叠区：机制参数与原始记录 ——
 
@@ -75,9 +75,9 @@ let boardTab='current';
 function boardPage(){
   const board=boardData(),tasks=board.tasks||[],id=boardId();
   if(id){
-    if(selectedBoard?.id===id&&selectedBoard.loadError)return `<a class="back-link" href="#board">← 任务板</a><div class="callout" role="alert">${esc(selectedBoard.loadError)} ${button('重试','board-refresh')}</div>`;
+    if(selectedBoard?.id===id&&selectedBoard.loadError)return `<a class="back-link" href="/board">← 任务板</a><div class="callout" role="alert">${esc(selectedBoard.loadError)} ${button('重试','board-refresh')}</div>`;
     const task=selectedBoard?.id===id?selectedBoard:tasks.find(t=>t.id===id);
-    return task?boardDetail(task,tasks):`<a class="back-link" href="#board">← 任务板</a>${empty('任务未出现在当前快照','请返回任务板或刷新后重试。',button('刷新','board-refresh'))}`;
+    return task?boardDetail(task,tasks):`<a class="back-link" href="/board">← 任务板</a>${empty('任务未出现在当前快照','请返回任务板或刷新后重试。',button('刷新','board-refresh'))}`;
   }
   const roots=tasks.filter(t=>!t.parent_id),active=tasks.filter(t=>!boardTerminal.has(t.state));
   const history=roots.filter(boardArchived),current=roots.filter(t=>!boardArchived(t));
@@ -102,20 +102,20 @@ function boardDetail(task,tasks){
   const route=boardRoute(task.id),routingError=task.state==='pending'&&route?.error;
   const report=task.result||task.previous_result,result=typeof report==='string'?report:report?.output||report;
   const reuse=Number(task.reuse_count)||0;
-  return `<a class="back-link" href="#board">← 任务板</a>`+head(esc(task.title), !boardTerminal.has(task.state)?button('取消任务','board-cancel',false,`data-id="${esc(task.id)}"`):'')+
+  return `<a class="back-link" href="/board">← 任务板</a>`+head(esc(task.title), !boardTerminal.has(task.state)?button('取消任务','board-cancel',false,`data-id="${esc(task.id)}"`):'')+
     `<div class="goal-summary"><div><span>进度</span>${badge(boardBadgeClass(task),boardStatus(task,route))}</div><div><span>由谁负责</span><strong>${esc(boardPreset(task)?task.preset_name:'群体安排中')}</strong></div><div><span>子任务</span><strong>${children.filter(t=>t.state==='completed').length} / ${children.length}</strong></div>${boardEnergySummary(task)}</div>`+
     (reuse?`<p class="hint">这份工作的成果已被同伴参考 ${reuse} 次。</p>`:'')+
     (routingError?`<div class="callout" role="status">${esc(boardRoutingMessage(route.error))}${route.retry_at?`。下次尝试 ${esc(time(route.retry_at))}`:''}${route.attempts?`，已尝试 ${esc(route.attempts)} 次`:''}。</div>`:'')+
     (task.error?`<div class="callout" role="status">${task.error==='energy_exhausted'?'预算耗尽，工作已停止。可取消后以更高预算重新发布。':task.error==='board_run_failed'?'这次执行没有完成，工作已重新开放给群体。':task.error==='interrupted_outcome_unknown'?'执行结果无法确认，请核对后再决定。':task.error==='board_agent_did_not_claim'?'成员没有接下这项工作，已重新开放。':esc('这次工作未能完成，已记录以便排查。')}</div>`:'')+
     (task.progress?panel('工作进展',`<div class="panel-body record-text">${esc(task.progress.message)}</div>`):'')+
-    panel('任务要求',`<div class="panel-body"><dl class="definition"><dt>目标</dt><dd>${esc(task.instructions)}</dd><dt>验收标准</dt><dd>${esc(task.acceptance)}</dd>${parent?`<dt>拆分来源</dt><dd><a href="#board/${esc(parent.id)}">${esc(parent.title)}</a></dd>`:''}</dl></div>`)+
+    panel('任务要求',`<div class="panel-body"><dl class="definition"><dt>目标</dt><dd>${esc(task.instructions)}</dd><dt>验收标准</dt><dd>${esc(task.acceptance)}</dd>${parent?`<dt>拆分来源</dt><dd><a href="/board/${esc(parent.id)}">${esc(parent.title)}</a></dd>`:''}</dl></div>`)+
     (children.length?panel('拆分后的任务',`<div class="board-task-list">${children.map(boardTaskRow).join('')}</div>`):'')+
     (result?panel(task.result?'成果':'上轮成果（待修改）',`<div class="panel-body output">${typeof result==='string'?esc(result):dataView(result)}</div>`):'')+
     boardAuditPanel(task)+
     boardNotesPanel(task)+
     (task.review_state==='pending'&&!boardAuditing(task)?panel('等你验收',`<div class="panel-body"><p>根据验收标准检查成果。通过后即交付归档；退回修改将按你的意见重新开工。</p>${button('评审成果','board-review',true,`data-id="${esc(task.id)}" data-run="${esc(task.run_id)}"`)}</div>`):'')+
     (task.reviews?.length?panel('最近评审记录',`<div class="panel-body">${task.reviews.map(review=>`<div class="record-text"><strong>${review.decision==='accepted'?'通过':'退回修改'}</strong>${review.author_kind==='verifier'?' <span class="hint">（独立质检）</span>':' <span class="hint">（人类）</span>'}<p>${esc(review.feedback)}</p>${button('查看本轮执行记录','run-detail',false,`data-id="${esc(review.run_id)}"`)}</div>`).join('')}</div>`):'')+
-    `<div class="head-actions">${task.instance_id?button('负责成员','agent-detail',false,`data-id="${esc(task.instance_id)}"`):''}${task.run_id?button('执行记录','run-detail',false,`data-id="${esc(task.run_id)}"`):''}<a class="button" href="#studio">工作现场</a></div>`;
+    `<div class="head-actions">${task.instance_id?button('负责成员','agent-detail',false,`data-id="${esc(task.instance_id)}"`):''}${task.run_id?button('执行记录','run-detail',false,`data-id="${esc(task.run_id)}"`):''}<a class="button" href="/studio">工作现场</a></div>`;
 }
 function boardNotesPanel(task){
   if(task.parent_id)return '';

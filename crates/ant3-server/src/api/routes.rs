@@ -1,6 +1,22 @@
 use super::auth::{guard, login, logout};
 use super::handlers::*;
 use super::*;
+// 固定路径路由：未知的页面路径一律交回前端入口，API 与静态资源仍然 404。
+async fn spa_fallback(uri: Uri) -> Response {
+    let asset = uri
+        .path()
+        .rsplit('/')
+        .next()
+        .is_some_and(|last| last.contains('.'));
+    if uri.path().starts_with("/api/") || asset {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+    Html(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../web/index.html"
+    )))
+    .into_response()
+}
 pub fn router(app: App) -> Router {
     Router::new()
         .route(
@@ -250,6 +266,7 @@ pub fn router(app: App) -> Router {
             }),
         )
         .route("/api/v1/events", get(events))
+        .fallback(spa_fallback)
         .layer(DefaultBodyLimit::max(128 * 1024))
         .layer(middleware::from_fn_with_state(app.clone(), guard))
         .with_state(app)

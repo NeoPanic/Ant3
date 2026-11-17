@@ -469,6 +469,25 @@ impl Store {
             .collect::<Result<Vec<_>, _>>()?;
         rows.into_iter().map(|(seq,kind,subject,body,at)|Ok(json!({"seq":seq,"kind":kind,"subject":subject,"data":serde_json::from_str::<Value>(&body)?,"at":at}))).collect()
     }
+    pub fn latest_events(&self, limit: i64) -> PResult<Vec<Value>> {
+        let connection = self.lock()?;
+        let mut stmt = connection.prepare(
+            "SELECT seq,kind,subject,body,at FROM events ORDER BY seq DESC LIMIT ?",
+        )?;
+        let mut rows = stmt
+            .query_map([limit], |r| {
+                Ok((
+                    r.get::<_, i64>(0)?,
+                    r.get::<_, String>(1)?,
+                    r.get::<_, String>(2)?,
+                    r.get::<_, String>(3)?,
+                    r.get::<_, i64>(4)?,
+                ))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        rows.reverse();
+        rows.into_iter().map(|(seq,kind,subject,body,at)|Ok(json!({"seq":seq,"kind":kind,"subject":subject,"data":serde_json::from_str::<Value>(&body)?,"at":at}))).collect()
+    }
     pub fn record(&self, kind: &str, subject: &str, body: Value) -> PResult<()> {
         self.transaction(|tx| event(tx, kind, subject, body))
     }

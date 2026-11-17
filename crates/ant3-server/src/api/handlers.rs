@@ -228,7 +228,10 @@ pub(super) async fn events(
         .transpose()
         .map_err(|_| fault(400, "invalid_cursor"))?
         .unwrap_or(0);
-    Ok(Json(json!({"events":app.store.events(after)?})))
+    let tail = query.get("tail").is_some_and(|v| v == "1" || v == "true");
+    Ok(Json(json!({
+        "events": if tail { app.store.latest_events(200)? } else { app.store.events(after)? }
+    })))
 }
 
 pub(super) async fn run(State(app): State<App>, Path(id): Path<String>) -> PResult<Json<Value>> {

@@ -19,7 +19,7 @@ function researcherFleetsSection(){
   if(id)return selectedFleet?.id===id?(selectedFleet.loadError?`<div class="callout" role="alert">${esc(selectedFleet.loadError)}</div>`:fleetPage(selectedFleet)):'<div class="loading">正在读取 Agent 池与操作…</div>';
   const fleets=data.fleets||[],capacity=data.capacity;
   return `<div class="quota-summary"><span>已占用或预留 <strong>${capacity.reserved} <span>/ ${capacity.limit}</span></strong></span><span>${capacity.active} 个实例未终止</span>${button('创建 Agent 池','spawn')}</div>`+
-    (fleets.length?table(['Agent 池 / Preset','策略','目标 / 当前','就绪 / 排空','状态','操作'],fleets.map(f=>`<tr><td><div class="primary-text">${esc(f.preset_name)} <span class="mono">@ ${esc(f.preset_version)}</span></div><div class="secondary-text mono">${esc(short(f.id))}</div></td><td>${f.mode==='maintain'?'持续维持':'有限批次'}</td><td class="mono">${f.desired_count} / ${f.current_count}</td><td class="mono">${f.ready_count} / ${f.draining_count}</td><td>${badge(f.state)}</td><td><a class="text-button" href="#fleet/${esc(f.id)}">查看成员</a></td></tr>`)):empty('还没有 Agent 池','群体自行召集成员时也会创建 Agent 池。'));
+    (fleets.length?table(['Agent 池 / Preset','策略','目标 / 当前','就绪 / 排空','状态','操作'],fleets.map(f=>`<tr><td><div class="primary-text">${esc(f.preset_name)} <span class="mono">@ ${esc(f.preset_version)}</span></div><div class="secondary-text mono">${esc(short(f.id))}</div></td><td>${f.mode==='maintain'?'持续维持':'有限批次'}</td><td class="mono">${f.desired_count} / ${f.current_count}</td><td class="mono">${f.ready_count} / ${f.draining_count}</td><td>${badge(f.state)}</td><td><a class="text-button" href="/fleet/${esc(f.id)}">查看成员</a></td></tr>`)):empty('还没有 Agent 池','群体自行召集成员时也会创建 Agent 池。'));
 }
 // —— 群体机制参数：游走池、经验阈值、模式开关 ——
 function researcherSwarmSection(){
@@ -39,7 +39,7 @@ function researcherMechanismSection(){
     const trace=t.trace?`${Number(t.trace.strength).toFixed(1)}（沉积 ${Number(t.trace.deposits||0)}）`:'—';
     const energy=t.energy?`${Number(t.energy.available).toLocaleString()} / ${Number(t.energy.budget).toLocaleString()}`:'—';
     const notes=(t.notes||[]).filter(n=>n.status==='active').length;
-    return `<tr><td><div class="primary-text wrap">${esc(t.title)}</div><div class="secondary-text mono">${esc(short(t.id))}</div></td><td class="mono">${esc(trace)}</td><td class="mono">${esc(energy)}</td><td>${notes?`${notes} 条`:'<span class="hint">—</span>'}</td><td><a class="text-button" href="#board/${esc(t.id)}">任务详情 ↗</a></td></tr>`;
+    return `<tr><td><div class="primary-text wrap">${esc(t.title)}</div><div class="secondary-text mono">${esc(short(t.id))}</div></td><td class="mono">${esc(trace)}</td><td class="mono">${esc(energy)}</td><td>${notes?`${notes} 条`:'<span class="hint">—</span>'}</td><td><a class="text-button" href="/board/${esc(t.id)}">任务详情 ↗</a></td></tr>`;
   }));
 }
 
