@@ -511,3 +511,11 @@ form input[type="checkbox"],form input[type="radio"] {accent-color:var(--ink)}
 .inbox-card .task-form-actions { justify-content:flex-end; }
 .inbox-card .task-form-actions .hint { margin-right:auto; }
 @media (pointer: coarse) { .researcher>summary { min-height:44px; padding-block:12px; } }
+
+/* 执行过程时间线：人话步骤，无原始字段 */
+.run-steps { list-style:none; margin:12px 0 0; padding:0; }
+.run-steps li { display:flex; gap:14px; padding:12px 0; border-bottom:1px solid var(--line); }
+.run-steps li:last-child { border-bottom:0; }
+.run-step-index { color:var(--muted); font:12px var(--mono); padding-top:2px; min-width:22px; }
+.run-step-copy strong { display:block; font-size:14px; }
+.run-step-copy p { margin:4px 0 0; color:var(--muted); font-size:13px; line-height:1.6; }

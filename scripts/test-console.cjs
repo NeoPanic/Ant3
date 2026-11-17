@@ -263,6 +263,23 @@ test('成果库只呈现交付物，私有文件浏览在研究者页',()=>{
   assert(files.includes('浏览文件'));
 });
 
+test('执行过程用人话步骤呈现，不展示原始工具名与参数字段',()=>{
+  const context=consoleContext();
+  const html=vm.runInContext(`reportView({execution_ms:12000,observations:[
+    {call:{name:'platform.board.read',arguments:{}},output:{changed:false,content:{tasks:[{},{}]}}},
+    {call:{name:'platform.board.claim',arguments:{task_id:'t1'}},output:{changed:true,content:{title:'检查数据'}}},
+    {call:{name:'text.inspect',arguments:{text:'x'}},output:{changed:false,content:{characters:1234}}}
+  ]})`,context);
+  assert(html.includes('查看任务板'));
+  assert(html.includes('看到 2 项工作'));
+  assert(html.includes('认领了「检查数据」'));
+  assert(html.includes('统计出 1,234 个字符'));
+  assert(html.includes('12 秒'));
+  assert(!html.includes('platform.board.read'));
+  assert(!html.includes('调用参数'));
+  assert(!html.includes('task_id'));
+});
+
 test('研究者视图默认全收起且惰性渲染，展开状态由分节集合驱动',()=>{
   const context=featureContext();
   vm.runInContext("document={addEventListener(){}}",context);

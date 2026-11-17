@@ -7,6 +7,37 @@ const labels = {verifying:'独立验证',ready:'就绪',draining:'排空中',bus
 const badge = (s, text) => `<span class="badge ${esc(s)}">${esc(text || labels[s] || s)}</span>`;
 Object.assign(labels,{delegating:'委派准备中',active:'已协调',provisioning:'协调中',superseded:'已被替代',pending:'等待派发',blocked:'依赖阻断','awaiting-review':'待验收',accepted:'已验收',cancelling:'正在取消'});
 const runErrorText = code => ({provider_network_error:'模型服务连接失败，请检查网关与网络配置',model_not_configured:'尚未配置模型凭证',timeout:'执行超时',cancelled:'运行已取消',interrupted_outcome_unknown:'执行结果未知，需要人工核对',empty_response:'模型返回了空响应',required_tool_not_completed:'未完成必需的工具调用',tool_limit:'工具调用次数超限',round_limit:'对话轮次超限',context_limit:'上下文超出模型窗口',invalid_arguments:'工具参数不合法',session_busy:'会话正忙'})[code]||'执行未完成';
+const toolNames = {'platform.board.read':'查看任务板','platform.board.claim':'认领工作','platform.board.split':'拆分工作','platform.board.progress':'上报进展','platform.board.result':'读取同伴成果','platform.board.traces':'查看痕迹','platform.board.trace':'留下信号','platform.board.notes':'查看共享结论','platform.board.note':'发布结论','platform.board.audit.evidence':'读取待审成果','platform.board.audit.report':'提交质检结论','text.inspect':'检查文本','web.search':'搜索资料','web.fetch':'读取网页','platform.messaging.send':'发送交接','platform.messaging':'消息操作','platform.workspace.write':'写入文件','platform.workspace.read':'读取文件','platform.workspace.publish':'发布文件','platform.workspace.list':'浏览文件'};
+function toolLabel(name){ return toolNames[name] || (name.startsWith('platform.')?'平台操作':name.startsWith('ant3_')?'内置工具':'自定义工具'); }
+function toolSummary(item){
+  const c=item.output?.content||{};
+  if(c && c.error) return '未完成';
+  const name=item.call.name;
+  if(name==='platform.board.read') return `看到 ${Array.isArray(c.tasks)?c.tasks.length:0} 项工作`;
+  if(name==='platform.board.claim') return c.title?`认领了「${c.title}」`:'认领了一项工作';
+  if(name==='platform.board.split') return `拆成 ${Array.isArray(c.task_ids)?c.task_ids.length:0} 份子工作`;
+  if(name==='platform.board.progress') return String(c.message||'上报了进展').slice(0,80);
+  if(name==='platform.board.result') return '读完了一份同伴成果';
+  if(name==='platform.board.traces') return `看到 ${Array.isArray(c.traces)?c.traces.length:0} 条痕迹`;
+  if(name==='platform.board.trace') return c.key?`留下了「${c.key}」信号`:'留下了信号';
+  if(name==='platform.board.notes') return `看到 ${Array.isArray(c.notes)?c.notes.length:0} 条共享结论`;
+  if(name==='platform.board.note') return c.key?`发布了「${c.key}」`:'发布了结论';
+  if(name==='platform.board.audit.evidence') return c.complete?'完整读取了待审成果':'读取了部分待审成果';
+  if(name==='platform.board.audit.report') return '提交了质检结论';
+  if(name==='text.inspect'&&Number.isFinite(Number(c.characters))) return `统计出 ${Number(c.characters).toLocaleString()} 个字符`;
+  if(name==='web.search') return `找到 ${Array.isArray(c.results)?c.results.length:0} 条结果`;
+  if(name==='web.fetch') return '读取了网页内容';
+  if(name==='platform.messaging.send') return '发送了工作交接';
+  if(name.startsWith('platform.workspace')) return '完成文件操作';
+  return item.output?.changed?'完成并产生变更':'完成';
+}
+function durationText(ms){
+  const value=Number(ms);if(!Number.isFinite(value)||value<0)return '待结算';
+  if(value<1000)return `${value} 毫秒`;
+  if(value<60000)return `${(value/1000).toFixed(value<10000?1:0)} 秒`;
+  const minutes=Math.floor(value/60000),seconds=Math.round((value%60000)/1000);
+  return `${minutes} 分 ${String(seconds).padStart(2,'0')} 秒`;
+}
 const eventNames = {board:{'task_published':'工作发布','task_routed':'成员安排','task_claimed':'成员接活','task_split':'工作拆分','children_activated':'子任务开工','continuation_ready':'等待汇总','task_reviewed':'评审完成','task_requeued':'重新开放','task_settled':'工作结算','progress_updated':'进展上报','trace_deposited':'痕迹沉积','audit_requested':'质检安排','audit_dispatched':'质检开始','audit_settled':'质检完成','note_published':'结论发布','note_adjudicated':'结论裁决','energy_posted':'能量记账','rework_cooldown':'暂缓重试'},swarm:{'self_selected':'个体接活','peer_spawned':'成员加入','peer_retired':'成员退出','colony_starved':'群体预算耗尽'}};
 function eventLabel(kind){
   const [group, name] = String(kind).split('.');
@@ -258,7 +289,7 @@ async function agentDetail(id) {
   if(request!==inspectionRequest)return;
   modalContext={type:'agent',id,session};
   const actions=a.state==='ready'?button('提交运行','run-form',true,`data-id="${esc(id)}"`)+button('暂停','suspend',false,`data-id="${esc(id)}"`):a.state==='suspended'?button('恢复','resume',true,`data-id="${esc(id)}"`):'';
-  openModal(a.preset_name,`<div class="inspector-summary"><div><span>生命周期</span>${badge(a.state)}</div><div><span>Preset 版本</span><strong class="mono">${esc(a.preset_version)}</strong></div><div><span>持久会话</span><strong>${session.turns.length} <small>个历史项 r${session.revision}</small></strong></div></div>${identity('实例 ID',id)}${a.expires_at?`<p class="hint">TTL 截止：${esc(new Date(a.expires_at).toLocaleString('zh-CN'))} 到期将停止接收任务并请求取消活动运行。</p>`:''}<div class="inspector-actions">${button('所属 Agent 池','fleet-nav',false,`data-id="${esc(a.fleet_id)}"`)}${actions}${['ready','busy','suspended'].includes(a.state)?`<button class="text-button" data-action="drain" data-id="${esc(id)}">排空并终止</button>`:''}${['ready','suspended'].includes(a.state)?`<button class="text-button danger-action" data-action="terminate" data-id="${esc(id)}">终止实例</button>`:''}</div><div id="detail-view">${definitionView(a.snapshot)}</div><details class="raw-data"><summary>Agent 池与存储信息</summary><dl class="detail-kv"><dt>Agent 池</dt><dd class="mono">${esc(a.fleet_id)}</dd><dt>槽位 / 代际</dt><dd>${a.slot??'—'} / ${a.generation??'—'}</dd><dt>截止时间</dt><dd>${a.expires_at?esc(new Date(a.expires_at).toLocaleString('zh-CN')):'未设置 TTL'}</dd><dt>检查点</dt><dd>${session.events.length}</dd><dt>模型协议</dt><dd>${esc(a.snapshot.protocol)}</dd></dl></details>`,'Agent 实例');
+  openModal(a.preset_name,`<div class="inspector-summary"><div><span>生命周期</span>${badge(a.state)}</div><div><span>Preset 版本</span><strong class="mono">${esc(a.preset_version)}</strong></div><div><span>会话记录</span><strong>${session.turns.length} <small>项</small></strong></div></div>${identity('实例 ID',id)}${a.expires_at?`<p class="hint">TTL 截止：${esc(new Date(a.expires_at).toLocaleString('zh-CN'))} 到期将停止接收任务并请求取消活动运行。</p>`:''}<div class="inspector-actions">${button('所属 Agent 池','fleet-nav',false,`data-id="${esc(a.fleet_id)}"`)}${actions}${['ready','busy','suspended'].includes(a.state)?`<button class="text-button" data-action="drain" data-id="${esc(id)}">排空并终止</button>`:''}${['ready','suspended'].includes(a.state)?`<button class="text-button danger-action" data-action="terminate" data-id="${esc(id)}">终止实例</button>`:''}</div><div id="detail-view">${definitionView(a.snapshot)}</div><details class="raw-data"><summary>Agent 池与存储信息</summary><dl class="detail-kv"><dt>Agent 池</dt><dd class="mono">${esc(a.fleet_id)}</dd><dt>槽位 / 代际</dt><dd>${a.slot??'—'} / ${a.generation??'—'}</dd><dt>截止时间</dt><dd>${a.expires_at?esc(new Date(a.expires_at).toLocaleString('zh-CN')):'未设置 TTL'}</dd><dt>检查点</dt><dd>${session.events.length}</dd><dt>模型协议</dt><dd>${esc(a.snapshot.protocol)}</dd></dl></details>`,'Agent 实例');
 }
 function definitionView(definition) {
   const bindings=presetBindings(definition);
@@ -272,7 +303,8 @@ async function runDetail(id, preserve=false) {
   if(request!==inspectionRequest)return;
   modalContext={type:'run',id,run:r,tab:selected};
   const duration=r.report?.execution_ms ?? (r.finished_at&&r.started_at?r.finished_at-r.started_at:null);
-  openModal('执行详情',`<div class="inspector-summary"><div><span>运行状态</span>${badge(r.state)}</div><div><span>执行耗时</span><strong>${duration===null?'待结算':`${duration.toLocaleString()} <small>ms</small>`}</strong></div><div><span>模型用量</span><strong>${r.report?.usage?`${r.report.usage.input.toLocaleString()} <small>输入 / ${r.report.usage.output.toLocaleString()} 输出</small>`:'<small>未提供计费用量</small>'}</strong></div></div>${identity('Run ID',id)}<div class="inspector-actions"><span class="hint">详情按需刷新；列表每 1.5 秒同步。</span>${['queued','running'].includes(r.state)?`<button class="button danger" data-action="cancel-run" data-id="${esc(id)}">取消运行</button>`:''}${button('刷新详情','refresh-run',false,`data-id="${esc(id)}"`)}</div><div class="tabs">${[['output','输出'],['report','工具与回执']].map(([key,label])=>`<button data-action="run-tab" data-tab="${key}" aria-pressed="${key===selected}" class="${key===selected?'active':''}">${label}</button>`).join('')}</div><div id="detail-view">${runTabView(r,selected)}</div><p class="hint">原始请求与会话记录请在研究者视图查看。</p><details class="raw-data"><summary>关联实例</summary>${identity('Agent ID',r.instance_id)}</details>`,'运行与证据');
+  const usage=r.report?.usage?`${(r.report.usage.input+r.report.usage.output).toLocaleString()} tokens`:'未记录';
+  openModal('执行详情',`<div class="inspector-summary"><div><span>运行结果</span>${badge(r.state)}</div><div><span>耗时</span><strong>${durationText(duration)}</strong></div><div><span>模型用量</span><strong>${usage}</strong></div></div><div class="inspector-actions">${['queued','running'].includes(r.state)?`<button class="button danger" data-action="cancel-run" data-id="${esc(id)}">取消运行</button>`:''}${['queued','running'].includes(r.state)?button('刷新详情','refresh-run',false,`data-id="${esc(id)}" title="列表每 1.5 秒自动同步"`):''}</div><div class="tabs">${[['output','结果'],['report','执行过程']].map(([key,label])=>`<button data-action="run-tab" data-tab="${key}" aria-pressed="${key===selected}" class="${key===selected?'active':''}">${label}</button>`).join('')}</div><div id="detail-view">${runTabView(r,selected)}</div><details class="raw-data"><summary>技术标识</summary><dl class="detail-kv"><dt>Run</dt><dd class="mono wrap">${esc(id)}</dd><dt>实例</dt><dd class="mono wrap">${esc(r.instance_id)}</dd></dl></details>`,'运行与证据');
   if(preserve){$('#modal [data-action="refresh-run"]').focus({preventScroll:true});$('#modal').scrollTop=scroll;}
 }
 function runTabView(r,tab) {
@@ -280,9 +312,10 @@ function runTabView(r,tab) {
   return runOutput(r);
 }
 function reportView(report) {
-  if(!report)return empty('回执尚未生成','运行结算后可以检查工具调用与完整回执。');
+  if(!report)return empty('过程尚未生成','运行结算后可以查看执行过程。');
   const observations=report.observations||[];
-  return `<div class="receipt-summary"><span>${icon('capabilities')} ${observations.length} 次工具调用</span><span class="mono">${report.execution_ms} ms</span></div>${observations.map((item,i)=>`<section class="receipt"><div class="receipt-head"><span class="receipt-index">${String(i+1).padStart(2,'0')}</span><strong class="mono">${esc(item.call.name)}</strong>${badge('neutral',item.output.changed?'有变更':'无变更')}</div><div class="receipt-content"><div><h3>调用参数</h3>${dataView(item.call.arguments)}</div><div><h3>工具结果</h3>${dataView(item.output.content)}</div></div></section>`).join('')}${report.error?`<div class="callout">${esc(report.error.message||runErrorText(report.error.code))}</div>`:''}`;
+  if(!observations.length)return empty('没有工具调用','这次运行直接给出了结果，没有使用工具。');
+  return `<div class="receipt-summary"><span>${icon('capabilities')} ${observations.length} 个步骤</span><span>${durationText(report.execution_ms)}</span></div><ol class="run-steps">${observations.map((item,i)=>`<li><span class="run-step-index">${String(i+1).padStart(2,'0')}</span><div class="run-step-copy"><strong>${esc(toolLabel(item.call.name))}</strong><p>${esc(toolSummary(item))}</p></div></li>`).join('')}</ol>${report.error?`<div class="callout">${esc(report.error.message||runErrorText(report.error.code))}</div>`:''}<p class="hint">每一步的参数与回执原始记录在研究者视图的执行记录中查看。</p>`;
 }
 function runOutput(r) {
   const error=r.report?.error,pending=['queued','running'].includes(r.state);
