@@ -15,6 +15,10 @@ use rusqlite::{Transaction, params};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
+/// Upper bound for the colony energy pool (2^30). Operators may park a large
+/// pool for long experiments; the ledger itself stays i64.
+pub const MAX_COLONY_BUDGET: i64 = 1_073_741_824;
+
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
@@ -146,7 +150,7 @@ impl Settings {
         let s = &self.self_select;
         if !(1..=64).contains(&s.pool_max)
             || !(0..=100_000).contains(&s.idle_burn_per_min)
-            || !(0..=10_000_000).contains(&s.colony_budget)
+            || !(0..=MAX_COLONY_BUDGET).contains(&s.colony_budget)
             || !(1..=100).contains(&s.poor_failures)
         {
             return Err(fault(400, "invalid_settings"));

@@ -34,7 +34,7 @@ function researcherSwarmSection(){
       <div class="grid-three">
         <label>待命池上限<input name="pool_max" type="number" min="1" max="64" step="1" value="${esc(num(s.pool_max,8))}" required></label>
         <label>每分钟待命消耗<input name="idle_burn_per_min" type="number" min="0" max="100000" step="1" value="${esc(num(s.idle_burn_per_min,20))}" required></label>
-        <label>群体能量池<input name="colony_budget" type="number" min="0" max="10000000" step="1000" value="${esc(num(s.colony_budget,200000))}" required></label>
+        <label>群体能量池<input name="colony_budget" type="number" min="0" max="1073741824" step="1" value="${esc(num(s.colony_budget,200000))}" required></label>
         <label>连续失败淘汰阈值<input name="poor_failures" type="number" min="1" max="100" step="1" value="${esc(num(s.poor_failures,3))}" required></label>
       </div>
     </fieldset>

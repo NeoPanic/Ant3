@@ -72,3 +72,23 @@ fn saved_settings_drive_new_pools_and_trace_views() {
     assert_eq!(traces["half_life_ms"], 60_000);
     assert_eq!(traces["max_strength"], 40.0);
 }
+
+#[test]
+fn colony_budget_accepts_the_full_configured_ceiling() {
+    let store = Store::memory().unwrap();
+    let updated = store
+        .update_settings(json!({"self_select":{"colony_budget":1_073_741_824_i64}}))
+        .unwrap();
+    assert_eq!(updated["self_select"]["colony_budget"], 1_073_741_824_i64);
+    assert_eq!(
+        store.settings_config().unwrap().self_select.colony_budget,
+        1_073_741_824
+    );
+    assert_eq!(
+        store
+            .update_settings(json!({"self_select":{"colony_budget":1_073_741_825_i64}}))
+            .unwrap_err()
+            .1,
+        "invalid_settings"
+    );
+}
