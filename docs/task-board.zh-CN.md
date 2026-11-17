@@ -36,7 +36,7 @@ Web 的“任务板”和 CLI 提供发布、列表、详情和取消。HTTP 使
 CLI 共用 `--port`、`--data-dir` 配置，输出 JSON：
 
 ```sh
-./target/debug/ant3 board publish --file examples/clients/board-task.json --key study-1
+./target/debug/ant3 board publish --file crates/ant3-cli/examples/board-task.json --key study-1
 ./target/debug/ant3 board list
 ./target/debug/ant3 board show TASK_ID
 ./target/debug/ant3 board cancel TASK_ID
@@ -45,7 +45,7 @@ CLI 共用 `--port`、`--data-dir` 配置，输出 JSON：
 
 任务板尚未添加 MCP 工具；已有 MCP 入口提供实例、Run、消息、母体与插件操作。
 
-请求示例见 [board-task.json](../examples/clients/board-task.json)：
+请求示例见 [board-task.json](../crates/ant3-cli/examples/board-task.json)：
 
 ```json
 {
