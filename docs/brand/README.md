@@ -26,7 +26,7 @@ The shared board draws on **stigmergy**, coordination through changes to a share
 | Default data directory / environment prefix | `.ant3/` / `ANT3_` |
 | Plugin and MCP protocol identifiers | `ant3` identifiers |
 
-Use **³** (U+00B3) in display text; use `Ant3` where ASCII is required. Technical identifiers use `ant3`, the Rust execution type is `Ant`, and environment variables use `ANT3_`. Repository links use `Ant3`. This is a breaking identifier change; migrate existing integrations and data directories using the [upgrade guide](../upgrade-ant3.zh-CN.md). Historical records remain unchanged.
+Use **³** (U+00B3) in display text; use `Ant3` where ASCII is required. Technical identifiers use `ant3`, the Rust execution type is `Ant`, and environment variables use `ANT3_`. Repository links use `Ant3`. Historical records remain unchanged.
 
 ## Assets
 

@@ -4,13 +4,15 @@
 
 ## 启动与使用
 
-- [入门指南](getting-started.zh-CN.md)：本地启动、模型配置、任务发布与兼容流程入口。
+- [入门指南](getting-started.zh-CN.md)：本地启动、模型配置与任务发布。
+- 控制台以"人类观察蚁群"视角组织：观察（工作现场/蚁群/成果库）、工作（任务板/需要你处理）、设置（母体/插件/研究者视图）；机制参数默认折叠于研究者视图。
 - [共享任务板](task-board.zh-CN.md)：任务先发布，控制面动态选型，Agent 认领、拆分与回投。
 - [客户端示例](../examples/clients/)：CLI 计划文件与 MCP 配置。
 
 ## 当前状态
 
-- [平台状态](status.zh-CN.md)：可用链路、容量限制、未提供能力和验证边界。
+- [平台状态](status.zh-CN.md)：可用链路、容量限制与验证边界。
+- [路线图](roadmap.zh-CN.md)：唯一前瞻清单，只列未完成方向。
 - [能力与源码索引](capabilities.zh-CN.md)：逐项实现状态、当前模块与目标目录映射、完整源码树。修改能力 JSON 后运行 `python3 scripts/render-progress.py` 更新。
 
 ## 设计与内核
@@ -42,4 +44,3 @@
 
 开发流程见[参与贡献](../CONTRIBUTING.md)。公共 API 文档通过 `cargo doc --locked --workspace --no-deps --open` 生成。
 
-- [Ant³ 标识升级与数据迁移](upgrade-ant3.zh-CN.md)
