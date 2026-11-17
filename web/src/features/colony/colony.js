@@ -15,8 +15,8 @@ function swarmNarrative(event,snapshot){
   if(!event||!swarmKinds.has(event.kind))return null;
   const d=event.data||{},subject=event.subject,title=()=>swarmTaskTitle(subject,snapshot);
   switch(event.kind){
-    case 'swarm.self_selected':return `一只${d.preset_name||'成员'}主动接了「${title()}」`;
-    case 'board.task_claimed':return `${swarmMemberName(d.instance_id||subject,snapshot)}开始处理「${title()}」`;
+    case 'swarm.self_selected':return `一只 ${d.preset_name||'成员'} 主动接了「${title()}」`;
+    case 'board.task_claimed':return `${swarmMemberName(d.instance_id||subject,snapshot)} 开始处理「${title()}」`;
     case 'board.task_split':return `「${swarmTaskTitle(d.parent_id||subject,snapshot)}」被拆成${(d.task_ids||[]).length||d.count||'多'}份独立工作`;
     case 'board.children_activated':return '子任务开工';
     case 'board.continuation_ready':return '子任务全部完成，等待汇总';
@@ -103,18 +103,22 @@ function colonyCostRows(snapshot=data){
       delivered:Boolean(accepted),duration:finished&&t.created_at?colonyDuration(finished-t.created_at):'进行中'};
   });
 }
+let colonyTab='members';
 function colonyPage(){
   if(!colonyPool&&!colonyLoading&&!colonyLoadError)queueMicrotask(loadColony);
   const members=colonyMemberRows(),feed=swarmFeed(events,30,data);
   const budget=Number(colonyPool?.colony_budget)||0,spent=Number(colonyPool?.colony_spent)||0;
   const remaining=Math.max(0,budget-spent),percent=budget?Math.min(100,spent/budget*100):0;
   const costs=colonyCostRows();
+  const membersBody=members.length?table(['成员','擅长','干了几单','成功率','当前状态','正在做'],members.map(m=>`<tr><td><div class="primary-text">${esc(m.nickname)}</div><div class="secondary-text mono">${esc(short(m.id))}</div></td><td class="wrap">${esc(m.purpose)}</td><td>${esc(m.done)}</td><td>${esc(m.rate)}</td><td>${badge(m.rawState==='busy'?'running':m.rawState==='ready'?'ready':m.rawState==='draining'?'draining':'terminated',m.state)}</td><td class="wrap">${m.task?esc(m.task):'<span class="hint">—</span>'}</td></tr>`)):empty('还没有成员','发布任务后，群体会自行召集合适的成员。');
+  const feedBody=feed.length?`<div class="panel-body"><div class="swarm-timeline">${feed.map(item=>`<div class="swarm-line"><span class="swarm-line-text">${esc(item.text)}</span><span class="swarm-line-time">${time(item.at)}</span></div>`).join('')}</div></div>`:empty('群体还很安静','成员开始协作后，这里会出现它们的一举一动。');
+  const costsBody=`<div class="panel-body">${budget?`<div class="energy-progress"><span>群体总预算还剩 ${remaining.toLocaleString()} / ${budget.toLocaleString()}</span><div class="progress-track ${percent>=66?'is-low':percent>=33?'is-mid':''}" role="img" aria-label="群体预算已用 ${Math.round(percent)}%"><i style="width:${percent.toFixed(1)}%"></i></div></div>`:'<p class="hint">群体池尚未启用，暂无总预算。</p>'}
+    ${costs.length?table(['工作','已花费','从发布到交付'],costs.map(c=>`<tr><td class="wrap"><a href="#board/${esc(c.id)}">${esc(c.title)}</a></td><td class="mono">${Number(c.spent).toLocaleString()}${c.budget?` <span class="hint">/ 预算 ${Number(c.budget).toLocaleString()}</span>`:''}</td><td>${c.delivered?esc(c.duration):`<span class="hint">${esc(c.duration)}</span>`}</td></tr>`)):'<p class="hint">还没有已发布的工作。</p>'}</div>`;
+  const body=colonyTab==='feed'?feedBody:colonyTab==='costs'?costsBody:membersBody;
   return head('蚁群', button(colonyLoading?'正在刷新…':'刷新','colony-refresh',false,colonyLoading?'disabled':''))+
     (colonyLoadError?`<div class="callout" role="alert">${esc(colonyLoadError)}。${button('重试','colony-refresh')}</div>`:'')+
-    panel('成员花名册',members.length?table(['成员','擅长','干了几单','成功率','当前状态','正在做'],members.map(m=>`<tr><td><div class="primary-text">${esc(m.nickname)}</div><div class="secondary-text mono">${esc(short(m.id))}</div></td><td class="wrap">${esc(m.purpose)}</td><td>${esc(m.done)}</td><td>${esc(m.rate)}</td><td>${badge(m.rawState==='busy'?'running':m.rawState==='ready'?'ready':m.rawState==='draining'?'draining':'terminated',m.state)}</td><td class="wrap">${m.task?esc(m.task):'<span class="hint">—</span>'}</td></tr>`)):empty('还没有成员','发布任务后，群体会自行召集合适的成员。'),`<span class="board-count">${members.length} 名在场</span>`)+
-    panel('群体动态',feed.length?`<div class="panel-body"><div class="swarm-timeline">${feed.map(item=>`<div class="swarm-line"><span class="swarm-line-text">${esc(item.text)}</span><span class="swarm-line-time">${time(item.at)}</span></div>`).join('')}</div></div>`:empty('群体还很安静','成员开始协作后，这里会出现它们的一举一动。'))+
-    panel('开销',`<div class="panel-body">${budget?`<div class="energy-progress"><span>群体总预算还剩 ${remaining.toLocaleString()} / ${budget.toLocaleString()}</span><div class="progress-track ${percent>=66?'is-low':percent>=33?'is-mid':''}" role="img" aria-label="群体预算已用 ${Math.round(percent)}%"><i style="width:${percent.toFixed(1)}%"></i></div></div>`:'<p class="hint">群体池尚未启用，暂无总预算。</p>'}
-      ${costs.length?table(['工作','已花费','从发布到交付'],costs.map(c=>`<tr><td class="wrap"><a href="#board/${esc(c.id)}">${esc(c.title)}</a></td><td class="mono">${Number(c.spent).toLocaleString()}${c.budget?` <span class="hint">/ 预算 ${Number(c.budget).toLocaleString()}</span>`:''}</td><td>${c.delivered?esc(c.duration):`<span class="hint">${esc(c.duration)}</span>`}</td></tr>`)):'<p class="hint">还没有已发布的工作。</p>'}</div>`);
+    tabBar('colony-tab',[['members',`成员 ${members.length}`],['feed',`群体动态 ${feed.length}`],['costs','开销']],colonyTab)+
+    `<div class="page-tab">${tabPanel(body,true)}</div>`;
 }
 async function colonyAction(action){
   if(action==='colony-refresh'){await loadColony();return true;}

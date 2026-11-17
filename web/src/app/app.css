@@ -279,6 +279,7 @@ pre { max-height: 450px; overflow: auto; margin: 12px 0; padding: 18px; border: 
 .tabs button { min-height: 38px; border: 0; border-bottom: 2px solid transparent; padding: 7px 0; background: none; color: #666; font-size: 12px; white-space: nowrap; }
 .tabs button:hover { color: #222; }
 .tabs button.active { color: #222; border-bottom-color: #444; font-weight: 550; }
+.tab-panel { margin-bottom: 0; }
 .inspector-summary { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 20px; padding: 0 0 20px; border-bottom: var(--divider) solid var(--line); }
 .inspector-summary > div { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
 .inspector-summary > div > span:first-child { font-size: 12px; color: #696969; }

@@ -125,6 +125,8 @@ function head(title, buttons = '') { return `<div class="page-head"><div><h1>${t
 function button(label, action, primary = false, extra = '') { return `<button type="button" class="button ${primary ? 'primary' : ''}" data-action="${action}" ${extra}>${label}</button>`; }
 function empty(title, text, action = '') { return `<div class="empty"><b>${title}</b><p>${text}</p>${action}</div>`; }
 function panel(title, body, link = '', suffix = '') { return `<section class="panel"><div class="panel-head"><h2 class="panel-title">${title}${suffix}</h2>${link}</div>${body}</section>`; }
+function tabBar(action, tabs, active) { return `<div class="tabs" role="tablist">${tabs.map(([key,label])=>`<button role="tab" data-action="${action}" data-id="${key}" aria-selected="${key===active}" aria-pressed="${key===active}" class="${key===active?'active':''}">${label}</button>`).join('')}</div>`; }
+function tabPanel(body, flush = false) { return `<section class="panel tab-panel">${flush?`<div>${body}</div>`:`<div class="panel-body">${body}</div>`}</section>`; }
 
 function table(headers, rows) { return `<div class="table-wrap" tabindex="0" role="region" aria-label="${esc(headers.join('、'))}，可横向滚动"><table class="${['操作','检查','载荷'].includes(headers.at(-1))?'table-actions':''}"><thead><tr>${headers.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`; }
 function agentRows(list) {
@@ -371,6 +373,9 @@ async function handleAction(action, element) {
   }
   if(action==='cancel-run') return openModal('取消这个运行？',`<form data-form="run-cancel" data-id="${esc(id)}"><p class="form-intro">排队任务将停止派发；已开始的运行会协作收尾。已经发生的工具调用和外部效果无法撤销，历史记录保留。</p>${identity('Run ID',id)}${formEnd('确认取消运行')}</form>`,'运行操作');
   if(action==='researcher-tab') {researcherTab=id;return render();}
+  if(action==='board-tab') {boardTab=id;return render();}
+  if(action==='colony-tab') {colonyTab=id;return render();}
+  if(action==='deliveries-tab') {deliveriesTab=id;return render();}
   if(action==='run-tab') {
     const r=modalContext.run, tab=element.dataset.tab;
     modalContext.tab=tab;

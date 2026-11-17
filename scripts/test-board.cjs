@@ -9,6 +9,8 @@ Object.assign(context,{
   badge:(state,text)=>`<span>${text}</span>`,button:(label,action,primary,attributes='')=>`<button data-action="${action}" ${attributes}>${label}</button>`,
   head:(_,title,description,actions)=>`<h1>${title}</h1><p>${description}</p>${actions}`,
   panel:(title,body,extra='')=>`<section><h2>${title}</h2>${extra}${body}</section>`,
+  tabBar:(action,tabs,active)=>`<div role="tablist">${tabs.map(([key,label])=>`<button data-action="${action}" data-id="${key}" class="${key===active?'active':''}">${label}</button>`).join('')}</div>`,
+  tabPanel:body=>`<section class="panel">${body}</section>`,
   empty:(title,description,action='')=>`${title}${description}${action}`,
   formEnd:label=>`<button type="submit">${label}</button>`,
   openModal:(title,html)=>{context.form=html;},dataView:value=>JSON.stringify(value),
@@ -48,14 +50,18 @@ test('评审通过与取消归入历史，待评审、失败和结果未知任�
     {id:'blocked',title:'需要解除阻断',state:'blocked'},
     {id:'pending',title:'等待执行',state:'pending'},
   ]}};
-  const html=vm.runInContext('boardPage()',context),[current,history]=html.split('历史任务');
-  for(const title of ['需要排查','需要核对','需要解除阻断','等待执行','等待人类检查'])assert(current.includes(title));
-  assert(current.includes('等你验收'));
-  assert(!current.includes('已交付'));
+  const html=vm.runInContext('boardPage()',context);
+  for(const title of ['需要排查','需要核对','需要解除阻断','等待执行','等待人类检查'])assert(html.includes(title),title);
+  assert(html.includes('等你验收'));
+  assert(!html.includes('已交付'));
+  assert(!html.includes('已撤回'));
+  const history=vm.runInContext(`boardTab='history';boardPage()`,context);
   assert(history.includes('已交付'));
   assert(history.includes('已撤回'));
-  assert(!html.includes('<img'));
+  assert(!history.includes('等待人类检查'));
+  assert(!history.includes('<img'));
   assert(html.includes('&lt;img src=x&gt;'));
+  vm.runInContext("boardTab='current'",context);
 });
 
 test('成果、进度和人类评审意见可见且转义，评审绑定当前 Run',()=>{

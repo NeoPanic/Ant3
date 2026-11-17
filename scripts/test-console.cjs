@@ -151,8 +151,8 @@ test('群体事件翻译成一句话：认领 / 拆分 / 参考 / 质检 / 人�
   const snapshot={instances:[{id:'agent-9527',preset_name:'analyst',state:'busy'}],board:{tasks:[{id:'task-abcdef12',title:'检查数据'}]}};
   context.snapshot=snapshot;
   const say=(kind,subject,d)=>vm.runInContext(`swarmNarrative(${JSON.stringify({kind,subject,data:d})},snapshot)`,context);
-  assert.equal(say('swarm.self_selected','task-abcdef12',{preset_name:'analyst'}),'一只analyst主动接了「检查数据」');
-  assert.equal(say('board.task_claimed','task-abcdef12',{instance_id:'agent-9527'}),'analyst #9527开始处理「检查数据」');
+  assert.equal(say('swarm.self_selected','task-abcdef12',{preset_name:'analyst'}),'一只 analyst 主动接了「检查数据」');
+  assert.equal(say('board.task_claimed','task-abcdef12',{instance_id:'agent-9527'}),'analyst #9527 开始处理「检查数据」');
   assert.equal(say('board.task_split','task-abcdef12',{parent_id:'task-abcdef12',task_ids:['a','b','c']}),'「检查数据」被拆成3份独立工作');
   assert.equal(say('board.trace_deposited','task-abcdef12',{reason:'reuse'}),'一份成果被同伴参考');
   assert.equal(say('board.trace_deposited','task-abcdef12',{reason:'failure'}),'一条路径失败，群体将换方向');
@@ -247,7 +247,10 @@ test('蚁群页默认文案不出现机制词汇，参数移到研究者页',()=
   assert(!html.includes('response_threshold'));
   assert(!html.includes('浓度'));
   assert(!html.includes('<details class="researcher"'));
-  assert(html.includes('群体总预算还剩 800 / 1,000'));
+  assert(html.includes('群体动态'));
+  const costs=vm.runInContext(`colonyTab='costs';colonyPage()`,context);
+  assert(costs.includes('群体总预算还剩 800 / 1,000'));
+  vm.runInContext("colonyTab='members'",context);
   // 研究者页承接参数。
   const researcher=vm.runInContext('researcherSwarmSection()',context);
   assert(researcher.includes('响应阈值'));
