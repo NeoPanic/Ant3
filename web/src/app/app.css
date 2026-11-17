@@ -229,6 +229,7 @@ tbody tr:hover td:last-child { background: #fafafa; }
 .card p { font-size: 12px; color: #626262; line-height: 1.9; margin: 0 0 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .card-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 9px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: auto; }
 .grid-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.grid-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .capability { padding: 21px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
 .capability h3 { display: flex; justify-content: space-between; align-items: start; gap: 12px; font-size: 14px; margin: 0 0 12px; }
 .capability p { font-size: 12px; line-height: 1.9; color: #636363; margin: 0; }
@@ -452,7 +453,7 @@ form input[type="checkbox"],form input[type="radio"] {accent-color:var(--ink)}
 @media (max-width: 560px) {
   #modal-body form>.form-actions>.button { flex:1; min-width:0; }
   main { padding:20px 14px; }
-  .split>div:last-child,.grid-two,.receipt-content,.cards { grid-template-columns:minmax(0,1fr); }
+  .split>div:last-child,.grid-two,.grid-three,.receipt-content,.cards { grid-template-columns:minmax(0,1fr); }
   .stat { padding:12px 14px; }
   .stat-number { font-size:24px; }
   .stat-number small { display:block; margin:4px 0; font-size:12px; }

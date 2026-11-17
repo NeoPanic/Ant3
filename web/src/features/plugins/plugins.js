@@ -4,7 +4,15 @@ function pluginsPage() {
     const configured=data.builtin_plugin_status?.[p.id]?.configured!==false;
     return `<tr><td><div class="primary-text">${esc(p.id)}</div><div class="secondary-text mono">${esc(p.version)}</div></td><td>${esc(p.description)}</td><td>${badge(configured?'good':'neutral',configured?'可用':'未配置')}</td><td>${(p.tools||[]).length}</td><td><button class="text-button" data-action="builtin-detail" data-id="${esc(p.id)}">查看能力</button></td></tr>`;
   });
-  return head('插件与能力')+panel('内置插件',rows.length?table(['插件 / 版本','能力','状态','工具','操作'],rows):empty('暂无内置插件',''));
+  const processes=data.process_plugins||[];
+  const processRows=processes.map(p=>{
+    const enabled=p.state==='enabled';
+    return `<tr><td><div class="primary-text">${esc(p.id)}</div><div class="secondary-text mono">${esc(p.version)}</div></td><td>${badge(enabled?'good':'neutral',enabled?'允许调用':'已禁用')}</td><td>${p.health_error?'<span class="badge failed">需要检查</span>':'<span class="hint">已通过</span>'}</td><td><button class="text-button" data-action="process-detail" data-id="${esc(p.id)}" data-version="${esc(p.version)}">查看契约</button><button class="text-button" data-action="process-check" data-id="${esc(p.id)}" data-version="${esc(p.version)}">健康检查</button><button class="text-button" data-action="process-state" data-id="${esc(p.id)}" data-version="${esc(p.version)}">${enabled?'禁用':'启用'}</button></td></tr>`;
+  });
+  const execution=data.process_plugin_execution;
+  return head('插件与能力', button('安装进程插件','process-install'))+
+    panel('内置插件',rows.length?table(['插件 / 版本','能力','状态','工具','操作'],rows):empty('暂无内置插件',''))+
+    panel('进程插件',processRows.length?table(['插件 / 版本','调用状态','健康检查','操作'],processRows):empty('尚未安装进程插件','安装本地包后，需要以 --allow-process-plugins 启动 daemon，实例才能调用它。',button('安装本地包','process-install')),`<span class="board-count">${processes.length} 个版本${execution?'':' · 全局执行已关闭'}</span>`);
 }
 function builtinDetail(p) {
   const configured=data.builtin_plugin_status?.[p.id]?.configured!==false;
@@ -19,6 +27,10 @@ function processDetail(p) {
 }
 async function processAction(action,element) {
   if(action==='builtin-detail'){const p=(data.builtin_plugins||[]).find(p=>p.id===element.dataset.id);if(p)builtinDetail(p);return true;}
+  if(action==='process-install'){
+    openModal('安装本地进程插件',`<form data-form="process-install"><label>包目录（绝对路径）<input name="source_dir" required placeholder="/Users/you/plugins/my-tool"></label><p class="hint">读取目录中的 manifest.json，校验工具契约、相对路径与文件摘要后安装；不会执行包内代码。安装后还需要以 --allow-process-plugins 启动 daemon 才可调用。</p>${formEnd('安装版本')}</form>`,'进程插件');
+    return true;
+  }
   if(!['process-detail','process-check','process-state'].includes(action))return false;
   const p=(data.process_plugins||[]).find(p=>p.id===element.dataset.id&&p.version===element.dataset.version);
   if(!p)throw new Error('版本不在当前列表中，请刷新后重试。');

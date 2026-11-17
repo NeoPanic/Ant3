@@ -36,13 +36,15 @@ test('仅操作列固定在表格右侧，数据列正常滚动',()=>{
   assert(!vm.runInContext("table(['目标','时间'],[])",context).includes('class="table-actions"'));
 });
 
-test('插件目录只显示内置能力，不提供安装入口，并明确未配置状态',()=>{
+test('插件目录区分内置与进程插件，并明确未配置状态',()=>{
   const context=consoleContext();
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/plugins/plugins.js'),'utf8'),context);
   vm.runInContext(`data={builtin_plugins:[{id:'web.search',version:'1.0.0',description:'搜索',tools:[]}],builtin_plugin_status:{'web.search':{configured:false}}}`,context);
   const html=vm.runInContext('pluginsPage()',context);
   assert(html.includes('web.search'));assert(html.includes('未配置'));
-  assert(!html.includes('安装'));assert(!html.includes('process-form'));assert(!html.includes('plugin-form'));
+  assert(html.includes('安装进程插件'));
+  assert(html.includes('尚未安装进程插件'));
+  assert(!html.includes('process-form'));assert(!html.includes('plugin-form'));
 });
 
 test('详情中的插件授权也服从全局执行开关',()=>{
