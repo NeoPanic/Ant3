@@ -49,16 +49,34 @@ function researcherPrivateFilesSection(){
   return deliveriesPrivateFiles();
 }
 
+// —— 分页呈现：一次只看一类记录，避免整页滚动 ——
+let researcherTab='swarm';
+const researcherTabs=[
+  ['swarm','群体机制参数'],
+  ['mechanism','任务机制概览'],
+  ['runs','执行记录'],
+  ['events','事件日志'],
+  ['agents','实例与 Agent 池'],
+  ['progress','实现进度'],
+  ['records','消息与私有文件'],
+];
+function researcherTabBar(){
+  return `<div class="tabs" role="tablist">${researcherTabs.map(([key,label])=>`<button role="tab" data-action="researcher-tab" data-id="${key}" aria-selected="${key===researcherTab}" aria-pressed="${key===researcherTab}" class="${key===researcherTab?'active':''}">${label}</button>`).join('')}</div>`;
+}
+function researcherTabBody(){
+  if(researcherTab==='mechanism')return researcherMechanismSection();
+  if(researcherTab==='runs')return researcherRunsSection();
+  if(researcherTab==='events')return researcherEventsSection();
+  if(researcherTab==='agents')return researcherAgentsSection()+researcherFleetsSection();
+  if(researcherTab==='progress')return progressBody();
+  if(researcherTab==='records')return panel('最近消息',`<div class="panel-body">${researcherMessagesSection()}</div>`)+panel('成员私有文件',`<div class="panel-body">${researcherPrivateFilesSection()}</div>`);
+  return researcherSwarmSection();
+}
 function researcherPage(){
+  if(fleetId())researcherTab='agents';
+  const active=researcherTabs.find(([key])=>key===researcherTab)||researcherTabs[0];
   return head('研究者视图：机制参数与原始记录')+
     '<p class="hint">这里是给研究协作机制的人准备的：原始事件、执行证据、池与消息记录。日常观察请用工作现场、蚁群与成果库。</p>'+
-    panel('群体机制参数',researcherSwarmSection())+
-    panel('任务机制概览',researcherMechanismSection())+
-    panel('执行记录',researcherRunsSection())+
-    panel('事件日志',researcherEventsSection())+
-    panel('Agent 实例',researcherAgentsSection())+
-    panel('Agent 池',researcherFleetsSection())+
-    panel('实现进度',progressBody())+
-    panel('最近消息',researcherMessagesSection())+
-    panel('成员私有文件',researcherPrivateFilesSection());
+    researcherTabBar()+
+    `<div class="researcher-tab" role="tabpanel">${panel(active[1],`<div class="panel-body">${researcherTabBody()}</div>`)}</div>`;
 }

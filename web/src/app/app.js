@@ -370,6 +370,7 @@ async function handleAction(action, element) {
     await api(`/api/v1/agent-instances/${encodeURIComponent(id)}/actions`,{action});$('#modal').close();await refresh();return toast('实例状态已更新');
   }
   if(action==='cancel-run') return openModal('取消这个运行？',`<form data-form="run-cancel" data-id="${esc(id)}"><p class="form-intro">排队任务将停止派发；已开始的运行会协作收尾。已经发生的工具调用和外部效果无法撤销，历史记录保留。</p>${identity('Run ID',id)}${formEnd('确认取消运行')}</form>`,'运行操作');
+  if(action==='researcher-tab') {researcherTab=id;return render();}
   if(action==='run-tab') {
     const r=modalContext.run, tab=element.dataset.tab;
     modalContext.tab=tab;

@@ -296,13 +296,20 @@ test('执行过程用人话步骤呈现，不展示原始工具名与参数字�
   assert(!html.includes('task_id'));
 });
 
-test('研究者视图一次呈现全部分节，不使用折叠',()=>{
+test('研究者视图用分页呈现，一次只渲染当前分页',()=>{
   const context=featureContext();
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/researcher/researcher.js'),'utf8'),context);
   vm.runInContext(`location={hash:'#researcher'};data={instances:[],runs:[],fleets:[],messages:[],capabilities:[],capacity:{reserved:0,limit:8,active:0},board:{tasks:[],router:{mode:'model'}},presets:[]};events=[];colonyPool=null;colonyLoading=false;colonyExperience=null;workspaceCatalog=null;workspaceLoading=false;workspacePublications=null;selectedFleet=null;loadColony=()=>{};loadWorkspaces=()=>{};fleetId=()=>null;deliveriesPrivateFiles=()=>'成员私有文件表格';progressBody=()=>'实现进度内容';agentsTable=()=>'';runsTable=()=>'';`,context);
   const html=vm.runInContext('researcherPage()',context);
   assert(html.includes('研究者视图：机制参数与原始记录'));
   assert(!html.includes('<details'),'不使用折叠');
-  for(const title of ['群体机制参数','任务机制概览','执行记录','事件日志','Agent 实例','Agent 池','实现进度','最近消息','成员私有文件'])assert(html.includes(title),title);
+  for(const label of ['群体机制参数','任务机制概览','执行记录','事件日志','实例与 Agent 池','实现进度','消息与私有文件'])assert(html.includes(label),label);
+  assert(html.includes('role="tablist"'));
+  assert.equal((html.match(/role="tab"/g)||[]).length,7);
+  assert(html.includes('Preset 经验与阈值'),'默认展示群体机制');
+  assert(!html.includes('成员私有文件表格'),'未选中的分页不渲染');
+  const records=vm.runInContext(`researcherTab='records';researcherPage()`,context);
+  assert(records.includes('成员私有文件表格'));
+  assert(!records.includes('Preset 经验与阈值'));
 });
 

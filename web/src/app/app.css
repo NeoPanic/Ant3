@@ -485,6 +485,10 @@ form input[type="checkbox"],form input[type="radio"] {accent-color:var(--ink)}
 .researcher[open]>summary { border-bottom:var(--divider) solid var(--line); }
 .researcher-body { padding:16px 18px; }
 .researcher-body>.panel:last-child { margin-bottom:0; }
+.researcher-tab>.panel { margin-bottom: 0; }
+.researcher-tab .panel-body>.detail-kv:first-child { margin-top: 8px; }
+.researcher-tab .panel-body>.panel { margin-top: 20px; }
+.researcher-tab .panel-body>.panel:last-child { margin-bottom: 0; }
 .researcher .researcher { margin:14px 0; }
 .swarm-timeline { display:grid; }
 .swarm-line { display:flex; align-items:baseline; gap:14px; padding:9px 0; border-bottom:var(--divider) solid var(--line); }
