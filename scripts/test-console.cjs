@@ -26,7 +26,7 @@ test('能力列表按涌现路径分组，每项仅有一个状态标签，范�
   assert(html.includes('涌现机制'));
   assert(html.includes('后续扩展'));
   assert(html.includes('原生测试与 Web 联调'));
-  assert(html.includes('crates/ant3-core/src/lib.rs'));
+  assert(!html.includes('crates/ant3-core/src/lib.rs'),'代码路径不再堆在能力卡片里');
   assert(html.includes('能力 &lt;A&gt;'));
 });
 
@@ -296,19 +296,13 @@ test('执行过程用人话步骤呈现，不展示原始工具名与参数字�
   assert(!html.includes('task_id'));
 });
 
-test('研究者视图默认全收起且惰性渲染，展开状态由分节集合驱动',()=>{
+test('研究者视图一次呈现全部分节，不使用折叠',()=>{
   const context=featureContext();
-  vm.runInContext("document={addEventListener(){}}",context);
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/researcher/researcher.js'),'utf8'),context);
-  vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/agents/fleets.js'),'utf8'),context);
-  vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/messages/messages.js'),'utf8'),context);
-  context.location={hash:'#researcher'};
-  vm.runInContext(`data={instances:[],runs:[],fleets:[],messages:[],capabilities:[],capacity:{reserved:0,limit:8,active:0}};events=[];`,context);
+  vm.runInContext(`location={hash:'#researcher'};data={instances:[],runs:[],fleets:[],messages:[],capabilities:[],capacity:{reserved:0,limit:8,active:0},board:{tasks:[],router:{mode:'model'}},presets:[]};events=[];colonyPool=null;colonyLoading=false;colonyExperience=null;workspaceCatalog=null;workspaceLoading=false;workspacePublications=null;selectedFleet=null;loadColony=()=>{};loadWorkspaces=()=>{};fleetId=()=>null;deliveriesPrivateFiles=()=>'成员私有文件表格';progressBody=()=>'实现进度内容';agentsTable=()=>'';runsTable=()=>'';`,context);
   const html=vm.runInContext('researcherPage()',context);
   assert(html.includes('研究者视图：机制参数与原始记录'));
-  assert(!html.includes(' open'), '默认全部收起');
-  assert(!html.includes('directory-search'), '收起的分节不渲染控件，避免重复 ID');
-  vm.runInContext("researcherSections.add('runs')",context);
-  const opened=vm.runInContext('researcherPage()',context);
-  assert.equal((opened.match(/id="directory-search"/g)||[]).length,1);
+  assert(!html.includes('<details'),'不使用折叠');
+  for(const title of ['群体机制参数','任务机制概览','执行记录','事件日志','Agent 实例','Agent 池','实现进度','最近消息','成员私有文件'])assert(html.includes(title),title);
 });
+

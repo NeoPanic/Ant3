@@ -22,8 +22,9 @@ test('发布表单只收集任务；执行 Preset 不可选，验证器为可选
   assert(context.form.includes('name="acceptance"'));
   assert(!context.form.includes('name="preset"'));
   assert(!context.form.includes('name="instance_id"'));
-  // 可选独立验证折叠在 details 内，默认不启用。
-  assert(context.form.includes('<details><summary>独立验证（可选）'));
+  // 可选独立验证直接平铺，默认不启用。
+  assert(context.form.includes('独立验证（可选）'));
+  assert(!context.form.includes('<details'));
   assert(context.form.includes('value="">不启用（仅人类评审）'));
   assert(context.form.includes('name="verify_preset"'));
 });
@@ -47,7 +48,7 @@ test('评审通过与取消归入历史，待评审、失败和结果未知任�
     {id:'blocked',title:'需要解除阻断',state:'blocked'},
     {id:'pending',title:'等待执行',state:'pending'},
   ]}};
-  const html=vm.runInContext('boardPage()',context),[current,history]=html.split('<details id="board-history"');
+  const html=vm.runInContext('boardPage()',context),[current,history]=html.split('历史任务');
   for(const title of ['需要排查','需要核对','需要解除阻断','等待执行','等待人类检查'])assert(current.includes(title));
   assert(current.includes('等你验收'));
   assert(!current.includes('已交付'));

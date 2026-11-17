@@ -84,7 +84,7 @@ function boardPage(){
   return head('任务板', button('发布任务','board-publish',true))+
     (board.router?.error?`<div class="callout" role="status">安排工作暂时受阻：${esc(board.router.error)}</div>`:'')+
     panel('当前任务',current.length?`<div class="board-task-list">${current.map(boardTaskRow).join('')}</div>`:empty(roots.length?'当前没有待处理任务':'还没有发布任务',roots.length?'历史任务保留在下方。发布新任务后，在这里跟进进展与结果。':'点击右上角“发布任务”，填写目标与验收标准。'),`<span class="board-count">${active.length} 项待完成，含子任务${reviewCount?`，${reviewCount} 项等你验收`:''}</span>`)+
-    (history.length?`<details id="board-history" class="board-history"><summary>历史任务 <span>${history.length} 项已交付或取消</span></summary><div class="board-task-list">${history.map(boardTaskRow).join('')}</div></details>`:'')+
+    (history.length?panel(`历史任务 <small class="hint">${history.length} 项已交付或取消</small>`,`<div class="board-task-list">${history.map(boardTaskRow).join('')}</div>`):'')+
     (board.history_truncated?`<p class="hint">显示最近 ${esc(board.roots_included)} 项根任务及其子任务，共 ${esc(board.roots_total)} 项根任务。活动任务优先。</p>`:'');
 }
 function boardEnergySummary(task){
@@ -131,7 +131,7 @@ function boardAuditPanel(task){
   return panel('质检结论',`<div class="panel-body">${note}${rows||'<p class="hint">成果完成后自动开始质检。</p>'}</div>`);
 }
 function boardPublishForm(){
-  openModal('发布任务',`<form data-form="board-publish"><label>任务名称<input name="title" required maxlength="200" placeholder="例如：分析这个项目的性能瓶颈"></label><label>任务内容<textarea name="instructions" required maxlength="8000" rows="5" placeholder="描述目标、已有资料和约束。"></textarea></label><label>验收标准<textarea name="acceptance" required maxlength="8000" rows="3" placeholder="完成时应交付什么，如何判断结果可用？"></textarea></label><label>能量预算（可选）<input name="energy_budget" type="number" min="2000" max="10000000" step="1000" placeholder="默认 100000；验收通过会部分回充，耗尽即停止"></label><details><summary>独立验证（可选）</summary><label>验证器 Preset<select name="verify_preset"><option value="">不启用（仅人类评审）</option>${(data?.presets||[]).map(p=>`<option value="${esc(p.name)}@${esc(p.version)}">${esc(p.name)} @ ${esc(p.version)}</option>`).join('')}</select></label><label>自动返工上限<select name="verify_reworks"><option value="0">0（退回即交人类）</option><option value="1" selected>1</option><option value="2">2</option></select></label><p class="hint">全新实例按验收标准审计冻结结果；通过自动归档，退回有界返工，人类保留最终评审权。</p></details>${formEnd('投递到任务板')}</form>`,'共享任务板');
+  openModal('发布任务',`<form data-form="board-publish"><label>任务名称<input name="title" required maxlength="200" placeholder="例如：分析这个项目的性能瓶颈"></label><label>任务内容<textarea name="instructions" required maxlength="8000" rows="5" placeholder="描述目标、已有资料和约束。"></textarea></label><label>验收标准<textarea name="acceptance" required maxlength="8000" rows="3" placeholder="完成时应交付什么，如何判断结果可用？"></textarea></label><label>能量预算（可选）<input name="energy_budget" type="number" min="2000" max="10000000" step="1000" placeholder="默认 100000；验收通过会部分回充，耗尽即停止"></label><p class="form-section-title">独立验证（可选）</p><label>验证器 Preset<select name="verify_preset"><option value="">不启用（仅人类评审）</option>${(data?.presets||[]).map(p=>`<option value="${esc(p.name)}@${esc(p.version)}">${esc(p.name)} @ ${esc(p.version)}</option>`).join('')}</select></label><label>自动返工上限<select name="verify_reworks"><option value="0">0（退回即交人类）</option><option value="1" selected>1</option><option value="2">2</option></select></label><p class="hint">全新实例按验收标准审计冻结结果；通过自动归档，退回有界返工，人类保留最终评审权。</p>${formEnd('投递到任务板')}</form>`,'共享任务板');
 }
 async function boardAction(action,element){
   if(action==='board-publish'){boardPublishForm();return true;}

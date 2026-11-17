@@ -40,13 +40,13 @@ async function workspaceFile(id,path){
  const request=++inspectionRequest;
  const file=await api(`/api/v1/agent-instances/${encodeURIComponent(id)}/workspace/file?path=${encodeURIComponent(path)}`);
  if(request!==inspectionRequest)return;
- openModal(path,`<p class="hint">当前文件内容 ${file.bytes.toLocaleString()} B 尚未发布为共享快照</p><div class="output">${esc(file.content)}</div><details class="raw-data"><summary>来源与内容摘要</summary>${identity('Agent ID',id)}${identity('Path',path)}${identity('SHA-256',file.digest)}</details>`,'实例文件');
+ openModal(path,`<p class="hint">当前文件内容 ${file.bytes.toLocaleString()} B 尚未发布为共享快照</p><div class="output">${esc(file.content)}</div>`,'实例文件');
 }
 async function workspaceArtifactDetail(id){
  const request=++inspectionRequest;
  const a=await api(`/api/v1/workspace-artifacts/${encodeURIComponent(id)}`);
  if(request!==inspectionRequest)return;
- openModal(a.name,`<div class="inspector-summary"><div><span>内容格式</span><strong>${a.kind==='json'?'结构化 JSON':'文件快照'}</strong></div><div><span>完整性</span><strong>${a.integrity_verified?'摘要匹配':'摘要不匹配'}</strong></div><div><span>大小</span><strong>${a.bytes.toLocaleString()} B</strong></div></div><p>来源 ${badge(a.source_state)}</p><div class="inspector-actions">${button('检查来源 Run','run-detail',false,`data-id="${esc(a.run_id)}"`)}${button('下载原文','workspace-download',false,`data-id="${esc(id)}"`)}</div><div class="output">${esc(a.content)}</div><details class="raw-data"><summary>来源与内容摘要</summary>${identity('Artifact ID',a.id)}${identity('Agent ID',a.instance_id)}${identity('Run ID',a.run_id)}${identity('SHA-256',a.digest)}</details>`,'不可变共享文件');
+ openModal(a.name,`<div class="inspector-summary"><div><span>内容格式</span><strong>${a.kind==='json'?'结构化 JSON':'文件快照'}</strong></div><div><span>完整性</span><strong>${a.integrity_verified?'摘要匹配':'摘要不匹配'}</strong></div><div><span>大小</span><strong>${a.bytes.toLocaleString()} B</strong></div></div><p>来源 ${badge(a.source_state)}</p><div class="inspector-actions">${button('检查来源 Run','run-detail',false,`data-id="${esc(a.run_id)}"`)}${button('下载原文','workspace-download',false,`data-id="${esc(id)}"`)}</div><div class="output">${esc(a.content)}</div>`,'不可变共享文件');
 }
 async function workspaceAction(action,element){
  const id=element.dataset.id;if(action==='workspace-refresh'){await loadWorkspaces();return true;}

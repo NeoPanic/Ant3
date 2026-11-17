@@ -234,3 +234,6 @@ body:has(.studio) .body { background:#0a1220; }
   .studio-inspect-close { width:44px; height:44px; }
 }
 .board-note{fill:#c4dfdc;stroke:#7bc7c4;stroke-width:1.5}.board-note.note-active{fill:#8be4dc}
+
+.studio-message-list { margin-top: 14px; }
+.studio-acceptance { margin-top: 12px; }
