@@ -293,6 +293,56 @@ fn split_routes_children_then_reoffers_parent_to_any_peer() {
     assert_eq!(s.board_task(id(&t)).unwrap()["state"], "completed");
 }
 #[test]
+fn a_single_split_is_bounded_and_depth_stops_at_six() {
+    let (s, t) = fixture();
+    let r = provision(&s, &t);
+    let too_many = SplitInput {
+        tasks: (0..9).map(|i| input(&format!("part {i}"))).collect(),
+    };
+    assert_eq!(
+        s.split_board_task(id(&r), &too_many, "too-many")
+            .unwrap_err()
+            .1,
+        "invalid_board_split"
+    );
+    let max = SplitInput {
+        tasks: (0..8).map(|i| input(&format!("part {i}"))).collect(),
+    };
+    s.claim_board_task(id(&r), id(&t)).unwrap();
+    let receipt = s.split_board_task(id(&r), &max, "max").unwrap();
+    assert_eq!(receipt["task_ids"].as_array().unwrap().len(), 8);
+    finish(&s, &r, "completed");
+    let mut current = s.board_pending().unwrap().remove(0);
+    for depth in 1..=6 {
+        let work = provision(&s, &current);
+        s.claim_board_task(id(&work), id(&current)).unwrap();
+        if depth == 6 {
+            assert_eq!(
+                s.split_board_task(
+                    id(&work),
+                    &SplitInput { tasks: vec![input("too deep")] },
+                    "deep"
+                )
+                .unwrap_err()
+                .1,
+                "board_depth_limit"
+            );
+        } else {
+            let child = s
+                .split_board_task(
+                    id(&work),
+                    &SplitInput { tasks: vec![input("next")] },
+                    &format!("depth-{depth}"),
+                )
+                .unwrap();
+            let child = child["task_ids"][0].as_str().unwrap().to_string();
+            finish(&s, &work, "completed");
+            current = s.board_task(&child).unwrap();
+        }
+    }
+}
+
+#[test]
 fn failed_split_never_launches_children() {
     let (s, t) = fixture();
     let r = provision(&s, &t);

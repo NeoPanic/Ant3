@@ -108,13 +108,17 @@
   },
   {
     "id": "lineage",
-    "name": "受限 Agent 派生",
+    "name": "受限子任务拆分",
     "phase": "P2",
-    "status": "partial",
-    "detail": "Agent 按批准 Preset/参数派生子任务，宿主绑定父任务、Run 和实例；最多 6 层、单次 8 项、每根 48 个后代，根任务共 64 项。没有任意子树授权、迁移或分布式租约。",
-    "source": [],
+    "status": "implemented",
+    "detail": "Agent 只能拆分自己已认领且正在运行的任务；子任务只提交标题、目标与验收标准，平台在来源 Run 成功后激活并交给共享任务板，由后续选型决定执行实例，拆分者不能指定身份。限制：单次最多 8 项、层级最多 6 层、每个根任务树最多 64 项（含根任务）；每轮人工评审周期只能拆一次，失败或取消会连带取消未启动的子任务。",
+    "source": [
+      "crates/ant3-platform/src/scheduling/board/mod.rs",
+      "crates/ant3-platform/src/scheduling/board/tools.rs",
+      "crates/ant3-server/tests/board.rs"
+    ],
     "target": [
-      "crates/ant3-domain/src/agents/"
+      "crates/ant3-platform/src/scheduling/board/"
     ],
     "verification": "native-tests-and-browser",
     "scope": "current",

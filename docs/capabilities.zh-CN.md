@@ -26,7 +26,7 @@
 | 有限批量实例化 | 已实现 | 原生测试 + Web 联调 | HTTP 以 202 接纳创建 Operation，协调器分批创建，每批最多 8 个实例；256 容量含待创建预留，幂等重试复用原回执。 |
 | 实例生命周期与 TTL | 部分实现 | 原生测试 + Web 联调 | 支持暂停、恢复、终止、排空和 TTL，Agent 池支持 finite/maintain 扩缩容。没有空闲策略、stop/start、配置升级或单实例 Operation。 |
 | Agent 池与异步 Operation | 部分实现 | 原生测试 + Web 联调 | Agent 池提供异步创建/扩缩容/终止、持久槽位与代际、容量预留和重启协调；没有排空期限、Operation 单独取消或远程执行配置。 |
-| 受限 Agent 派生 | 部分实现 | 原生测试 + Web 联调 | Agent 按批准 Preset/参数派生子任务，宿主绑定父任务、Run 和实例；最多 6 层、单次 8 项、每根 48 个后代，根任务共 64 项。没有任意子树授权、迁移或分布式租约。 |
+| 受限子任务拆分 | 已实现 | 原生测试 + Web 联调 | Agent 只能拆分自己已认领且正在运行的任务；子任务只提交标题、目标与验收标准，平台在来源 Run 成功后激活并交给共享任务板，由后续选型决定执行实例，拆分者不能指定身份。限制：单次最多 8 项、层级最多 6 层、每个根任务树最多 64 项（含根任务）；每轮人工评审周期只能拆一次，失败或取消会连带取消未启动的子任务。 |
 | 持久队列与取消 | 已实现 | 原生测试 + Web 联调 | 持久 Run 队列提供 8 个本地并发槽、单实例串行、幂等提交与协作取消。 |
 | SQLite 与恢复 | 部分实现 | 原生测试 | SQLite 事务、检查点、事件和 daemon 独占锁；恢复时保留已知回执，未知结果进入中断。没有完整备份运维、外部对账或事件分页。 |
 | 三类模型协议 | 部分实现 | 原生测试 | 提供 Chat Completions、Responses、Anthropic 三类非流式工具循环；Responses 经过真实服务验证。没有流式输出或分片中断契约。 |
@@ -64,7 +64,7 @@
 | 有限批量实例化 | `crates/ant3-platform/src/control/fleets.rs`<br>`crates/ant3-platform/src/storage/sqlite.rs` | `crates/ant3-platform/src/control/` |
 | 实例生命周期与 TTL | `crates/ant3-platform/src/control/lifecycle.rs`<br>`crates/ant3-platform/src/storage/sqlite.rs` | `crates/ant3-platform/src/control/`<br>`crates/ant3-domain/src/agents/` |
 | Agent 池与异步 Operation | `crates/ant3-platform/src/control/fleets.rs`<br>`web/src/features/agents/fleets.js`<br>`crates/ant3-server/tests/fleets.rs` | `crates/ant3-domain/src/operations/`<br>`crates/ant3-platform/src/control/` |
-| 受限 Agent 派生 | 尚无实现模块 | `crates/ant3-domain/src/agents/` |
+| 受限子任务拆分 | `crates/ant3-platform/src/scheduling/board/mod.rs`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-server/tests/board.rs` | `crates/ant3-platform/src/scheduling/board/` |
 | 持久队列与取消 | `crates/ant3-platform/src/storage/sqlite.rs`<br>`crates/ant3-worker/src/runner.rs` | `crates/ant3-platform/src/scheduling/` |
 | SQLite 与恢复 | `crates/ant3-platform/src/storage/sqlite.rs`<br>`crates/ant3-storage/migrations/sqlite/schema.sql`<br>`crates/ant3-storage/src/lib.rs`<br>`crates/ant3-storage/tests/database.rs` | `crates/ant3-storage/src/` |
 | 三类模型协议 | `crates/ant3-models/src/lib.rs` | `crates/ant3-models/src/` |
