@@ -12,7 +12,11 @@ function inboxItems(snapshot=data){
     const auditing=latest&&['pending','running'].includes(latest.state);
     if(!task.parent_id&&task.review_state==='pending'&&!auditing)
       items.push({kind:'review',id:task.id,title:'成果等你验收',text:`「${task.title}」已完成，等待你按验收标准检查。`,task});
-    if(latest&&['inconclusive','failed'].includes(latest.state))
+    const latestReview=(task.reviews||[]).slice().sort((a,b)=>(b.created_at||0)-(a.created_at||0))[0];
+    const auditUnresolved=latest&&['inconclusive','failed'].includes(latest.state)
+      &&task.review_state!=='accepted'
+      &&!(latestReview&&Number(latestReview.created_at||0)>=Number(latest.finished_at||0));
+    if(auditUnresolved)
       items.push({kind:'audit',id:task.id,title:'质检无法定论，需要你判断',text:`「${task.title}」的独立质检未能给出结论${latest.error?`（${inboxAuditReason(latest.error)}）`:''}，请人工核对成果。`,task});
     if(task.state==='failed'&&task.error==='energy_exhausted')
       items.push({kind:'energy',id:task.id,title:'预算耗尽停止',text:`「${task.title}」因预算耗尽停止。暂不支持在线追加预算；可取消后以更高预算重新发布。`,task});

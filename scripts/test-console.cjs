@@ -191,6 +191,22 @@ test('inbox 聚合人类决策点：待验收根任务、质检定论、预算�
   assert(!html.includes('子任务'));
 });
 
+test('已处理过的质检不再出现在待办中',()=>{
+  const context=featureContext();
+  vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/inbox/inbox.js'),'utf8'),context);
+  vm.runInContext(`data={board:{tasks:[
+    {id:'a1',title:'已验收',state:'completed',review_state:'accepted',
+     audits:[{state:'failed',finished_at:100,error:'audit_run_incomplete'}],
+     reviews:[{decision:'accepted',author_kind:'operator',created_at:200}]},
+    {id:'a2',title:'人工已判',state:'completed',review_state:'pending',
+     audits:[{state:'inconclusive',finished_at:100}],
+     reviews:[{decision:'changes_requested',author_kind:'operator',created_at:150}]},
+  ]},runs:[],models:[{protocol:'demo',configured:true}]}`,context);
+  const items=vm.runInContext('inboxItems()',context);
+  assert.deepEqual([...items.map(i=>i.id)],['a2'],'仅保留尚无人工结论的待验收项');
+  assert.equal(items[0].kind,'review');
+});
+
 test('一切正常时 inbox 显示空态，不产生卡片',()=>{
   const context=featureContext();
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/inbox/inbox.js'),'utf8'),context);
