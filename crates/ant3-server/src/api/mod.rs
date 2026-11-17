@@ -4,7 +4,7 @@ use axum::{
     http::{HeaderMap, StatusCode, Uri, header},
     middleware::{self, Next},
     response::{Html, IntoResponse, Response},
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use ant3::session::SessionStore;
 use ant3_models::Models;

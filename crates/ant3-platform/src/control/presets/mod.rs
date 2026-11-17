@@ -230,6 +230,48 @@ impl Store {
     pub fn publish_definition(&self, input: Value) -> PResult<Value> {
         self.publish_checked(input, |_| Ok(()))
     }
+    // 版本不可变意味着没有"修改"，删除是唯一的出口。仍在服役（实例、Agent 池、
+    // 进行中的任务或待执行的质检计划）的版本拒绝删除；历史快照与经验记录保留。
+    pub fn delete_preset(&self, name: &str, version: &str) -> PResult<Value> {
+        self.transaction(|tx| {
+            let exists: bool = tx.query_row(
+                "SELECT EXISTS(SELECT 1 FROM presets WHERE name=? AND version=?)",
+                params![name, version],
+                |r| r.get::<_, i64>(0),
+            )?
+                != 0;
+            if !exists {
+                return Err(fault(404, "preset_not_found"));
+            }
+            let active = |sql: &str| -> PResult<i64> {
+                Ok(tx.query_row(sql, params![name, version], |r| {
+                    r.get::<_, i64>(0)
+                })?)
+            };
+            let instances = active(
+                "SELECT count(*) FROM instances WHERE preset_name=? AND preset_version=? AND state!='terminated'",
+            )?;
+            let fleets = active(
+                "SELECT count(*) FROM fleets WHERE preset_name=? AND preset_version=? AND state!='terminated'",
+            )?;
+            let tasks = active(
+                "SELECT count(*) FROM board_tasks WHERE preset_name=? AND preset_version=? AND state NOT IN ('completed','failed','cancelled','interrupted')",
+            )?;
+            let verifications = tx.query_row(
+                "SELECT count(*) FROM board_tasks WHERE state NOT IN ('completed','failed','cancelled','interrupted') AND json_extract(verification,'$.preset_name')=? AND json_extract(verification,'$.preset_version')=?",
+                params![name, version],
+                |r| r.get::<_, i64>(0),
+            )?;
+            if instances + fleets + tasks + verifications > 0 {
+                return Err(fault(409, "preset_in_use"));
+            }
+            tx.execute(
+                "DELETE FROM presets WHERE name=? AND version=?",
+                params![name, version],
+            )?;
+            Ok(json!({"deleted":true,"name":name,"version":version}))
+        })
+    }
     pub fn publish_checked(
         &self,
         input: Value,

@@ -220,6 +220,7 @@ pub fn router(app: App) -> Router {
         .route("/api/v1/messages/{id}", get(message))
         .route("/api/v1/messages/{id}/actions", post(message_action))
         .route("/api/v1/presets", post(publish))
+        .route("/api/v1/presets/{name}/{version}", delete(preset_delete))
         .route("/api/v1/plugins", post(install))
         .route(
             "/api/v1/process-plugins",

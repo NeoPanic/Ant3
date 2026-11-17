@@ -1,4 +1,5 @@
 use ant3_platform::{
+    board::{BoardVerification, PublishInput},
     domain::*,
     fleets::{FleetAction, FleetPlan},
     presets::{bindings, instantiate},
@@ -289,4 +290,73 @@ fn legacy_publication_and_instantiation_keep_their_existing_wire_contract() {
         )
         .unwrap();
     assert_eq!(spawned["count"], 1);
+}
+
+#[test]
+fn unused_preset_versions_delete_and_busy_ones_refuse() {
+    let store = Store::memory().unwrap();
+    bundle(&store, "local.a", "1");
+    store.publish_definition(definition("worker")).unwrap();
+    assert_eq!(store.delete_preset("worker", "1").unwrap()["deleted"], true);
+    assert_eq!(
+        store.delete_preset("worker", "1").unwrap_err().1,
+        "preset_not_found"
+    );
+
+    store.publish_definition(definition("busy")).unwrap();
+    let plan = FleetPlan {
+        preset_name: "busy".into(),
+        preset_version: "1".into(),
+        count: 1,
+        mode: "finite".into(),
+        ttl_seconds: None,
+        parameters: Default::default(),
+    };
+    let fleet = store.create_fleet(&plan, "delete-fleet").unwrap();
+    let fleet_id = fleet["fleet_id"].as_str().unwrap().to_string();
+    assert_eq!(
+        store.delete_preset("busy", "1").unwrap_err().1,
+        "preset_in_use"
+    );
+    store
+        .fleet_action(
+            &fleet_id,
+            &FleetAction {
+                action: "terminate".into(),
+                expected_revision: 1,
+                count: None,
+            },
+            "delete-stop",
+        )
+        .unwrap();
+    store.reconcile_fleets().unwrap();
+    assert_eq!(store.delete_preset("busy", "1").unwrap()["deleted"], true);
+}
+
+#[test]
+fn pending_verification_plans_block_deletion_until_the_task_ends() {
+    let store = Store::memory().unwrap();
+    store.publish_definition(definition("verifier")).unwrap();
+    let task = store
+        .publish_board_task(
+            &PublishInput {
+                title: "audit me".into(),
+                instructions: "inspect".into(),
+                acceptance: "evidence".into(),
+                verification: Some(BoardVerification {
+                    preset_name: "verifier".into(),
+                    preset_version: "1".into(),
+                    max_auto_reworks: 1,
+                }),
+                energy_budget: None,
+            },
+            "root",
+        )
+        .unwrap();
+    assert_eq!(
+        store.delete_preset("verifier", "1").unwrap_err().1,
+        "preset_in_use"
+    );
+    store.cancel_board_task(task["id"].as_str().unwrap()).unwrap();
+    assert_eq!(store.delete_preset("verifier", "1").unwrap()["deleted"], true);
 }

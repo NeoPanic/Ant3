@@ -218,6 +218,13 @@ pub(super) async fn cancel(
     }
     Ok(Json(result))
 }
+pub(super) async fn preset_delete(
+    State(app): State<App>,
+    Path((name, version)): Path<(String, String)>,
+) -> PResult<Json<Value>> {
+    Ok(Json(app.store.delete_preset(&name, &version)?))
+}
+
 pub(super) async fn events(
     State(app): State<App>,
     Query(query): Query<HashMap<String, String>>,
