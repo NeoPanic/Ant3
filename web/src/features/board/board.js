@@ -35,15 +35,8 @@ async function boardReadDetail(){
     const task=await api(`/api/board/tasks/${encodeURIComponent(id)}`);
     if(boardId()!==id)return;
     selectedBoard=task;
-    const rootId=boardRootId(task,boardData().tasks||[]);
-    try{const field=await api(`/api/board/traces?root_id=${encodeURIComponent(rootId)}`);if(boardId()===id)boardTraces=field;}
-    catch(error){if(boardId()===id)boardTraces={root_id:rootId,loadError:error.message};}
-    try{const energy=await api(`/api/board/tasks/${encodeURIComponent(id)}/energy`);if(boardId()===id)boardEnergy={id,...energy};}
-    catch{if(boardId()===id)boardEnergy=null;}
-    try{const notes=await api(`/api/board/tasks/${encodeURIComponent(id)}/notes`);if(boardId()===id)boardNotes={id,...notes};}
-    catch{if(boardId()===id)boardNotes=null;}
   }
-  catch(error){if(boardId()===id){selectedBoard={id,loadError:error.message};boardTraces=null;boardEnergy=null;boardNotes=null;}}
+  catch(error){if(boardId()===id)selectedBoard={id,loadError:error.message};}
 }
 function boardData(snapshot=data){return snapshot.board||{tasks:[],agents:[]};}
 function boardRoute(id){return (boardData().routing||[]).find(route=>route.task_id===id);}
@@ -74,43 +67,10 @@ function boardTaskRow(task){
   return `<a class="board-task-row" href="#board/${esc(task.id)}"><span class="board-task-copy"><strong>${esc(task.title)}</strong>${task.instructions?`<span class="board-task-preview">${esc(task.instructions)}</span>`:''}<span>${esc(boardPreset(task)?`由 ${task.preset_name} 负责`:route?.error?boardRoutingMessage(route.error):'群体自行安排合适的成员')}${task.parent_id?' 子任务':''}</span></span>${boardReuseBadge(task)}${badge(boardBadgeClass(task),boardStatus(task,route))}<span aria-hidden="true">→</span></a>`;
 }
 // —— 研究者折叠区：机制参数与原始记录 ——
-function boardTraceFieldPanel(task,tasks){
-  const rootId=boardRootId(task,tasks),field=boardTraces;
-  const refreshButton=button('刷新','board-refresh');
-  let body;
-  if(field?.root_id===rootId&&field.loadError)body=`<div class="panel-body"><p class="hint">痕迹场读取失败：${esc(field.loadError)}</p></div>`;
-  else if(field?.root_id!==rootId)body=`<div class="panel-body"><p class="hint">正在读取痕迹场…</p></div>`;
-  else{
-    const traces=[...(field.traces||[])].sort((a,b)=>boardTraceStrength(b)-boardTraceStrength(a));
-    body=traces.length?table(['痕迹键','类型','浓度','沉积次数'],traces.map(trace=>`<tr><td class="mono">${esc(trace.key)}</td><td><span class="badge neutral">${esc(boardTraceKinds[trace.kind]||trace.kind)}</span></td><td><span class="trace-cell">${boardTraceBadge(trace)}<span class="mono">/ ${esc(field.max_strength??100)}</span></span></td><td class="mono">${esc(trace.deposits??0)}</td></tr>`)):`<div class="panel-body"><p class="hint">该根任务还没有信息素痕迹。Agent 结算成果后会在此沉积。</p></div>`;
-  }
-  const halfLife=field?.root_id===rootId&&!field.loadError?`<p class="hint trace-half-life">信息素随时间蒸发：半衰期 ${boardTraceHalfLife(field.half_life_ms)}${Number.isFinite(Number(field.half_life_ms))?`（half_life_ms = ${esc(field.half_life_ms)}）`:''}，即每隔该时长浓度减半；新的沉积会重新加浓。列表按当前浓度降序，随页面每 1.5 秒轮询自动更新。</p>`:'';
-  return panel('信息素痕迹场',body+halfLife,refreshButton,`<small>根任务 <span class="mono">${esc(rootId)}</span></small>`);
-}
-function boardEnergyLedgerPanel(task){
-  const ledger=boardEnergy?.id===task.id?boardEnergy:null;
-  if(!ledger)return '<p class="hint">正在读取能量账本…</p>';
-  const rows=ledger.ledger||[];
-  const kinds={reserve:'预留',settle:'结算消耗',settle_unknown:'结果未知结算',accept_refund:'验收回充',complete_refund:'完成回充',refund:'回充',idle_burn:'待命消耗'};
-  return `<dl class="detail-kv"><dt>预算 / 预留</dt><dd class="mono">${esc(ledger.budget)} / ${esc(ledger.reserved)}</dd><dt>已耗 / 回充 / 可用</dt><dd class="mono">${esc(ledger.spent)} / ${esc(ledger.refunded)} / ${esc(ledger.available)}</dd></dl>`+
-    (rows.length?table(['运行','类型','数量','结余','时间'],rows.map(entry=>`<tr><td class="mono">${esc(short(entry.run_id||'—'))}</td><td>${esc(kinds[entry.kind]||entry.kind)}</td><td class="mono">${esc(entry.amount)}</td><td class="mono">${esc(entry.balance)}</td><td>${time(entry.created_at)}</td></tr>`)):'<p class="hint">尚无记账记录。</p>');
-}
-function boardNotesHistoryPanel(task){
-  const source=boardNotes?.id===task.id?boardNotes.notes:task.notes;
-  if(!source)return '<p class="hint">正在读取黑板裁决历史…</p>';
-  if(!source.length)return '<p class="hint">尚无黑板记录。</p>';
-  const status={active:'现行结论',superseded:'被裁决取代'};
-  return table(['键','修订','状态','支持度','内容'],source.map(n=>`<tr><td class="mono wrap">${esc(n.key)}</td><td class="mono">r${esc(n.revision)}</td><td>${esc(status[n.status]||n.status)}${n.superseded_by?`<div class="secondary-text mono">${esc(short(n.superseded_by))}</div>`:''}</td><td class="mono">${esc(n.support_score??n.support??'—')}</td><td class="wrap record-text">${esc(n.body)}</td></tr>`));
-}
-function boardResearcherDetails(task,tasks){
-  return `<details class="researcher" id="board-researcher"><summary>研究者视图：协作机制与原始记录</summary><div class="researcher-body">
-    ${boardTraceFieldPanel(task,tasks)}
-    ${panel('能量账本',`<div class="panel-body">${boardEnergyLedgerPanel(task)}</div>`)}
-    ${panel('黑板裁决历史',`<div class="panel-body">${boardNotesHistoryPanel(task)}</div>`)}
-    ${task.route_reason?`<details class="raw-data"><summary>选型依据原文（route_reason）</summary><p class="record-text">${esc(task.route_reason)}</p></details>`:''}
-    ${task.trace?`<p class="hint">当前痕迹：${esc(boardTraceKinds[task.trace.kind]||task.trace.kind)} · 浓度 ${boardTraceStrength(task.trace).toFixed(1)} · 沉积 ${esc(task.trace.deposits??0)} 次</p>`:''}
-  </div></details>`;
-}
+
+
+
+
 function boardPage(){
   const board=boardData(),tasks=board.tasks||[],id=boardId();
   if(id){
@@ -151,8 +111,7 @@ function boardDetail(task,tasks){
     boardNotesPanel(task)+
     (task.review_state==='pending'&&!boardAuditing(task)?panel('等你验收',`<div class="panel-body"><p>根据验收标准检查成果。通过后即交付归档；退回修改将按你的意见重新开工。</p>${button('评审成果','board-review',true,`data-id="${esc(task.id)}" data-run="${esc(task.run_id)}"`)}</div>`):'')+
     (task.reviews?.length?panel('最近评审记录',`<div class="panel-body">${task.reviews.map(review=>`<div class="record-text"><strong>${review.decision==='accepted'?'通过':'退回修改'}</strong>${review.author_kind==='verifier'?' <span class="hint">（独立质检）</span>':' <span class="hint">（人类）</span>'}<p>${esc(review.feedback)}</p>${button('查看本轮执行记录','run-detail',false,`data-id="${esc(review.run_id)}"`)}</div>`).join('')}</div>`):'')+
-    `<div class="head-actions">${task.instance_id?button('负责成员','agent-detail',false,`data-id="${esc(task.instance_id)}"`):''}${task.run_id?button('执行记录','run-detail',false,`data-id="${esc(task.run_id)}"`):''}<a class="button" href="#studio">工作现场</a></div>`+
-    boardResearcherDetails(task,tasks);
+    `<div class="head-actions">${task.instance_id?button('负责成员','agent-detail',false,`data-id="${esc(task.instance_id)}"`):''}${task.run_id?button('执行记录','run-detail',false,`data-id="${esc(task.run_id)}"`):''}<a class="button" href="#studio">工作现场</a></div>`;
 }
 function boardNotesPanel(task){
   if(task.parent_id)return '';

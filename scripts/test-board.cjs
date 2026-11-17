@@ -127,21 +127,16 @@ test('列表行用人话徽章展示被参考次数，不显示浓度徽章',()=
   assert(!html.includes('浓度'));
 });
 
-test('任务详情默认区无机制词汇，机制细节收进研究者折叠',()=>{
+test('任务详情只讲结果，机制数据全部在研究者页',()=>{
   context.location.hash='#board/root';
   context.data={board:{tasks:[{id:'root',root_id:'root',title:'工作',instructions:'目标',acceptance:'标准',state:'running',route_reason:'原始选型依据',trace:{kind:'result',strength:66},reuse_count:2,energy:{budget:100000,spent:4000,refunded:0,available:96000}}]}};
   const html=vm.runInContext('boardPage()',context);
-  const [visible,researcher]=html.split('<details class="researcher"');
-  assert(researcher,'研究者折叠区存在');
-  assert(!visible.includes('浓度'));
-  assert(!visible.includes('阈值'));
-  assert(!visible.includes('账本'));
-  assert(!visible.includes('半衰期'));
-  assert(!visible.includes('原始选型依据'));
-  assert(visible.includes('被同伴参考 2 次'));
-  assert(visible.includes('花费'));
-  assert(researcher.includes('信息素痕迹场'));
-  assert(researcher.includes('能量账本'));
-  assert(researcher.includes('黑板裁决历史'));
-  assert(researcher.includes('原始选型依据'));
+  assert(!html.includes('<details class="researcher"'),'任务板不再内嵌研究者折叠');
+  assert(!html.includes('浓度'));
+  assert(!html.includes('阈值'));
+  assert(!html.includes('账本'));
+  assert(!html.includes('半衰期'));
+  assert(html.includes('被同伴参考 2 次'));
+  assert(html.includes('花费'));
 });
+

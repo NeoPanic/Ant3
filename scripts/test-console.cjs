@@ -218,22 +218,25 @@ test('蚁群花名册合并实例与经验，状态用人话，正在做的任�
   assert.equal(rows[0].task,'检查数据');
 });
 
-test('蚁群页默认文案不出现机制词汇，研究者折叠内保留参数',()=>{
-  const context=featureContext();
+test('蚁群页默认文案不出现机制词汇，参数移到研究者页',()=>{
+  const context=consoleContext();
+  context.queueMicrotask=()=>{};
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/colony/colony.js'),'utf8'),context);
-  vm.runInContext(`
-    colonyPool={enabled:true,peers:[],pool_max:4,colony_budget:1000,colony_spent:200,idle_burn_per_min:5};
-    colonyExperience={experience:[{preset_name:'analyst',preset_version:'1',successes:1,failures:0,energy_spent:10,cost_efficiency:0.5,response_threshold:20}]};
-    data={instances:[],presets:[],board:{tasks:[{id:'t',title:'工作',state:'running',energy:{budget:100,spent:40}}],router:{mode:'model'}}};
-    events=[];
-  `,context);
+  vm.runInContext("document={addEventListener(){}}",context);
+  vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/researcher/researcher.js'),'utf8'),context);
+  vm.runInContext("data={board:{tasks:[],agents:[]},instances:[],presets:[],events:[]}",context);
+  vm.runInContext("colonyPool={enabled:true,pool_max:8,peers:[],colony_budget:1000,colony_spent:200,idle_burn_per_min:20}",context);
+  vm.runInContext("colonyExperience={experience:[{preset_name:'reader',preset_version:'1',successes:2,failures:1,energy_spent:300,cost_efficiency:0.4,response_threshold:0.31}]}",context);
   const html=vm.runInContext('colonyPage()',context);
-  const [visible,researcher]=html.split('<details class="researcher"');
-  assert(researcher);
-  for(const word of ['浓度','阈值','半衰期','账本','response_threshold','cost_efficiency'])assert(!visible.includes(word),`可见区不应包含 ${word}`);
-  assert(researcher.includes('response_threshold'));
-  assert(researcher.includes('cost_efficiency'));
-  assert(visible.includes('群体总预算还剩 800 / 1,000'));
+  assert(!html.includes('response_threshold'));
+  assert(!html.includes('浓度'));
+  assert(!html.includes('<details class="researcher"'));
+  assert(html.includes('群体总预算还剩 800 / 1,000'));
+  // 研究者页承接参数。
+  const researcher=vm.runInContext('researcherSwarmSection()',context);
+  assert(researcher.includes('响应阈值'));
+  assert(researcher.includes('能量效率'));
+  assert(researcher.includes('0.31'));
 });
 
 test('成果库以交付物为中心，私有文件浏览退到折叠区',()=>{
@@ -259,6 +262,7 @@ test('成果库以交付物为中心，私有文件浏览退到折叠区',()=>{
 
 test('研究者视图默认全收起且惰性渲染，展开状态由分节集合驱动',()=>{
   const context=featureContext();
+  vm.runInContext("document={addEventListener(){}}",context);
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/researcher/researcher.js'),'utf8'),context);
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/agents/fleets.js'),'utf8'),context);
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/messages/messages.js'),'utf8'),context);

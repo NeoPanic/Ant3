@@ -67,7 +67,7 @@ async function loadColony(){
   if(colonyLoading)return;colonyLoading=true;colonyLoadError='';
   try{[colonyPool,colonyExperience]=await Promise.all([api('/api/swarm/pool'),api('/api/presets/experience')]);}
   catch(error){colonyLoadError=error.message;}
-  finally{colonyLoading=false;if(page()==='colony')render();}
+  finally{colonyLoading=false;if(page()==='colony'||page()==='researcher')render();}
 }
 const colonyMemberStates={busy:'正在干活',ready:'待命',draining:'收尾中',suspended:'休眠中'};
 function colonyMemberRows(snapshot=data){
@@ -109,17 +109,12 @@ function colonyPage(){
   const budget=Number(colonyPool?.colony_budget)||0,spent=Number(colonyPool?.colony_spent)||0;
   const remaining=Math.max(0,budget-spent),percent=budget?Math.min(100,spent/budget*100):0;
   const costs=colonyCostRows();
-  const researcher=`<details class="researcher" id="colony-researcher"><summary>研究者视图：池与经验参数</summary><div class="researcher-body">
-    <dl class="detail-kv"><dt>池模式</dt><dd>${colonyPool?.enabled?'开启':'关闭'}</dd><dt>繁殖目标 / 实际</dt><dd>${esc(colonyPool?.pool_max??'—')} / ${esc((colonyPool?.peers||[]).length)}</dd><dt>选型模式</dt><dd class="mono">${esc(data.board?.router?.mode||'未提供')}</dd><dt>待命消耗</dt><dd>${esc(colonyPool?.idle_burn_per_min??'—')} / 分钟</dd></dl>
-    ${(colonyExperience?.experience||[]).length?table(['母体 / 版本','成功 / 失败','能量花费','cost_efficiency','response_threshold'],colonyExperience.experience.map(e=>`<tr><td class="mono wrap">${esc(e.preset_name)} @ ${esc(e.preset_version)}</td><td class="mono">${esc(e.successes)} / ${esc(e.failures)}</td><td class="mono">${esc(e.energy_spent)}</td><td class="mono">${esc(e.cost_efficiency)}</td><td class="mono">${esc(e.response_threshold)}</td></tr>`)):'<p class="hint">尚无经验记录。</p>'}
-    <details class="raw-data"><summary>原始 peers JSON</summary>${dataView(colonyPool?.peers||[])}</details></div></details>`;
   return head('蚁群', button(colonyLoading?'正在刷新…':'刷新','colony-refresh',false,colonyLoading?'disabled':''))+
     (colonyLoadError?`<div class="callout" role="alert">${esc(colonyLoadError)}。${button('重试','colony-refresh')}</div>`:'')+
     panel('成员花名册',members.length?table(['成员','擅长','干了几单','成功率','当前状态','正在做'],members.map(m=>`<tr><td><div class="primary-text">${esc(m.nickname)}</div><div class="secondary-text mono">${esc(short(m.id))}</div></td><td class="wrap">${esc(m.purpose)}</td><td>${esc(m.done)}</td><td>${esc(m.rate)}</td><td>${badge(m.rawState==='busy'?'running':m.rawState==='ready'?'ready':m.rawState==='draining'?'draining':'terminated',m.state)}</td><td class="wrap">${m.task?esc(m.task):'<span class="hint">—</span>'}</td></tr>`)):empty('还没有成员','发布任务后，群体会自行召集合适的成员。'),`<span class="board-count">${members.length} 名在场</span>`)+
     panel('群体动态',feed.length?`<div class="panel-body"><div class="swarm-timeline">${feed.map(item=>`<div class="swarm-line"><span class="swarm-line-text">${esc(item.text)}</span><span class="swarm-line-time">${time(item.at)}</span></div>`).join('')}</div></div>`:empty('群体还很安静','成员开始协作后，这里会出现它们的一举一动。'))+
     panel('开销',`<div class="panel-body">${budget?`<div class="energy-progress"><span>群体总预算还剩 ${remaining.toLocaleString()} / ${budget.toLocaleString()}</span><div class="progress-track ${percent>=66?'is-low':percent>=33?'is-mid':''}" role="img" aria-label="群体预算已用 ${Math.round(percent)}%"><i style="width:${percent.toFixed(1)}%"></i></div></div>`:'<p class="hint">群体池尚未启用，暂无总预算。</p>'}
-      ${costs.length?table(['工作','已花费','从发布到交付'],costs.map(c=>`<tr><td class="wrap"><a href="#board/${esc(c.id)}">${esc(c.title)}</a></td><td class="mono">${Number(c.spent).toLocaleString()}${c.budget?` <span class="hint">/ 预算 ${Number(c.budget).toLocaleString()}</span>`:''}</td><td>${c.delivered?esc(c.duration):`<span class="hint">${esc(c.duration)}</span>`}</td></tr>`)):'<p class="hint">还没有已发布的工作。</p>'}</div>`)+
-    researcher;
+      ${costs.length?table(['工作','已花费','从发布到交付'],costs.map(c=>`<tr><td class="wrap"><a href="#board/${esc(c.id)}">${esc(c.title)}</a></td><td class="mono">${Number(c.spent).toLocaleString()}${c.budget?` <span class="hint">/ 预算 ${Number(c.budget).toLocaleString()}</span>`:''}</td><td>${c.delivered?esc(c.duration):`<span class="hint">${esc(c.duration)}</span>`}</td></tr>`)):'<p class="hint">还没有已发布的工作。</p>'}</div>`);
 }
 async function colonyAction(action){
   if(action==='colony-refresh'){await loadColony();return true;}
