@@ -159,7 +159,7 @@ use ant3::{Ant, Limits, Registry};
 let agent = Ant::new(Registry::default(), Limits::default());
 ```
 
-[离线示例](examples/quickstart.rs)运行模型 → 工具 → 模型循环，并重投同一事件演示会话去重。固定 Git revision 以获得可复现构建。API 参考：`cargo doc --locked --workspace --no-deps --open`。
+[离线示例](crates/ant3-core/examples/quickstart.rs)运行模型 → 工具 → 模型循环，并重投同一事件演示会话去重。固定 Git revision 以获得可复现构建。API 参考：`cargo doc --locked --workspace --no-deps --open`。
 
 ## 状态与边界
 

@@ -7,7 +7,7 @@
 - [入门指南](getting-started.zh-CN.md)：本地启动、模型配置与任务发布。
 - 控制台以"人类观察蚁群"视角组织：观察（工作现场/蚁群/成果库）、工作（任务板/需要你处理）、设置（母体/插件/研究者视图）；机制参数默认折叠于研究者视图。
 - [共享任务板](task-board.zh-CN.md)：任务先发布，控制面动态选型，Agent 认领、拆分与回投。
-- [客户端示例](../examples/clients/)：CLI 计划文件与 MCP 配置。
+- [客户端示例](../crates/ant3-cli/examples/)：CLI 计划文件与 MCP 配置。
 
 ## 当前状态
 
@@ -38,7 +38,7 @@
 | [文件工作区](workspaces.zh-CN.md) | 私有文件与同板根快照共享 |
 | [进程插件](process-plugins.zh-CN.md) | 包格式、安装、绑定与执行契约 |
 
-插件示例：[文本统计](../examples/plugins/text-inspector/)、[HTTP 读取](../examples/plugins/http-reader/)、[文件交接母体](../examples/plugins/workspace-preset/)。
+插件示例：[文本统计](../crates/ant3-plugins/examples/text-inspector/)、[HTTP 读取](../crates/ant3-plugins/examples/http-reader/)、[文件交接母体](../crates/ant3-plugins/examples/workspace-preset/)。
 
 官方内置插件（文本统计、网页读取、网页搜索）统一放在根目录 [`plugins/`](../plugins/README.md)，与协议、SDK、宿主实现及教学示例分开维护。
 

@@ -28,4 +28,4 @@ uuid = { version = "1", features = ["v4"] }
 
 [[example]]
 name = "quickstart"
-path = "../../examples/quickstart.rs"
+path = "examples/quickstart.rs"

@@ -1,6 +1,6 @@
 # Ant³ 中文导读：从一条消息到可靠的执行结果
 
-[项目首页](../README.zh-CN.md) · [运行契约](runtime.md) · [可运行示例](../examples/quickstart.rs)
+[项目首页](../README.zh-CN.md) · [运行契约](runtime.md) · [可运行示例](../crates/ant3-core/examples/quickstart.rs)
 
 Ant³ 面向 Agent 集群提供可组合的执行内核；本文中的 `Ant` 指 Rust 执行器类型。
 

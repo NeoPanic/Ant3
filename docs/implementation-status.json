@@ -202,10 +202,10 @@
       "crates/ant3-plugin-protocol/src/lib.rs",
       "crates/ant3-plugin-sdk/src/lib.rs",
       "crates/ant3-plugin-sdk/tests/contract.rs",
-      "examples/plugins/text-inspector/manifest.json",
-      "examples/plugins/http-reader/manifest.json",
-      "examples/plugins/http-reader/test_worker.py",
-      "examples/plugins/workspace-preset/preset.json"
+      "crates/ant3-plugins/examples/text-inspector/manifest.json",
+      "crates/ant3-plugins/examples/http-reader/manifest.json",
+      "crates/ant3-plugins/examples/http-reader/test_worker.py",
+      "crates/ant3-plugins/examples/workspace-preset/preset.json"
     ],
     "target": [
       "crates/ant3-plugin-protocol/src/",
@@ -432,7 +432,7 @@
       "crates/ant3-cli/src/commands.rs",
       "crates/ant3-server/src/mcp.rs",
       "crates/ant3-cli/tests/entrances.rs",
-      "examples/clients/mcp.json"
+      "crates/ant3-cli/examples/mcp.json"
     ],
     "target": [
       "crates/ant3-client/src/",

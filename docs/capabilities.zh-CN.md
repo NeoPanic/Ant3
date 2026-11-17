@@ -67,7 +67,7 @@
 | SQLite 与恢复 | `crates/ant3-platform/src/storage/sqlite.rs`<br>`crates/ant3-storage/migrations/sqlite/schema.sql`<br>`crates/ant3-storage/src/lib.rs`<br>`crates/ant3-storage/tests/database.rs` | `crates/ant3-storage/src/` |
 | 三类模型协议 | `crates/ant3-models/src/lib.rs` | `crates/ant3-models/src/` |
 | 内置工具与提示词包 | `plugins/src/lib.rs`<br>`plugins/text/mod.rs`<br>`plugins/web-fetch/mod.rs`<br>`plugins/web-search/mod.rs`<br>`crates/ant3-server/tests/builtin_plugins.rs` | `plugins/` |
-| 可执行插件契约与 SDK | `crates/ant3-plugin-protocol/src/lib.rs`<br>`crates/ant3-plugin-sdk/src/lib.rs`<br>`crates/ant3-plugin-sdk/tests/contract.rs`<br>`examples/plugins/text-inspector/manifest.json`<br>`examples/plugins/http-reader/manifest.json`<br>`examples/plugins/http-reader/test_worker.py`<br>`examples/plugins/workspace-preset/preset.json` | `crates/ant3-plugin-protocol/src/`<br>`crates/ant3-plugin-sdk/src/` |
+| 可执行插件契约与 SDK | `crates/ant3-plugin-protocol/src/lib.rs`<br>`crates/ant3-plugin-sdk/src/lib.rs`<br>`crates/ant3-plugin-sdk/tests/contract.rs`<br>`crates/ant3-plugins/examples/text-inspector/manifest.json`<br>`crates/ant3-plugins/examples/http-reader/manifest.json`<br>`crates/ant3-plugins/examples/http-reader/test_worker.py`<br>`crates/ant3-plugins/examples/workspace-preset/preset.json` | `crates/ant3-plugin-protocol/src/`<br>`crates/ant3-plugin-sdk/src/` |
 | 外部插件与热加载 | `crates/ant3-plugins/src/lib.rs`<br>`crates/ant3-plugins/src/package.rs`<br>`crates/ant3-plugins/src/process.rs`<br>`web/src/features/plugins/plugins.js`<br>`crates/ant3-server/tests/process_plugins.rs` | `crates/ant3-plugins/src/loaders/`<br>`crates/ant3-plugins/src/reload/` |
 | 对等 Agent 共享任务板 | `crates/ant3-platform/src/scheduling/board/mod.rs`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-storage/migrations/sqlite/board.sql`<br>`crates/ant3-platform/src/scheduling/routing.rs`<br>`crates/ant3-platform/src/scheduling/decision.rs`<br>`web/src/features/board/board.js`<br>`crates/ant3-server/tests/board.rs`<br>`crates/ant3-server/tests/routing.rs`<br>`crates/ant3-server/tests/decision.rs`<br>`crates/ant3-platform/src/scheduling/audit.rs`<br>`crates/ant3-server/tests/audit.rs` | `crates/ant3-platform/src/collaboration/`<br>`crates/ant3-platform/src/scheduling/` |
 | 信息素痕迹场 | `crates/ant3-domain/src/traces.rs`<br>`crates/ant3-platform/src/scheduling/traces.rs`<br>`crates/ant3-storage/migrations/sqlite/traces.sql`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-server/tests/traces.rs`<br>`crates/ant3-server/tests/evaluation.rs` | `crates/ant3-platform/src/scheduling/` |
@@ -78,7 +78,7 @@
 | 可靠协作消息 | `crates/ant3-platform/src/collaboration/messaging/mod.rs`<br>`crates/ant3-platform/src/collaboration/messaging/tools.rs`<br>`web/src/features/messages/messages.js`<br>`crates/ant3-server/tests/messaging.rs`<br>`crates/ant3-server/tests/messaging.rs` | `crates/ant3-storage/src/inbox_outbox/`<br>`crates/ant3-domain/src/collaboration/` |
 | 实例工作区与文件/JSON交接 | `crates/ant3-platform/src/workspaces/mod.rs`<br>`crates/ant3-platform/src/workspaces/tools.rs`<br>`web/src/features/workspaces/workspaces.js`<br>`crates/ant3-server/tests/workspaces.rs` | `crates/ant3-platform/src/workspaces/`<br>`crates/ant3-domain/src/artifacts/` |
 | Web 执行证据检查 | `web/src/app/app.js`<br>`web/src/features/studio/studio.js`<br>`web/src/features/studio/studio.css`<br>`web/src/features/agents/fleets.js`<br>`web/src/features/messages/messages.js`<br>`web/src/features/workspaces/workspaces.js` | `web/src/features/` |
-| API / CLI / MCP 入口 | `crates/ant3-server/src/api/mod.rs`<br>`crates/ant3-client/src/lib.rs`<br>`crates/ant3-cli/src/main.rs`<br>`crates/ant3-cli/src/commands.rs`<br>`crates/ant3-server/src/mcp.rs`<br>`crates/ant3-cli/tests/entrances.rs`<br>`examples/clients/mcp.json` | `crates/ant3-client/src/`<br>`crates/ant3-cli/src/`<br>`crates/ant3-server/src/mcp.rs` |
+| API / CLI / MCP 入口 | `crates/ant3-server/src/api/mod.rs`<br>`crates/ant3-client/src/lib.rs`<br>`crates/ant3-cli/src/main.rs`<br>`crates/ant3-cli/src/commands.rs`<br>`crates/ant3-server/src/mcp.rs`<br>`crates/ant3-cli/tests/entrances.rs`<br>`crates/ant3-cli/examples/mcp.json` | `crates/ant3-client/src/`<br>`crates/ant3-cli/src/`<br>`crates/ant3-server/src/mcp.rs` |
 | 实时事件与查询 | `crates/ant3-server/src/api/mod.rs` | `crates/ant3-server/src/events/` |
 | 预算预留与账本 | 尚无实现模块 | `crates/ant3-platform/src/accounting/`<br>`crates/ant3-domain/src/budgets/` |
 | 身份、授权与审批 | `crates/ant3-server/src/api/mod.rs` | `crates/ant3-platform/src/authorization/`<br>`crates/ant3-domain/src/identity/` |
@@ -94,6 +94,15 @@
 ```text
 crates/
 ├── ant3-cli/
+│   ├── examples/
+│   │   ├── README.md
+│   │   ├── board-task.json
+│   │   ├── composed-preset.json
+│   │   ├── fleet.json
+│   │   ├── mcp.json
+│   │   ├── parameterized-fleet.json
+│   │   ├── process-fleet.json
+│   │   └── process-preset.json
 │   ├── src/
 │   │   ├── commands.rs
 │   │   └── main.rs
@@ -106,6 +115,8 @@ crates/
 │   │   └── lib.rs
 │   └── Cargo.toml
 ├── ant3-core/
+│   ├── examples/
+│   │   └── quickstart.rs
 │   ├── src/
 │   │   ├── context.rs
 │   │   ├── driver.rs
@@ -188,9 +199,23 @@ crates/
 │   ├── src/
 │   │   └── lib.rs
 │   ├── tests/
+│   │   ├── fixtures/
+│   │   │   └── text-inspector.manifest.json
 │   │   └── contract.rs
 │   └── Cargo.toml
 ├── ant3-plugins/
+│   ├── examples/
+│   │   ├── http-reader/
+│   │   │   ├── README.md
+│   │   │   ├── manifest.json
+│   │   │   ├── test_worker.py
+│   │   │   └── worker.py
+│   │   ├── text-inspector/
+│   │   │   ├── manifest.json
+│   │   │   └── worker.py
+│   │   └── workspace-preset/
+│   │       ├── README.md
+│   │       └── preset.json
 │   ├── src/
 │   │   ├── lib.rs
 │   │   ├── package.rs
@@ -292,27 +317,6 @@ web/
 │           └── workspaces.js
 ├── README.md
 └── index.html
-examples/clients/
-├── README.md
-├── board-task.json
-├── composed-preset.json
-├── fleet.json
-├── mcp.json
-├── parameterized-fleet.json
-├── process-fleet.json
-└── process-preset.json
-examples/plugins/
-├── http-reader/
-│   ├── README.md
-│   ├── manifest.json
-│   ├── test_worker.py
-│   └── worker.py
-├── text-inspector/
-│   ├── manifest.json
-│   └── worker.py
-└── workspace-preset/
-    ├── README.md
-    └── preset.json
 ```
 
 维护方式：修改能力 JSON 或源码目录后运行 `python3 scripts/render-progress.py`；CI 使用 `--check` 检查文档同步与来源路径。

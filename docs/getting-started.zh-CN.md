@@ -87,7 +87,7 @@ cargo run --locked -p ant3-cli -- up \
 实例详情可暂停、恢复、终止或“排空并终止”。排空拒绝新任务、等待已接纳工作结算，不能撤回；终止后保留历史会话和回执。
 
 ```sh
-./target/debug/ant3 fleets create --file examples/clients/fleet.json --key pool-create-1
+./target/debug/ant3 fleets create --file crates/ant3-cli/examples/fleet.json --key pool-create-1
 ./target/debug/ant3 fleets show FLEET_ID
 ./target/debug/ant3 operations show OPERATION_ID
 ./target/debug/ant3 fleets scale FLEET_ID --count 3 --expected-revision 1 --key pool-scale-1
@@ -111,7 +111,7 @@ CLI 从 `--data-dir` 读取平台 token，只调用 loopback HTTP，不直接写
 
 ```sh
 ./target/debug/ant3 snapshot
-./target/debug/ant3 board publish --file examples/clients/board-task.json --key study-1
+./target/debug/ant3 board publish --file crates/ant3-cli/examples/board-task.json --key study-1
 ./target/debug/ant3 board list
 ./target/debug/ant3 board show TASK_ID
 ./target/debug/ant3 presets list
@@ -125,7 +125,7 @@ MCP stdio 连接已启动的 daemon：
 # 需要写入时追加 --allow-write
 ```
 
-客户端配置见 [mcp.json](../examples/clients/mcp.json)。适配器仅读取平台 token；stdout 用于逐行 JSON-RPC，诊断使用 stderr。默认只公布查询工具，`--allow-write` 授予本地操作者写权限。支持协议版本 2024-11-05、2025-03-26、2025-06-18、2025-11-25；没有 resources、Streamable HTTP、并发调用或协议级请求取消，取消 Run/任务使用显式工具。
+客户端配置见 [mcp.json](../crates/ant3-cli/examples/mcp.json)。适配器仅读取平台 token；stdout 用于逐行 JSON-RPC，诊断使用 stderr。默认只公布查询工具，`--allow-write` 授予本地操作者写权限。支持协议版本 2024-11-05、2025-03-26、2025-06-18、2025-11-25；没有 resources、Streamable HTTP、并发调用或协议级请求取消，取消 Run/任务使用显式工具。
 
 HTTP JSON 请求和 CLI 文件上限为 128 KiB，用户输入上限为 64,000 UTF-8 字节。列表有返回窗口；完整 Run、任务、Operation 通过 ID 查询，事件按游标补读。平台不自动重试写入。
 

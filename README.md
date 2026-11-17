@@ -159,7 +159,7 @@ use ant3::{Ant, Limits, Registry};
 let agent = Ant::new(Registry::default(), Limits::default());
 ```
 
-The [offline example](examples/quickstart.rs) runs a model → tool → model cycle and redelivers the same event to demonstrate session deduplication. Pin a Git revision for reproducible builds. API reference: `cargo doc --locked --workspace --no-deps --open`.
+The [offline example](crates/ant3-core/examples/quickstart.rs) runs a model → tool → model cycle and redelivers the same event to demonstrate session deduplication. Pin a Git revision for reproducible builds. API reference: `cargo doc --locked --workspace --no-deps --open`.
 
 ## Status & boundaries
 

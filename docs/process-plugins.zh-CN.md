@@ -9,7 +9,7 @@
 ```sh
 cargo run --locked -p ant3-cli -- up --allow-process-plugins
 # 或在已有 Responses 配置启动参数后追加 --allow-process-plugins
-./target/debug/ant3 plugins install-process --source-dir /absolute/path/to/ant3/examples/plugins/text-inspector
+./target/debug/ant3 plugins install-process --source-dir /absolute/path/to/ant3/crates/ant3-plugins/examples/text-inspector
 ./target/debug/ant3 plugins list
 ./target/debug/ant3 plugins show-process local.text 1.0.0
 ./target/debug/ant3 plugins action-process local.text 1.0.0 check
@@ -23,7 +23,7 @@ Python 示例使用 `/usr/bin/python3`，不需要第三方包。其他语言可
 
 ## 包与固定绑定
 
-参考 [manifest.json](../examples/plugins/text-inspector/manifest.json)。关键字段：
+参考 [manifest.json](../crates/ant3-plugins/examples/text-inspector/manifest.json)。关键字段：
 
 | 字段 | 契约 |
 | --- | --- |
@@ -46,8 +46,8 @@ Python 示例使用 `/usr/bin/python3`，不需要第三方包。其他语言可
 配置好 Responses 模型后：
 
 ```sh
-./target/debug/ant3 presets publish --file examples/clients/process-preset.json
-./target/debug/ant3 fleets create --file examples/clients/process-fleet.json --key external-inspector-1
+./target/debug/ant3 presets publish --file crates/ant3-cli/examples/process-preset.json
+./target/debug/ant3 fleets create --file crates/ant3-cli/examples/process-fleet.json --key external-inspector-1
 ./target/debug/ant3 fleets show fleet_REPLACE
 # 等待实例就绪，input.txt 写入想统计的原文
 ./target/debug/ant3 runs submit agent_REPLACE --file input.txt --key external-input-1

@@ -524,7 +524,7 @@ ant3/
 │   ├── collaboration/                 # 任务、消息、委派、贡献、评审与验收
 │   ├── reliability/                   # 所有权、故障矩阵、事务、幂等与恢复
 │   └── governance/                    # 身份、预算、审计、保留期与评估协议
-├── examples/
+├── crates/ant3-core/examples/
 │   ├── quickstart.rs                  # 保留独立内核示例
 │   ├── presets/researcher/            # 自定义母体、参数与发布/启动示例
 │   ├── plugins/

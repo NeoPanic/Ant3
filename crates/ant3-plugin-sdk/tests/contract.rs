@@ -2,7 +2,7 @@ use ant3_plugin_sdk::{protocol::Manifest, serve_io};
 use serde_json::{Value, json};
 fn manifest() -> Manifest {
     serde_json::from_str(include_str!(
-        "../../../examples/plugins/text-inspector/manifest.json"
+        "fixtures/text-inspector.manifest.json"
     ))
     .unwrap()
 }
