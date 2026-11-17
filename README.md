@@ -45,8 +45,6 @@ The result is a local-first, single-binary Rust platform you can run, inspect, a
 
 ## Swarm mechanisms
 
-Implemented today, not roadmap promises:
-
 | Mechanism | What it does |
 | --- | --- |
 | **Pheromone trace field** | Results carry a concentration that reinforces on completion, acceptance, and peer reuse, and **evaporates with a 30-minute half-life**. Strong trails attract work; stale ones fade. |
