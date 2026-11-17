@@ -239,9 +239,10 @@ test('蚁群页默认文案不出现机制词汇，参数移到研究者页',()=
   assert(researcher.includes('0.31'));
 });
 
-test('成果库以交付物为中心，私有文件浏览退到折叠区',()=>{
+test('成果库只呈现交付物，私有文件浏览在研究者页',()=>{
   const context=featureContext();
   vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/workspaces/workspaces.js'),'utf8'),context);
+  vm.runInContext(readFileSync(resolve(__dirname,'../web/src/features/researcher/researcher.js'),'utf8'),context);
   vm.runInContext(`
     workspaceCatalog={configured:true,instances:[{id:'i1',preset_name:'analyst',state:'ready',artifact_count:1}]};
     workspacePublications={artifacts:[{id:'a1',name:'报告',kind:'json',instance_id:'i1',run_id:'r1',source_state:'completed',bytes:10}]};
@@ -251,13 +252,15 @@ test('成果库以交付物为中心，私有文件浏览退到折叠区',()=>{
     ]}};
   `,context);
   const html=vm.runInContext('deliveriesPage()',context);
-  const [visible,researcher]=html.split('<details class="researcher"');
-  assert(visible.includes('已交付工作'));
-  assert(visible.includes('已交付'));
-  assert(visible.includes('被参考 2 次'));
-  assert(!visible.includes('进行中工作'));
-  assert(visible.includes('查看快照'));
-  assert(researcher.includes('浏览文件'));
+  assert(html.includes('已交付工作'));
+  assert(html.includes('已交付'));
+  assert(html.includes('被参考 2 次'));
+  assert(!html.includes('进行中工作'),'未完成工作不出现在成果库');
+  assert(!html.includes('<details class="researcher"'),'成果库不再内嵌研究者折叠');
+  assert(!html.includes('浏览文件'));
+  // 私有文件浏览在研究者页分节。
+  const files=vm.runInContext('researcherPrivateFilesSection()',context);
+  assert(files.includes('浏览文件'));
 });
 
 test('研究者视图默认全收起且惰性渲染，展开状态由分节集合驱动',()=>{

@@ -71,6 +71,12 @@ async function researcherLoadMechanism(taskId,body){
   body.innerHTML=html;
 }
 
+// —— 成员私有文件浏览 ——
+function researcherPrivateFilesSection(){
+  if(!workspaceCatalog&&!workspaceLoading)queueMicrotask(loadWorkspaces);
+  return deliveriesPrivateFiles();
+}
+
 function researcherPage(){
   if(fleetId())researcherSections.add('fleets');
   const sections=[
@@ -82,6 +88,7 @@ function researcherPage(){
     ['fleets','Agent 池',researcherFleetsSection],
     ['progress','实现进度',progressPage],
     ['messages','原始消息 Inbox / Outbox',messagesPage],
+    ['files','成员私有文件浏览',researcherPrivateFilesSection],
   ];
   return head('研究者视图：机制参数与原始记录')+
     '<p class="hint">这里是给研究协作机制的人准备的：原始事件、执行证据、池与消息记录。日常观察请用工作现场、蚁群与成果库。</p>'+
