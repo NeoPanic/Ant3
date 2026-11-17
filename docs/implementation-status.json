@@ -382,9 +382,9 @@
     "id": "workspaces",
     "name": "实例工作区与文件/JSON交接",
     "phase": "P2",
-    "status": "partial",
+    "status": "implemented",
     "scope": "current",
-    "detail": "实例独立目录、UTF-8 文件读写、文件/JSON 不可变快照；同一个根任务（邀请或招募）同伴可读取快照作为 stigmergy 交接，私有文件仍隔离；Web 预览/下载保留来源状态和摘要。没有 OS 沙箱或通用代码执行环境。",
+    "detail": "实例独立目录、UTF-8 文件读写、文件/JSON 不可变快照；同一个根任务（邀请或招募）同伴可读取快照作为 stigmergy 交接，私有文件仍隔离；Web 预览/下载保留来源状态和摘要。只支持 UTF-8 文本与单文件 1 MB；执行隔离单列为独立能力。",
     "source": [
       "crates/ant3-platform/src/workspaces/mod.rs",
       "crates/ant3-platform/src/workspaces/tools.rs",
@@ -493,10 +493,10 @@
   },
   {
     "id": "worker",
-    "name": "监督 Worker 与执行隔离",
+    "name": "监督 Worker 与所有权 fencing",
     "phase": "P3",
     "status": "planned",
-    "detail": "使用嵌入式本地 Worker；没有独立进程、所有权 fencing、跨进程租约或执行沙箱。",
+    "detail": "使用嵌入式本地 Worker；没有独立进程、所有权 fencing 或跨进程租约。",
     "source": [],
     "target": [
       "crates/ant3-worker/src/"
@@ -573,5 +573,22 @@
     "verification": "native-tests-and-browser",
     "scope": "current",
     "path": "support"
+  },
+  {
+    "id": "execution-sandbox",
+    "name": "工具与插件执行隔离",
+    "phase": "P3",
+    "status": "planned",
+    "detail": "进程插件已使用独立子进程、清空环境、独立 cwd、超时与进程组终止，但仍以 daemon 系统用户身份运行，可访问宿主文件与网络。计划按平台接入 macOS Seatbelt、Linux Landlock+seccomp/namespace，或 WASM 运行时；默认拒绝文件与网络，仅授予实例工作区。",
+    "source": [
+      "crates/ant3-plugins/src/process.rs"
+    ],
+    "target": [
+      "crates/ant3-plugins/src/",
+      "crates/ant3-worker/src/"
+    ],
+    "verification": "not-implemented",
+    "scope": "deferred",
+    "path": "governance"
   }
 ]

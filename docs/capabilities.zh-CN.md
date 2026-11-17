@@ -13,7 +13,7 @@
 | 个体自选认领（选型下沉） | 已实现 | 原生测试 | ANT3_SELF_SELECT=1 时中央选型分类器完全退位：游走待命池（上限 8）按验证经验繁殖（Laplace 平滑份额，持续失败 Preset 退役），空闲游走消耗群体能量（20/实例/分钟，群体池 20 万，耗尽退役全池）。每个待命个体按自己的成本调整阈值对开放任务做 s²/(s²+θ²) 概率响应（splitmix64 种子化），响应者原子竞争认领（先插 Run 后 UPDATE 门控，败者回滚）；控制面只保留容量/能量/原子性物理法则。自选 Run 幂等认领自己的工作；swarm.self_selected/peer_spawned/peer_retired/colony_starved 事件可审计；操作员视图 /api/swarm/pool。默认关闭，与选型模式可对照。 |
 | 预算即能量 | 已实现 | 原生测试 | 根任务能量池（发布可配，默认 100000）：派发原子预留 2000/Run，结算按真实 usage 计费（10 token=1 能量，缓存输入免费；usage 缺失保守计 1500），完成回充 500、独立验收回充 4000——高效路径赚回预算，浪费路径饿死。可用能量不足预留的根停止供给，待认领任务显式淘汰（energy_exhausted）；结算幂等、账本与事件可审计，操作员视图 /api/board/tasks/{id}/energy。选择压力由此成为涌现机制而非会计治理。 |
 | 可靠协作消息 | 已实现 | 原生测试 + Web 联调 | 持久 Outbox/Inbox、稳定消息 ID、幂等去重、投递与消费分离、暂停积压和未知结果人工处置；Agent 使用 platform.messaging 直接交接。作用域为同一 Agent 池或同一根任务；任务板 Agent 可向任意活跃同伴发起交接，接受时把发送者根任务传播给收件人（招募台账 board_peer_roots），回复保持作用域内。当前范围是本地单 daemon；远程投递与细粒度 Grant 授权不在范围内。 |
-| 实例工作区与文件/JSON交接 | 部分实现 | 原生测试 + Web 联调 | 实例独立目录、UTF-8 文件读写、文件/JSON 不可变快照；同一个根任务（邀请或招募）同伴可读取快照作为 stigmergy 交接，私有文件仍隔离；Web 预览/下载保留来源状态和摘要。没有 OS 沙箱或通用代码执行环境。 |
+| 实例工作区与文件/JSON交接 | 已实现 | 原生测试 + Web 联调 | 实例独立目录、UTF-8 文件读写、文件/JSON 不可变快照；同一个根任务（邀请或招募）同伴可读取快照作为 stigmergy 交接，私有文件仍隔离；Web 预览/下载保留来源状态和摘要。只支持 UTF-8 文本与单文件 1 MB；执行隔离单列为独立能力。 |
 | 涌现评估基线 | 部分实现 | 原生测试 | 单/多 Agent 同任务同验收对照：确定性契约基线报告通过/验收、Run 成本代理、信息复用率、痕迹浓度、收敛时延（发布→验收）与能量净消耗；个体损失鲁棒性场景已验证。能量账本落地后等预算真实模型对照可配置，自动化运行未实现。不预设多 Agent 更优。 |
 
 ## 运行底座
@@ -50,8 +50,9 @@
 | --- | --- | --- | --- |
 | 预算预留与账本 | 规划中 | 待实现 | 能量账本已落地（见预算即能量条目）：预留/结算/回充/淘汰。尚未提供：跨根团队费用硬上限、供应商限价对账、进行中请求的结算边界。 |
 | 身份、授权与审批 | 部分实现 | 原生测试 | loopback、本地 token 与浏览器会话认证；没有 Principal/Grant、持久审批、租户隔离或插件作用域授权。 |
-| 监督 Worker 与执行隔离 | 规划中 | 待实现 | 使用嵌入式本地 Worker；没有独立进程、所有权 fencing、跨进程租约或执行沙箱。 |
+| 监督 Worker 与所有权 fencing | 规划中 | 待实现 | 使用嵌入式本地 Worker；没有独立进程、所有权 fencing 或跨进程租约。 |
 | 远程控制面与 PostgreSQL | 规划中 | 待实现 | 没有多机器 Worker、网络分区对账、分布式背压或滚动升级兼容契约。 |
+| 工具与插件执行隔离 | 规划中 | 待实现 | 进程插件已使用独立子进程、清空环境、独立 cwd、超时与进程组终止，但仍以 daemon 系统用户身份运行，可访问宿主文件与网络。计划按平台接入 macOS Seatbelt、Linux Landlock+seccomp/namespace，或 WASM 运行时；默认拒绝文件与网络，仅授予实例工作区。 |
 
 ## 当前模块 → 目标目录
 
@@ -83,11 +84,12 @@
 | 实时事件与查询 | `crates/ant3-server/src/api/mod.rs` | `crates/ant3-server/src/events/` |
 | 预算预留与账本 | 尚无实现模块 | `crates/ant3-platform/src/accounting/`<br>`crates/ant3-domain/src/budgets/` |
 | 身份、授权与审批 | `crates/ant3-server/src/api/mod.rs` | `crates/ant3-platform/src/authorization/`<br>`crates/ant3-domain/src/identity/` |
-| 监督 Worker 与执行隔离 | 尚无实现模块 | `crates/ant3-worker/src/` |
+| 监督 Worker 与所有权 fencing | 尚无实现模块 | `crates/ant3-worker/src/` |
 | 远程控制面与 PostgreSQL | 尚无实现模块 | `crates/ant3-storage/src/`<br>`crates/ant3-worker/src/backends/` |
 | 涌现评估基线 | `crates/ant3-server/tests/evaluation.rs`<br>`docs/evaluation.zh-CN.md` | `tests/evaluation/` |
 | 发行、生态与验收套件 | `.github/workflows/check.yml`<br>`docs/getting-started.zh-CN.md` | `deploy/`<br>`examples/`<br>`tests/`<br>`docs/` |
 | 运行时机制参数 | `crates/ant3-platform/src/settings.rs`<br>`web/src/features/researcher/researcher.js` | `crates/ant3-platform/src/settings.rs` |
+| 工具与插件执行隔离 | `crates/ant3-plugins/src/process.rs` | `crates/ant3-plugins/src/`<br>`crates/ant3-worker/src/` |
 
 ## 当前源码目录
 

@@ -19,7 +19,7 @@ Ant³ 的唯一协调路径是共享任务板：发布工作后，由证据引�
 
 ## 运行边界
 
-平台采用单 daemon、SQLite、本地 Worker 和受信任插件。进程插件以 daemon 所在系统用户权限执行；文件工具限制相对路径和符号链接，但没有 OS 沙箱、多租户授权或多机租约。团队费用没有硬上限，Run 仍受轮次、工具调用次数和超时约束。模型接入提供 OpenAI-compatible Chat Completions、OpenAI Responses、Anthropic Messages 三类非流式协议。
+平台采用单 daemon、SQLite、本地 Worker 和受信任插件。进程插件以 daemon 所在系统用户权限执行；文件工具限制相对路径和符号链接，但没有 OS 沙箱、多租户授权或多机租约；执行隔离的缺口单列为路线图「工具与插件执行隔离」。团队费用没有硬上限，Run 仍受轮次、工具调用次数和超时约束。模型接入提供 OpenAI-compatible Chat Completions、OpenAI Responses、Anthropic Messages 三类非流式协议。
 
 | 本地容量约束 | 默认值 |
 | --- | --- |
