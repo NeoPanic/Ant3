@@ -83,7 +83,7 @@ function boardPage(){
   const history=roots.filter(boardArchived),current=roots.filter(t=>!boardArchived(t));
   const reviewCount=roots.filter(t=>t.review_state==='pending').length;
   const currentBody=(current.length?`<div class="board-task-list">${current.map(boardTaskRow).join('')}</div>`:empty(roots.length?'当前没有待处理任务':'还没有发布任务',roots.length?'历史任务保留在历史分页中。发布新任务后，在这里跟进进展与结果。':'点击右上角“发布任务”，填写目标与验收标准。'))+
-    `<p class="hint">${active.length} 项待完成，含子任务${reviewCount?`，${reviewCount} 项等你验收`:''}</p>`;
+    `<p class="hint board-summary">${active.length} 项待完成，含子任务${reviewCount?`，${reviewCount} 项等你验收`:''}</p>`;
   const historyBody=history.length?`<div class="board-task-list">${history.map(boardTaskRow).join('')}</div>`:empty('还没有历史任务','任务交付或取消后会归档在这里。');
   return head('任务板', button('发布任务','board-publish',true))+
     (board.router?.error?`<div class="callout" role="status">安排工作暂时受阻：${esc(board.router.error)}</div>`:'')+
