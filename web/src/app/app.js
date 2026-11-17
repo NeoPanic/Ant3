@@ -472,13 +472,13 @@ document.addEventListener('submit',async event=>{
     }
     if(form.dataset.form==='drain') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/actions`,{action:'drain'});}
     if(form.dataset.form==='terminate') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/actions`,{action:'terminate'});}
-    if(form.dataset.form==='spawn') {const preset=JSON.parse(values.preset);result=await api('/api/v1/agent-fleets',{preset_name:preset.name,preset_version:preset.version,count:Number(values.count),mode:values.mode,parameters:instanceParameters(form),ttl_seconds:values.ttl_minutes?Number(values.ttl_minutes)*60:null},'POST',form.dataset.commandKey);navigate(`/fleet/${result.fleet_id}`);researcherSections.add('fleets');}
+    if(form.dataset.form==='spawn') {const preset=JSON.parse(values.preset);result=await api('/api/v1/agent-fleets',{preset_name:preset.name,preset_version:preset.version,count:Number(values.count),mode:values.mode,parameters:instanceParameters(form),ttl_seconds:values.ttl_minutes?Number(values.ttl_minutes)*60:null},'POST',form.dataset.commandKey);navigate(`/fleet/${result.fleet_id}`);}
     if(form.dataset.form==='fleet-action') {result=await api(`/api/v1/agent-fleets/${encodeURIComponent(form.dataset.id)}/actions`,{action:form.dataset.operation,expected_revision:Number(form.dataset.revision),...(form.dataset.operation==='scale'?{count:Number(values.count)}:{})},'POST',form.dataset.commandKey);}
     if(form.dataset.form==='preset') {result=await api('/api/v1/presets',presetPayload(form));navigate('/presets');}
     if(form.dataset.form==='preset-delete') {result=await api(`/api/v1/presets/${encodeURIComponent(form.dataset.id)}/${encodeURIComponent(form.dataset.version)}`,{},'DELETE',form.dataset.commandKey);navigate('/presets');}
     if(form.dataset.form==='process-state') {result=await api(`/api/v1/process-plugins/${encodeURIComponent(form.dataset.id)}/${encodeURIComponent(form.dataset.version)}/actions`,{action:form.dataset.state});}
     if(form.dataset.form==='process-install') {result=await api('/api/v1/process-plugins',{source_dir:values.source_dir});}
-    if(form.dataset.form==='run') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/runs`,{text:values.text},'POST',form.dataset.commandKey);navigate('/researcher');researcherSections.add('runs');}
+    if(form.dataset.form==='run') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/runs`,{text:values.text},'POST',form.dataset.commandKey);researcherTab='runs';navigate('/researcher');}
     if(form.dataset.form==='settings') {
       const n=name=>Number(form.elements[name].value);
       result=await api('/api/v1/settings',{
@@ -504,16 +504,6 @@ document.addEventListener('submit',async event=>{
 document.querySelectorAll('nav a').forEach(a=>{a.title=a.textContent.replace(/[◈▦▧▷⌘◫≋◇0]/g,'').trim();a.querySelector('.nav-icon').innerHTML=icon(a.dataset.page);});
 document.addEventListener('compositionstart',()=>{composing=true;});
 document.addEventListener('compositionend',()=>{composing=false;});
-document.addEventListener('input',event=>{
-  const type=event.target.dataset.filter,kind=page()==='researcher'?(researcherSections.has('agents')?'agents':'runs'):page();
-  if(!type||!filters[kind])return;
-  filters[kind][type]=event.target.value;
-  $('#directory-results').innerHTML=directory(kind);
-  $('.filter-note').textContent=resultCount(kind);
-  const clear=$('.toolbar [data-action="clear-filters"]');
-  if(clear)clear.hidden=!filters[kind].query&&filters[kind].state==='all';
-  else if(filters[kind].query||filters[kind].state!=='all')$('.toolbar').insertAdjacentHTML('beforeend',button('清除筛选','clear-filters'));
-});
 $('#modal').addEventListener('close',()=>{
   if($('#modal').open)return;
   inspectionRequest++;
