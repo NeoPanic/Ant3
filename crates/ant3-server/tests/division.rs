@@ -60,6 +60,90 @@ fn experience(s: &Store, name: &str) -> Value {
 }
 
 #[test]
+fn provider_outages_do_not_retire_a_capable_preset_or_erase_billed_energy() {
+    let (s, t) = fixture();
+    for (index, code) in [
+        "provider_network_error",
+        "provider_timeout",
+        "provider_http_503",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let task = if index == 0 {
+            t.clone()
+        } else {
+            s.publish_board_task(&input(code), code).unwrap()
+        };
+        let run = provision(&s, &task);
+        s.claim_board_task(id(&run), id(&task)).unwrap();
+        s.finish(
+            id(&run),
+            run["instance_id"].as_str().unwrap(),
+            "failed",
+            json!({"error":{"code":code},"usage":{"input":100,"output":50}}),
+        )
+        .unwrap();
+        s.reconcile_board().unwrap();
+        assert!(
+            s.board_energy(id(&task)).unwrap()["spent"]
+                .as_i64()
+                .unwrap()
+                > 0
+        );
+    }
+    assert_eq!(experience(&s, "reader")["failures"], 0);
+    assert!(experience(&s, "reader")["energy_spent"].as_i64().unwrap() > 0);
+    for _ in 0..3 {
+        s.self_select_sweep(true).unwrap();
+        s.reconcile_fleets().unwrap();
+    }
+    assert!(
+        !s.swarm_pool().unwrap()["peers"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn opening_legacy_database_repairs_only_provider_penalties_once() {
+    let path =
+        std::env::temp_dir().join(format!("ant3-experience-{}.sqlite", uuid::Uuid::new_v4()));
+    let s = Store::open(&path).unwrap();
+    s.publish(preset("reader")).unwrap();
+    for code in ["provider_network_error", "tool_failed"] {
+        let task = s.publish_board_task(&input(code), code).unwrap();
+        let run = provision(&s, &task);
+        s.claim_board_task(id(&run), id(&task)).unwrap();
+        s.finish(
+            id(&run),
+            run["instance_id"].as_str().unwrap(),
+            "failed",
+            json!({"error":{"code":code},"usage":{"input":100,"output":50}}),
+        )
+        .unwrap();
+        s.reconcile_board().unwrap();
+    }
+    let spent = experience(&s, "reader")["energy_spent"].clone();
+    s.transaction(|tx| {
+        tx.execute("UPDATE preset_experience SET failures=2", [])?;
+        tx.execute_batch("PRAGMA user_version=28;")?;
+        Ok(())
+    })
+    .unwrap();
+    drop(s);
+    for _ in 0..2 {
+        let s = Store::open(&path).unwrap();
+        let e = experience(&s, "reader");
+        assert_eq!(e["failures"], 1);
+        assert_eq!(e["energy_spent"], spent);
+        assert_eq!(s.list("runs").unwrap().len(), 2);
+    }
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
 fn success_lowers_and_definite_failure_raises_the_response_threshold() {
     let (s, t) = fixture();
     assert_eq!(experience(&s, "reader")["response_threshold"], 0.5);

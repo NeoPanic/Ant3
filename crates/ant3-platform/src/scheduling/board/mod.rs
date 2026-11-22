@@ -559,7 +559,7 @@ impl Store {
                         tx.execute("UPDATE board_tasks SET result=? WHERE id=?",params![report,claimed])?;
                         if state=="completed" {
                             let cost:Option<i64>=tx.query_row("SELECT amount FROM energy_ledger WHERE run_id=? AND kind IN ('settle','settle_unknown')",[&run],|r|r.get(0)).optional()?;
-                            crate::division::record_outcome(tx,&preset_name,&preset_version,true,cost.unwrap_or(Settings::load(tx)?.energy.unknown_cost))?;
+                            crate::division::record_outcome(tx,&preset_name,&preset_version,Some(true),cost.unwrap_or(Settings::load(tx)?.energy.unknown_cost))?;
                             crate::traces::deposit(tx,t["root_id"].as_str().unwrap(),claimed,crate::domain::traces::RESULT_TRACE_KIND,crate::domain::traces::TRACE_COMPLETION_AMOUNT,"completion",Some(&run))?;
                             // Recruitment: success amplifies the trails this Run
                             // signposted, recruiting peers toward used paths.
@@ -589,10 +589,13 @@ impl Store {
                             let root=t["root_id"].as_str().unwrap();
                             // Negative feedback: a definite failure penalizes the
                             // path. Outcome-unknown Runs are not definite failures.
+                            let provider_unavailable=report.as_deref().and_then(|r|serde_json::from_str::<Value>(r).ok()).as_ref().is_some_and(crate::division::provider_unavailable);
                             if failed_state=="failed" {
                                 let cost:Option<i64>=tx.query_row("SELECT amount FROM energy_ledger WHERE run_id=? AND kind IN ('settle','settle_unknown')",[&run],|r|r.get(0)).optional()?;
-                                crate::division::record_outcome(tx,&preset_name,&preset_version,false,cost.unwrap_or(Settings::load(tx)?.energy.unknown_cost))?;
-                                crate::traces::penalize_failure(tx,root,claimed,Some(&run))?;
+                                crate::division::record_outcome(tx,&preset_name,&preset_version,if provider_unavailable {None} else {Some(false)},cost.unwrap_or(Settings::load(tx)?.energy.unknown_cost))?;
+                                if !provider_unavailable {
+                                    crate::traces::penalize_failure(tx,root,claimed,Some(&run))?;
+                                }
                             }
                             // Individual-loss robustness: a definitely-failed task
                             // returns to the pool under a bounded retry budget;

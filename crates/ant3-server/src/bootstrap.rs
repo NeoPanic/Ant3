@@ -108,6 +108,7 @@ pub async fn up(options: Options) -> crate::ServerResult<()> {
         let _ = tokio::signal::ctrl_c().await;
         stop.cancel();
     };
+    let app=app.layer(axum::Extension(shutdown.clone()));
     let result = axum::serve(listener, app)
         .with_graceful_shutdown(signal)
         .await;

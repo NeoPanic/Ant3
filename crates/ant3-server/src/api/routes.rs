@@ -19,6 +19,32 @@ async fn spa_fallback(uri: Uri) -> Response {
 }
 pub fn router(app: App) -> Router {
     Router::new()
+        .route("/api/chat/stream", get(super::chat::stream))
+        .route("/api/chat/history", get(super::chat::history))
+        .route(
+            "/chat.js",
+            get(|| async {
+                (
+                    [(header::CONTENT_TYPE, "text/javascript; charset=utf-8")],
+                    include_str!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/../../web/src/features/chat/chat.js"
+                    )),
+                )
+            }),
+        )
+        .route(
+            "/chat.css",
+            get(|| async {
+                (
+                    [(header::CONTENT_TYPE, "text/css; charset=utf-8")],
+                    include_str!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/../../web/src/features/chat/chat.css"
+                    )),
+                )
+            }),
+        )
         .route(
             "/board.js",
             get(|| async {

@@ -29,7 +29,7 @@
 | 受限子任务拆分 | 已实现 | 原生测试 + Web 联调 | Agent 只能拆分自己已认领且正在运行的任务；子任务只提交标题、目标与验收标准，平台在来源 Run 成功后激活并交给共享任务板，由后续选型决定执行实例，拆分者不能指定身份。限制：单次最多 8 项、层级最多 6 层、每个根任务树最多 64 项（含根任务）；每轮人工评审周期只能拆一次，失败或取消会连带取消未启动的子任务。 |
 | 持久队列与取消 | 已实现 | 原生测试 + Web 联调 | 持久 Run 队列提供 8 个本地并发槽、单实例串行、幂等提交与协作取消。 |
 | SQLite 与恢复 | 部分实现 | 原生测试 | SQLite 事务、检查点、事件和 daemon 独占锁；恢复时保留已知回执，未知结果进入中断。没有完整备份运维、外部对账或事件分页。 |
-| 三类模型协议 | 部分实现 | 原生测试 | 提供 Chat Completions、Responses、Anthropic 三类非流式工具循环；Responses 经过真实服务验证。没有流式输出或分片中断契约。 |
+| 三类模型协议 | 部分实现 | 原生测试 | 提供 Chat Completions、Responses、Anthropic 工具循环与 Worker 流式正文；fixture 覆盖分片、终止、usage 与取消。真实供应商流式兼容性待验收；详情见[蚁群群聊](chat.zh-CN.md)。 |
 | 内置工具与提示词包 | 已实现 | 原生测试 | 内置 text.inspect、web.fetch、web.search；搜索需配置 Brave API 密钥。插件页仅展示内置能力，Preset 绑定固定版本与摘要。 |
 
 ## 支撑能力
@@ -150,7 +150,8 @@ crates/
 │   └── Cargo.toml
 ├── ant3-models/
 │   ├── src/
-│   │   └── lib.rs
+│   │   ├── lib.rs
+│   │   └── streaming.rs
 │   └── Cargo.toml
 ├── ant3-platform/
 │   ├── src/
@@ -182,6 +183,7 @@ crates/
 │   │   │   ├── selfselect.rs
 │   │   │   └── traces.rs
 │   │   ├── storage/
+│   │   │   ├── chat.rs
 │   │   │   ├── mod.rs
 │   │   │   ├── plugins.rs
 │   │   │   └── sqlite.rs
@@ -230,6 +232,7 @@ crates/
 │   ├── src/
 │   │   ├── api/
 │   │   │   ├── auth.rs
+│   │   │   ├── chat.rs
 │   │   │   ├── handlers.rs
 │   │   │   ├── mod.rs
 │   │   │   ├── routes.rs
@@ -243,6 +246,7 @@ crates/
 │   │   ├── audit.rs
 │   │   ├── board.rs
 │   │   ├── builtin_plugins.rs
+│   │   ├── chat.rs
 │   │   ├── decision.rs
 │   │   ├── division.rs
 │   │   ├── energy.rs
@@ -274,6 +278,7 @@ crates/
 │   └── Cargo.toml
 └── ant3-worker/
     ├── src/
+    │   ├── board-protocol.txt
     │   ├── lib.rs
     │   ├── recovery.rs
     │   ├── runner.rs
@@ -304,6 +309,9 @@ web/
 │       │   └── fleets.js
 │       ├── board/
 │       │   └── board.js
+│       ├── chat/
+│       │   ├── chat.css
+│       │   └── chat.js
 │       ├── colony/
 │       │   └── colony.js
 │       ├── inbox/

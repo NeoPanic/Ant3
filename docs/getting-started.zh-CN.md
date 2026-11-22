@@ -46,7 +46,7 @@ cargo run --locked -p ant3-cli -- up \
 
 配置在 daemon 启动时固定，切换需重启。模型或端点改变后，有历史会话的旧实例可能拒绝继续运行；创建新实例可隔离供应商 continuation。UI 的“已配置”表示配置已读取，实际调用结果需从 Run 检查。
 
-适配器支持非流式文本、函数工具调用、回传、用量和错误状态。Responses 保留必要 output items 与 encrypted reasoning continuation。流式、多模态、供应商内置搜索和通用自动重试不在当前适配范围。
+适配器支持文本、函数工具调用、回传、用量和错误状态。Worker 支持三类协议的流式正文，控制面选型使用完整响应；兼容服务返回 JSON 时保留整轮回执。Responses 保留必要 output items 与 encrypted reasoning continuation。多模态、供应商内置搜索和通用自动重试不在当前适配范围。控制台新增[蚁群群聊](chat.zh-CN.md)入口，用户输入直接发布任务，执行进展与正文持续呈现。
 
 ## 先发布一个任务
 

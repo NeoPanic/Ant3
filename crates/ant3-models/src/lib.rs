@@ -1,4 +1,5 @@
-//! Non-streaming adapters for configured model providers.
+//! Provider adapters with complete-response and streaming transports.
+mod streaming;
 use ant3::{
     Call, CancellationToken, Error, LiveOutput, Model, ModelInput, ModelReply, Result, TokenUsage,
     Turn,
@@ -42,7 +43,9 @@ impl Provider {
             return Err(fault(400, "invalid_model_configuration"));
         }
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(60))
+            .connect_timeout(Duration::from_secs(10))
+            .read_timeout(Duration::from_secs(60))
+            .timeout(Duration::from_secs(600))
             .redirect(reqwest::redirect::Policy::none())
             .build()
             .map_err(|_| fault(500, "http_client_error"))?;
@@ -333,6 +336,25 @@ impl Model for Provider {
         live: &LiveOutput,
         cancel: CancellationToken,
     ) -> Result<ModelReply> {
+        self.complete_request(input, live, cancel, false).await
+    }
+}
+impl Provider {
+    pub async fn complete_streamed(
+        &self,
+        input: ModelInput,
+        live: &LiveOutput,
+        cancel: CancellationToken,
+    ) -> Result<ModelReply> {
+        self.complete_request(input, live, cancel, true).await
+    }
+    async fn complete_request(
+        &self,
+        input: ModelInput,
+        live: &LiveOutput,
+        cancel: CancellationToken,
+        streaming: bool,
+    ) -> Result<ModelReply> {
         let path = match self.protocol {
             Protocol::OpenaiCompatible => "chat/completions",
             Protocol::OpenaiResponses => "responses",
@@ -348,11 +370,22 @@ impl Model for Provider {
         if unique.len() != names.len() {
             return Err(Error::new("provider_tool_alias_collision"));
         }
-        let body = self.request(&input, live.max_output_tokens().unwrap_or(4096));
+        let mut body = self.request(
+            &input,
+            live.max_output_tokens()
+                .unwrap_or(self.context_budget().output_reserve_tokens as u64),
+        );
+        body["stream"] = json!(streaming);
+        if streaming && self.protocol == Protocol::OpenaiCompatible {
+            body["stream_options"] = json!({"include_usage":true});
+        }
         let mut request = self
             .client
             .post(format!("{}/{path}", self.base))
             .json(&body);
+        if !streaming {
+            request = request.timeout(Duration::from_secs(60));
+        }
         if self.protocol == Protocol::Anthropic {
             request = request.header("anthropic-version", "2023-06-01");
             if !self.key.is_empty() {
@@ -363,11 +396,27 @@ impl Model for Provider {
         }
         let mut response = tokio::select! {
             _=cancel.cancelled()=>return Err(Error::new("cancelled")),
-            response=request.send()=>response.map_err(|_|Error::new("provider_network_error"))?,
+            response=request.send()=>response.map_err(network_error)?,
         };
         let status = response.status();
+        if streaming
+            && status.is_success()
+            && response
+                .headers()
+                .get("content-type")
+                .and_then(|v| v.to_str().ok())
+                .is_some_and(|v| v.starts_with("text/event-stream"))
+        {
+            let mut reply = streaming::receive(response, &self.protocol, live, cancel).await?;
+            for call in &mut reply.calls {
+                if let Some((_, original)) = names.iter().find(|(wire, _)| wire == &call.name) {
+                    call.name = original.clone();
+                }
+            }
+            return Ok(reply);
+        }
         let mut bytes = vec![];
-        while let Some(chunk) = tokio::select! {_=cancel.cancelled()=>return Err(Error::new("cancelled")),chunk=response.chunk()=>chunk.map_err(|_|Error::new("provider_network_error"))?}
+        while let Some(chunk) = tokio::select! {_=cancel.cancelled()=>return Err(Error::new("cancelled")),chunk=response.chunk()=>chunk.map_err(network_error)?}
         {
             if bytes.len() + chunk.len() > 4 * 1024 * 1024 {
                 return Err(Error::new("provider_response_too_large"));
@@ -397,6 +446,14 @@ impl Model for Provider {
         }
         Ok(reply)
     }
+}
+
+fn network_error(error: reqwest::Error) -> Error {
+    Error::new(if error.is_timeout() {
+        "provider_timeout"
+    } else {
+        "provider_network_error"
+    })
 }
 
 #[derive(Clone, Default)]

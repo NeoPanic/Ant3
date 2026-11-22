@@ -7,16 +7,61 @@ use crate::{domain::*, settings::Settings, store::Store};
 use rusqlite::{OptionalExtension, Transaction, params};
 use serde_json::{Value, json};
 
-pub use ant3_domain::division::{cost_adjusted_threshold, response_probability, response_threshold, stimulus};
+pub use ant3_domain::division::{
+    cost_adjusted_threshold, response_probability, response_threshold, stimulus,
+};
+
+pub(crate) fn provider_unavailable(report: &Value) -> bool {
+    match report["error"]["code"].as_str().unwrap_or_default() {
+        "provider_network_error"
+        | "provider_timeout"
+        | "provider_stream_error"
+        | "provider_http_401"
+        | "provider_http_403"
+        | "provider_http_408"
+        | "provider_http_429" => true,
+        code => code
+            .strip_prefix("provider_http_")
+            .and_then(|status| status.parse::<u16>().ok())
+            .is_some_and(|status| (500..600).contains(&status)),
+    }
+}
+
+pub(crate) fn repair_provider_failures(tx: &Transaction<'_>) -> PResult<()> {
+    let mut stmt = tx.prepare(
+        "SELECT i.preset_name,i.preset_version,r.report FROM board_agents a JOIN runs r ON r.id=a.run_id JOIN instances i ON i.id=a.instance_id WHERE a.processed=1 AND a.claimed_task_id IS NOT NULL AND r.state='failed'",
+    )?;
+    let rows = stmt
+        .query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, Option<String>>(2)?,
+            ))
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+    drop(stmt);
+    for (name, version, report) in rows {
+        let report: Value = serde_json::from_str(report.as_deref().unwrap_or("null"))?;
+        if provider_unavailable(&report) {
+            tx.execute("UPDATE preset_experience SET failures=max(0,failures-1) WHERE preset_name=? AND preset_version=?", params![name, version])?;
+        }
+    }
+    Ok(())
+}
 
 pub(crate) fn record_outcome(
     tx: &Transaction<'_>,
     preset_name: &str,
     preset_version: &str,
-    success: bool,
+    success: Option<bool>,
     energy: i64,
 ) -> PResult<()> {
-    let (s, f) = if success { (1, 0) } else { (0, 1) };
+    let (s, f) = match success {
+        Some(true) => (1, 0),
+        Some(false) => (0, 1),
+        None => (0, 0),
+    };
     tx.execute(
         "INSERT INTO preset_experience(preset_name,preset_version,successes,failures,energy_spent) VALUES(?,?,?,?,?)
          ON CONFLICT(preset_name,preset_version) DO UPDATE SET successes=successes+excluded.successes,failures=failures+excluded.failures,energy_spent=energy_spent+excluded.energy_spent",
