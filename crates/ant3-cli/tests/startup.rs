@@ -71,7 +71,9 @@ async fn fresh_start_is_empty_with_or_without_a_model() {
         })
         .await
         .expect("service readiness timeout");
-        for collection in ["presets", "instances", "runs", "fleets", "plugins"] {
+        assert_eq!(snapshot["presets"][0]["name"], "default-ant");
+        assert_eq!(snapshot["builtin_plugins"][0]["id"], "external.codex");
+        for collection in [ "instances", "runs", "fleets", "plugins"] {
             assert!(
                 snapshot[collection].as_array().unwrap().is_empty(),
                 "{collection} was seeded"

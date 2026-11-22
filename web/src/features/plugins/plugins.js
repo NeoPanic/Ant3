@@ -17,7 +17,7 @@ function pluginsPage() {
 function builtinDetail(p) {
   const configured=data.builtin_plugin_status?.[p.id]?.configured!==false;
   const tools=p.tools||[];
-  openModal(p.id,`<div class="inspector-summary"><div><span>版本</span><strong>${esc(p.version)}</strong></div><div><span>状态</span>${badge(configured?'good':'neutral',configured?'可用':'未配置')}</div></div>${p.id==='web.search'?'<p class="hint">需要 ANT3_WEB_SEARCH_API_KEY。搜索词会发送至 Brave Search，可能产生供应商费用。</p>':''}<dl class="detail-kv"><dt>能力</dt><dd>${esc(p.description)}</dd><dt>绑定</dt><dd>发布 Preset 时选择此插件。</dd></dl>${panel('工具',tools.map(t=>`<div class="panel-body"><strong class="mono">${esc(t.name)}</strong><p class="record-text">${esc(t.description)}</p><div class="schema-block"><span class="form-section-title">可填参数</span>${schemaSummary(t.parameters)}</div></div>`).join(''))}`);
+  openModal(p.id,`<div class="inspector-summary"><div><span>版本</span><strong>${esc(p.version)}</strong></div><div><span>状态</span>${badge(configured?'good':'neutral',configured?'可用':'未配置')}</div></div><dl class="detail-kv"><dt>能力</dt><dd>${esc(p.description)}</dd><dt>绑定</dt><dd>发布 Preset 时选择此插件。</dd></dl>${panel('工具',tools.map(t=>`<div class="panel-body"><strong class="mono">${esc(t.name)}</strong><p class="record-text">${esc(t.description)}</p><div class="schema-block"><span class="form-section-title">可填参数</span>${schemaSummary(t.parameters)}</div></div>`).join(''))}`);
 }
 function processDetail(p) {
   const manifest=p.definition.manifest;

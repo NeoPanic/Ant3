@@ -200,10 +200,8 @@ async fn real_harness_execution_is_persisted_and_agents_are_independent() {
     worker.await.unwrap();
     let settled = store.list("runs").unwrap();
     assert_eq!(settled[0]["state"], "completed");
-    assert_eq!(
-        settled[0]["report"]["observations"][0]["output"]["content"]["characters"],
-        4
-    );
+    assert_eq!(settled[0]["report"]["observations"], json!([]));
+    assert!(settled[0]["report"]["output"].as_str().unwrap().contains("Ant³"));
     assert_eq!(
         run,
         store
@@ -211,7 +209,7 @@ async fn real_harness_execution_is_persisted_and_agents_are_independent() {
             .unwrap()
     );
     let session = store.load(agents[0].as_str().unwrap()).await.unwrap();
-    assert_eq!(session.requests.len(), 2);
+    assert_eq!(session.requests.len(), 1);
     assert!(!session.events.is_empty());
     assert_eq!(
         store
@@ -542,7 +540,7 @@ fn all_provider_requests_include_the_first_user_text_once() {
             Protocol::OpenaiCompatible => &request["messages"][1]["content"],
             Protocol::OpenaiResponses => &request["input"][0]["content"],
             Protocol::Anthropic => &request["messages"][0]["content"][0]["text"],
-            Protocol::Demo => unreachable!(),
+            Protocol::Demo | Protocol::CodexCli => unreachable!(),
         };
         assert_eq!(expected, "hello");
     }

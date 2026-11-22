@@ -108,7 +108,7 @@ async function api(path, body, method = 'POST', key = null) {
   return value;
 }
 // 固定路径路由（/board、/colony…）；旧 hash 链接一次性重定向到对应路径。
-const routePages=['studio','colony','deliveries','board','inbox','presets','plugins','researcher'];
+const routePages=['studio','colony','deliveries','board','inbox','presets','plugins','providers','researcher'];
 const legacyRoutes={overview:'studio',agents:'researcher',fleets:'researcher',messages:'researcher',runs:'researcher',events:'researcher',capabilities:'researcher',workspaces:'deliveries'};
 function routeParts(){
   return (location.pathname||'/').split('/').filter(Boolean).map(part=>{try{return decodeURIComponent(part);}catch{return part;}});
@@ -145,7 +145,7 @@ function tabPanel(body, flush = false) { return `<section class="panel tab-panel
 
 function table(headers, rows) { return `<div class="table-wrap" tabindex="0" role="region" aria-label="${esc(headers.join('、'))}，可横向滚动"><table class="${['操作','检查','载荷'].includes(headers.at(-1))?'table-actions':''}"><thead><tr>${headers.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`; }
 function agentRows(list) {
-  return list.map((a,i) => `<tr><td><div class="table-name"><span class="agent-glyph">${icon('agents')}</span><div><div class="primary-text">${esc(a.preset_name)} <span class="mono">#${esc(a.id.slice(-5))}</span></div><div class="secondary-text mono">${esc(short(a.id))}</div></div></div></td><td>${badge(a.state)}</td><td><span class="mono">${esc(a.preset_version)}</span></td><td><span class="protocol">${esc(a.snapshot.protocol)}</span></td><td>${time(a.created_at)}</td><td><button class="text-button" data-action="agent-detail" data-id="${esc(a.id)}">检查 ↗</button>${a.state === 'ready' ? `<button class="text-button" data-action="run-form" data-id="${esc(a.id)}">运行</button>` : ''}</td></tr>`);
+  return list.map((a,i) => `<tr><td><div class="table-name"><span class="agent-glyph">${icon('agents')}</span><div><div class="primary-text">${esc(a.preset_name)} <span class="mono">#${esc(a.id.slice(-5))}</span></div><div class="secondary-text mono">${esc(short(a.id))}</div></div></div></td><td>${badge(a.state)}</td><td><span class="mono">${esc(a.preset_version)}</span></td><td><span class="protocol">${esc(a.snapshot.protocol)}</span></td><td>${time(a.created_at)}</td><td><button class="text-button" data-action="agent-detail" data-id="${esc(a.id)}">检查 ↗</button></td></tr>`);
 }
 function agentsTable(list,compact=false) {
   if(compact && list.length) return '<div class="compact-agents">'+table(['实例 / Preset','状态','协议','操作'],list.map(a=>`<tr><td><div class="primary-text">${esc(a.preset_name)}</div><div class="secondary-text mono">${esc(short(a.id))}</div></td><td>${badge(a.state)}</td><td class="protocol">${esc(a.snapshot.protocol)}</td><td><button class="text-button" data-action="agent-detail" data-id="${esc(a.id)}">查看实例</button></td></tr>`))+'</div>';
@@ -163,9 +163,10 @@ function progressPage() {
   if(!data.capabilities.length)return head('实现进度')+empty('尚未读取到能力清单','请刷新页面；持续为空时检查平台 API 的能力清单。');
   return head('实现进度')+progressBody();
 }
+let providerProtocol;
 function render() {
   if (!data || composing) return;
-  const p=page(), names={studio:'工作现场',colony:'蚁群',deliveries:'成果库',board:'任务板',inbox:'需要你处理',presets:'Presets',plugins:'插件与能力',researcher:'研究者视图'};
+  const p=page(), names={studio:'工作现场',colony:'蚁群',deliveries:'成果库',board:'任务板',inbox:'需要你处理',presets:'Presets',plugins:'插件与能力',providers:'模型提供商',researcher:'研究者视图'};
   const inboxCount=typeof inboxItems==='function'&&data?inboxItems().length:0;
   const inboxBadge=$('#inbox-count');
   if(inboxBadge){inboxBadge.textContent=inboxCount;inboxBadge.hidden=!inboxCount;}
@@ -179,6 +180,29 @@ function render() {
   if(p==='inbox') html=inboxPage();
   if(p==='researcher') html=researcherPage();
   if(p==='presets') html=head('Presets', button('发布 Preset','preset-form',true))+panel('Preset 版本',data.presets.length?table(['Preset / 版本','用途与目标','模型协议','操作'],data.presets.map(p=>`<tr><td><div class="primary-text">${esc(p.name)}</div><div class="secondary-text mono">${esc(p.version)}</div></td><td><div class="primary-text">${esc(p.definition.purpose)}</div><div class="secondary-text wrap">${esc(p.definition.objective)}</div></td><td><span class="protocol">${esc(p.definition.protocol)}</span></td><td><button class="text-button" data-action="preset-detail" data-id="${esc(p.name)}" data-version="${esc(p.version)}">查看定义</button><button class="text-button" data-action="preset-clone" data-id="${esc(p.name)}" data-version="${esc(p.version)}">派生新版本</button><button class="text-button" data-action="spawn" data-id="${esc(p.name)}" data-version="${esc(p.version)}">创建实例</button><button class="text-button" data-action="preset-delete" data-id="${esc(p.name)}" data-version="${esc(p.version)}">删除版本</button></td></tr>`)):empty('尚无 Preset 版本','点击“发布 Preset”，填写用途、目标和模型协议。'),`<span class="board-count">${data.presets.length} 个版本</span>`);
+  if(p==='providers') {
+    const profiles=data.saved_providers||[];
+    const selected=providerProtocol||profiles[0]?.protocol;
+    const saved=profiles.find(config=>config.protocol===selected);
+    html=`<section class="provider-page">
+    <h1>模型提供商</h1>
+    <form data-form="model-provider" class="provider-form">
+      <fieldset class="provider-protocol"><legend>接口协议</legend>
+        <div class="provider-options">${[
+          ['openai-compatible','OpenAI','Chat Completions'],
+          ['openai-responses','OpenAI','Responses'],
+          ['anthropic','Anthropic','Messages']
+        ].map(([value,brand,api])=>`<label><input type="radio" name="protocol" value="${value}" ${selected===value?'checked':''} required><span><small>${brand}</small><strong>${api}</strong></span></label>`).join('')}</div>
+      </fieldset>
+      <div class="provider-fields">
+        <label>接口地址<input type="url" name="base_url" value="${esc(saved?.base_url||'')}" required autocomplete="off" placeholder="https://example.com/v1" aria-describedby="provider-url-hint"><small id="provider-url-hint">填写基础地址，协议端点会自动追加。</small></label>
+        <label>模型 ID<input name="model" value="${esc(saved?.model||'')}" required autocomplete="off" placeholder="提供商指定的模型名称"></label>
+        <label><span>API Key <small>可选</small></span><input type="password" name="api_key" autocomplete="new-password" placeholder="${saved?.has_key?'已保存 · 输入新密钥可替换':'输入访问密钥'}"></label>
+      </div>
+      <div id="form-error" class="error" role="alert"></div>
+      <div class="provider-footer"><span>沿用原地址时，密钥留空会保留已保存的密钥。</span><button type="submit" class="button primary">保存配置</button></div>
+    </form></section>`;
+  }
   if(p==='plugins') html=pluginsPage();
   // Do not replace an unchanged view during polling: preserve focus and scroll.
   if(renderedMarkup!==html) {
@@ -282,22 +306,17 @@ function spawnForm(name,version) {
   const selected=data.presets.find(p=>p.name===name&&p.version===version)||data.presets.find(p=>p.name==='researcher')||data.presets[0];
   if(!selected) return toast('请先发布一个 Preset');
   const limit=data.capacity.limit,used=data.capacity.reserved,available=data.capacity.available;
-  openModal('从 Preset 创建实例',`<form data-form="spawn"><label>Preset 版本<select name="preset">${data.presets.map(p=>`<option value="${esc(JSON.stringify({name:p.name,version:p.version}))}" ${p===selected?'selected':''}>${esc(p.name)} @ ${esc(p.version)} ${esc(p.definition.protocol)}</option>`).join('')}</select></label><div id="spawn-parameters">${spawnParameterFields(selected.definition)}</div><div class="quota-summary"><span>实例配额</span><strong>${used} <span>/ ${limit} 已占用或预留</span></strong><span>还可创建 ${available} 个</span></div><label>Agent 池策略<select name="mode"><option value="finite">有限批次 终止后不补建</option><option value="maintain">持续维持 自动补足目标数量</option></select></label><p class="hint">持续维持会自动补建成员并重新计时 TTL。停止补建请缩容或终止 Agent 池。</p><label>实例数量<input name="count" type="number" min="1" max="${Math.max(1,available)}" value="${Math.min(3,available)||1}" ${available?'':'disabled'} required aria-describedby="spawn-hint"></label><label>实例 TTL（分钟，可选）<input name="ttl_minutes" type="number" min="1" max="43200" step="1" placeholder="不填则持续保留" aria-describedby="ttl-hint"></label><p class="hint" id="ttl-hint">从创建时开始计时，最多 30 天。到期停止接收任务、取消排队并协作取消运行；历史记录保留。</p><p class="hint" id="spawn-hint">${available?'创建后即可向就绪实例提交任务。':'当前容量已满。缩容或终止Agent 池可释放预留；finite 的闲置成员也可单独终止。'} Worker 最多并发 ${data.limits.workers} 个运行。</p>${formEnd('创建实例')}</form>`,'批量实例化');
+  openModal('从 Preset 创建实例',`<form data-form="spawn"><label>Preset 版本<select name="preset">${data.presets.map(p=>`<option value="${esc(JSON.stringify({name:p.name,version:p.version}))}" ${p===selected?'selected':''}>${esc(p.name)} @ ${esc(p.version)} ${esc(p.definition.protocol)}</option>`).join('')}</select></label><div id="spawn-parameters">${spawnParameterFields(selected.definition)}</div><div class="quota-summary"><span>实例配额</span><strong>${used} <span>/ ${limit} 已占用或预留</span></strong><span>还可创建 ${available} 个</span></div><label>Agent 池策略<select name="mode"><option value="finite">有限批次 终止后不补建</option><option value="maintain">持续维持 自动补足目标数量</option></select></label><p class="hint">持续维持会自动补建成员并重新计时 TTL。停止补建请缩容或终止 Agent 池。</p><label>实例数量<input name="count" type="number" min="1" max="${Math.max(1,available)}" value="${Math.min(3,available)||1}" ${available?'':'disabled'} required aria-describedby="spawn-hint"></label><label>实例 TTL（分钟，可选）<input name="ttl_minutes" type="number" min="1" max="43200" step="1" placeholder="不填则持续保留" aria-describedby="ttl-hint"></label><p class="hint" id="ttl-hint">从创建时开始计时，最多 30 天。到期停止接收任务、取消排队并协作取消运行；历史记录保留。</p><p class="hint" id="spawn-hint">${available?'请在任务板发布工作。':'当前容量已满。缩容或终止Agent 池可释放预留；finite 的闲置成员也可单独终止。'} Worker 最多并发 ${data.limits.workers} 个运行。</p>${formEnd('创建实例')}</form>`,'批量实例化');
   if(!available)$('#modal [type="submit"]').disabled=true;
 }
 
-function runForm(id) {
-  const a=data.instances.find(item=>item.id===id);if(!a)return;
-  const model=data.models.find(m=>m.protocol===a.snapshot.protocol);
-  openModal('提交任务',`<form data-form="run" data-id="${esc(id)}"><div class="task-context"><span class="agent-glyph">${icon('agents')}</span><div><strong>${esc(a.preset_name)} <span class="mono">@ ${esc(a.preset_version)}</span></strong><small>${esc(model?.model||a.snapshot.protocol)} ${esc(a.snapshot.protocol)}</small></div>${badge(a.state)}</div>${identity('实例 ID',id)}<label>任务内容<textarea name="text" required maxlength="64000" rows="6" placeholder="描述需要 Agent 完成的任务…" aria-describedby="run-hint"></textarea></label><p class="hint" id="run-hint">${model?.configured?'此任务将调用真实模型，按供应商规则计费。':'当前协议未配置模型，任务无法正常执行。请先配置模型并重启服务。'} 每次最多 12 轮、24 次工具调用、120 秒。</p>${formEnd('提交任务')}</form>`,'独立会话执行');
-}
 async function agentDetail(id) {
   const a=data.instances.find(a=>a.id===id); if(!a) return;
   const request=++inspectionRequest;
   const session=await api(`/api/v1/agent-instances/${encodeURIComponent(id)}/session`);
   if(request!==inspectionRequest)return;
   modalContext={type:'agent',id,session};
-  const actions=a.state==='ready'?button('提交运行','run-form',true,`data-id="${esc(id)}"`)+button('暂停','suspend',false,`data-id="${esc(id)}"`):a.state==='suspended'?button('恢复','resume',true,`data-id="${esc(id)}"`):'';
+  const actions=a.state==='ready'?button('暂停','suspend',false,`data-id="${esc(id)}"`):a.state==='suspended'?button('恢复','resume',true,`data-id="${esc(id)}"`):'';
   openModal(a.preset_name,`<div class="inspector-summary"><div><span>生命周期</span>${badge(a.state)}</div><div><span>Preset 版本</span><strong class="mono">${esc(a.preset_version)}</strong></div><div><span>会话记录</span><strong>${session.turns.length} <small>项</small></strong></div></div>${identity('实例 ID',id)}${a.expires_at?`<p class="hint">TTL 截止：${esc(new Date(a.expires_at).toLocaleString('zh-CN'))} 到期将停止接收任务并请求取消活动运行。</p>`:''}<div class="inspector-actions">${button('所属 Agent 池','fleet-nav',false,`data-id="${esc(a.fleet_id)}"`)}${actions}${['ready','busy','suspended'].includes(a.state)?`<button class="text-button" data-action="drain" data-id="${esc(id)}">排空并终止</button>`:''}${['ready','suspended'].includes(a.state)?`<button class="text-button danger-action" data-action="terminate" data-id="${esc(id)}">终止实例</button>`:''}</div><div id="detail-view">${definitionView(a.snapshot)}</div>`,'Agent 实例');
 }
 function definitionView(definition) {
@@ -357,7 +376,6 @@ async function handleAction(action, element) {
   if(action==='capabilities') {navigate('/researcher');return;}
   if(action==='spawn') return spawnForm(id,element.dataset.version);
   if(action==='preset-form') return presetForm();
-  if(action==='run-form') return runForm(id);
   if(action==='agent-detail') return agentDetail(id);
   if(action==='run-detail') return runDetail(id);
   if(action==='refresh-run') {await refresh(true);return runDetail(id,true);}
@@ -422,6 +440,12 @@ document.addEventListener('invalid',event=>{
 for(const type of ['input','change'])document.addEventListener(type,event=>{
   if(event.target.form?.dataset.form&&typeof event.target.setCustomValidity==='function')event.target.setCustomValidity('');
 });
+document.addEventListener('change',event=>{
+  if(event.target.name==='protocol' && event.target.form?.dataset.form==='model-provider'){
+    providerProtocol=event.target.value;
+    render();
+  }
+});
 document.addEventListener('submit',async event=>{
   const form=event.target;
   if(form.id==='login-form') {
@@ -478,7 +502,15 @@ document.addEventListener('submit',async event=>{
     if(form.dataset.form==='preset-delete') {result=await api(`/api/v1/presets/${encodeURIComponent(form.dataset.id)}/${encodeURIComponent(form.dataset.version)}`,{},'DELETE',form.dataset.commandKey);navigate('/presets');}
     if(form.dataset.form==='process-state') {result=await api(`/api/v1/process-plugins/${encodeURIComponent(form.dataset.id)}/${encodeURIComponent(form.dataset.version)}/actions`,{action:form.dataset.state});}
     if(form.dataset.form==='process-install') {result=await api('/api/v1/process-plugins',{source_dir:values.source_dir});}
-    if(form.dataset.form==='run') {result=await api(`/api/v1/agent-instances/${encodeURIComponent(form.dataset.id)}/runs`,{text:values.text},'POST',form.dataset.commandKey);researcherTab='runs';navigate('/researcher');}
+    if(form.dataset.form==='model-provider') {
+      await api('/api/v1/settings/model-provider',{protocol:values.protocol,model:values.model,base_url:values.base_url,api_key:values.api_key || undefined});
+      form.elements.api_key.value='';
+      providerProtocol=values.protocol;
+      renderedMarkup=null;
+      await refresh(true);
+      toast('模型提供商已保存，新任务将使用此配置。');
+      return;
+    }
     if(form.dataset.form==='settings') {
       const n=name=>Number(form.elements[name].value);
       result=await api('/api/v1/settings',{

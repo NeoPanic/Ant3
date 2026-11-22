@@ -68,20 +68,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ant3-builtin-plugins"
-version = "0.1.0"
-dependencies = [
- "ant3",
- "async-trait",
- "axum",
- "reqwest",
- "serde",
- "serde_json",
- "sha2",
- "tokio",
-]
-
-[[package]]
 name = "ant3-cli"
 version = "0.1.0"
 dependencies = [
@@ -142,7 +128,6 @@ name = "ant3-platform"
 version = "0.1.0"
 dependencies = [
  "ant3",
- "ant3-builtin-plugins",
  "ant3-domain",
  "ant3-models",
  "ant3-plugin-protocol",
@@ -195,7 +180,6 @@ name = "ant3-server"
 version = "0.1.0"
 dependencies = [
  "ant3",
- "ant3-builtin-plugins",
  "ant3-client",
  "ant3-domain",
  "ant3-models",
@@ -232,11 +216,11 @@ name = "ant3-worker"
 version = "0.1.0"
 dependencies = [
  "ant3",
- "ant3-builtin-plugins",
  "ant3-models",
  "ant3-platform",
  "ant3-plugins",
  "async-trait",
+ "libc",
  "serde",
  "serde_json",
  "tokio",
@@ -1259,7 +1243,6 @@ dependencies = [
  "rustls-platform-verifier",
  "serde",
  "serde_json",
- "serde_urlencoded",
  "sync_wrapper",
  "tokio",
  "tokio-rustls",

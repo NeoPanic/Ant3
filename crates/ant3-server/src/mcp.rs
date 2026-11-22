@@ -150,11 +150,11 @@ pub fn tools(allow_write: bool) -> Vec<Value> {
             vec!["id"],
         ),
         (
-            "runs_create",
-            "Queue an input on an existing instance. This can call a paid model. Inspect runs_show for the result.",
+            "board_publish",
+            "Publish work and acceptance criteria on the shared task board.",
             false,
-            json!({"id":id,"text":text,"key":key}),
-            vec!["id", "text", "key"],
+            json!({"input":{"type":"object","properties":{"title":text,"instructions":text,"acceptance":text,"energy_budget":{"type":"integer"},"verification":{"type":"object"}},"required":["title","instructions","acceptance"],"additionalProperties":false},"key":key}),
+            vec!["input", "key"],
         ),
         (
             "runs_show",

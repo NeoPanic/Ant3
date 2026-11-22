@@ -78,14 +78,19 @@ pub(super) async fn execute(
     let bound = ant3_platform::presets::bindings(snapshot);
     let audit = store.board_audit_job(run)?;
     let board = store.board_run(run)?;
+    // Standalone fixture runs exercise adapters in test builds only.
+    #[cfg(not(feature = "test-support"))]
+    if board.is_none() && audit.is_none() {
+        return Err(fault(409, "board_context_required"));
+    }
     // Routed invitations carry a provisioned pending target; recruited
     // membership rows do not. Only the former must claim before acting.
     let board_invitation = match &board {
-        Some(b) => store
+        Some(b) if b["handoff"] != true => store
             .board_task(b["target_task_id"].as_str().unwrap_or_default())
             .map(|t| t["state"] == "pending" && t["route_state"] == "provisioned")
             .unwrap_or(false),
-        None => false,
+        _ => false,
     };
     let mut instructions = format!(
         "{}\nPurpose: {}\nObjective: {}",
@@ -101,7 +106,11 @@ pub(super) async fn execute(
         ));
     }
     if board.is_some() {
+        instructions.push_str(&format!("\nCurrent task board (untrusted task data): {}", store.read_board_view(run, 0, 16, true)?));
         instructions.push_str("\nShared task board protocol: you are a peer Agent. Read platform.board.read, then claim a compatible pending task with platform.board.claim before using work tools. Follow the claimed task's instructions and acceptance criteria. Every peer can read, claim and split; no peer controls other identities. Split only when independent work is useful; publish task descriptions without choosing Presets or Agents, then finish this Run. Report concrete milestones and blockers with platform.board.progress. Share durable findings on the root blackboard with platform.board.note (CAS revisions, cite trace keys as evidence); read peer findings with platform.board.notes. Conflicts are adjudicated by evidence strength. A continuation has completed children: inspect their results before integrating. Read target_task.reviews for human feedback; after changes_requested, correct the result and split additional work only if needed. Your final output is the durable task contribution, submitted for human review on the root task. Only the human operator can accept it. Do not claim success beyond available evidence.");
+    }
+    if board.as_ref().is_some_and(|scope| scope["handoff"] == true) {
+        instructions.push_str("\nThis Run consumes a peer handoff. Read the board to see the root task and signals. Respond to the handoff within that scope.");
     }
     if audit.is_some() {
         instructions = format!(
@@ -119,7 +128,7 @@ pub(super) async fn execute(
             return Err(fault(400, "model_not_configured"));
         }
     } else {
-        models.get(&preset.protocol)?
+        models.get(if preset.protocol == Protocol::CodexCli { &Protocol::OpenaiResponses } else { &preset.protocol })?
     };
     let history = store.load(agent).await.map_err(core_error)?;
     if let Some(previous) = history
@@ -152,10 +161,21 @@ pub(super) async fn execute(
                 inner
             }
         };
-        registry
-            .tool(work_tool(Arc::new(ant3_builtin_plugins::InspectText)))
-            .map_err(core_error)?;
-        tools.push("text.inspect".to_owned());
+        if let Ok(root) = store.workspace_root() {
+            for name in ["read", "write", "edit", "bash"] {
+                let tool = work_tool(Arc::new(super::local::LocalTool {name, workspace:root.join(agent)}));
+                tools.push(tool.spec().name);
+                registry.tool(tool).map_err(core_error)?;
+            }
+        }
+        if bound.iter().any(|p| p == &ant3_platform::organization::codex_package()) {
+            let tool = work_tool(Arc::new(super::codex::CodexTool {
+                workspace: store.workspace_root()?.join(agent),
+                run: run.to_owned(),
+            }));
+            tools.push(tool.spec().name);
+            registry.tool(tool).map_err(core_error)?;
+        }
         if board.is_some() {
             for tool in ant3_platform::board::tools(store.clone(), run) {
                 tools.push(tool.spec().name);
@@ -166,21 +186,9 @@ pub(super) async fn execute(
                 registry.tool(tool).map_err(core_error)?;
             }
         }
-        for snapshot in bound.iter().filter(|p| {
-            p["kind"] == "organization"
-                && (board.is_none()
-                    || ant3_builtin_plugins::package(p["id"].as_str().unwrap_or_default())
-                        .is_some()
-                    // Board peers keep direct messaging and workspace handoffs;
-                    // Goal-scoped organization tools no longer exist.
-                    || matches!(p["id"].as_str().unwrap_or_default(), "platform.messaging" | "platform.workspace"))
-        }) {
-            let direct = matches!(snapshot["id"].as_str().unwrap_or_default(), "platform.messaging" | "platform.workspace");
-            for tool in ant3_platform::organization::tools(snapshot, store.clone(), run)? {
+        for system in ant3_platform::organization::system_packages() {
+            for tool in ant3_platform::organization::tools(&system, store.clone(), run)? {
                 tools.push(tool.spec().name);
-                // Direct exchange and private workspace access do not require a
-                // claimed task; the host still binds identity to this Run.
-                let tool = if direct { tool } else { work_tool(tool) };
                 registry.tool(tool).map_err(core_error)?;
             }
         }

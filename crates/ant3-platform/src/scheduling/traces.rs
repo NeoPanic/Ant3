@@ -193,7 +193,7 @@ pub(crate) fn trace_view(tx: &Transaction<'_>, root: &str, key: &str) -> PResult
     }))
 }
 
-fn traces_in(tx: &Transaction<'_>, root: &str) -> PResult<Value> {
+pub(crate) fn traces_in(tx: &Transaction<'_>, root: &str) -> PResult<Value> {
     let exists: bool = tx.query_row(
         "SELECT EXISTS(SELECT 1 FROM board_tasks WHERE id=?)",
         [root],

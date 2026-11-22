@@ -41,12 +41,21 @@ pub async fn worker_loop_with_router(
     let route_stop = shutdown.clone();
     let processes = plugins.is_enabled();
     let routing = tokio::spawn(async move {
+        let mut router = router;
+        let mut revision = 0;
         loop {
             if route_stop.is_cancelled() {
                 break;
             }
+            let (current, active_models) = route_store.configured_models(&route_models);
+            if current != revision {
+                match ant3_platform::routing::Router::from_env(&active_models) {
+                    Ok(updated) => {router = updated; revision = current;}
+                    Err(error) => eprintln!("Router configuration: {error}"),
+                }
+            }
             if let Err(error) = router
-                .route_pending(&route_store, &route_models, processes, route_stop.clone())
+                .route_pending(&route_store, &active_models, processes, route_stop.clone())
                 .await
             {
                 eprintln!("Task routing failed: {error}");
@@ -87,7 +96,7 @@ pub async fn worker_loop_with_router(
                         .insert(run.clone(), cancel.clone());
                     let store = store.clone();
                     let cancellations = cancellations.clone();
-                    let models = models.clone();
+                    let (_, models) = store.configured_models(&models);
                     let plugins = plugins.clone();
                     tasks.spawn(async move {
                         if store.cancel_requested(&run).unwrap_or(true) {

@@ -40,7 +40,7 @@
 
 插件示例：[文本统计](../crates/ant3-plugins/examples/text-inspector/)、[HTTP 读取](../crates/ant3-plugins/examples/http-reader/)、[文件交接 Preset](../crates/ant3-plugins/examples/workspace-preset/)。
 
-官方内置插件（文本统计、网页读取、网页搜索）统一放在根目录 [`plugins/`](../plugins/README.md)，与协议、SDK、宿主实现及教学示例分开维护。
+消息与工作区工具由平台提供，可在 Preset 中绑定。
 
 开发流程见[参与贡献](../CONTRIBUTING.md)。公共 API 文档通过 `cargo doc --locked --workspace --no-deps --open` 生成。
 

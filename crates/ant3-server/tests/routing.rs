@@ -133,7 +133,7 @@ fn classifier_catalog_includes_injected_board_capabilities_and_preset_constraint
         assert!(names.contains(&"platform.board.claim"));
         assert!(names.contains(&"platform.board.split"));
         assert!(names.contains(&"platform.board.result"));
-        assert!(names.contains(&"text.inspect"));
+        assert!(!names.contains(&"text.inspect"));
     }
 }
 #[tokio::test]

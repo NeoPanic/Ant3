@@ -37,7 +37,7 @@ def tree(path, prefix=''):
         lines.append(prefix + ('└── ' if last else '├── ') + child.name + ('/' if child.is_dir() else ''))
         if child.is_dir():
             tree(child, prefix + ('    ' if last else '│   '))
-for directory in ['crates', 'plugins', 'web']:
+for directory in ['crates', 'web']:
     lines.append(directory + '/')
     tree(root / directory)
 lines += ['```', '', '维护方式：修改能力 JSON 或源码目录后运行 `python3 scripts/render-progress.py`；CI 使用 `--check` 检查文档同步与来源路径。', '']

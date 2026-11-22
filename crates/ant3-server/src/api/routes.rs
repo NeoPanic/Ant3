@@ -239,7 +239,6 @@ pub fn router(app: App) -> Router {
         .route("/api/v1/agent-fleets/{id}/actions", post(fleet_action))
         .route("/api/v1/operations/{id}", get(operation))
         .route("/api/v1/agent-instances/{id}/actions", post(transition))
-        .route("/api/v1/agent-instances/{id}/runs", post(enqueue))
         .route("/api/v1/agent-instances/{id}/session", get(session))
         .route("/api/v1/runs/{id}", get(run))
         .route("/api/v1/runs/{id}/cancel", post(cancel))
@@ -267,6 +266,7 @@ pub fn router(app: App) -> Router {
             }),
         )
         .route("/api/v1/events", get(events))
+        .route("/api/v1/settings/model-provider", post(save_provider))
         .route("/api/v1/settings", get(settings).post(update_settings))
         .fallback(spa_fallback)
         .layer(DefaultBodyLimit::max(128 * 1024))

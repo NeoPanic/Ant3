@@ -1,6 +1,6 @@
 # 本地可执行插件
 
-> 当前产品先提供[官方内置插件](../plugins/README.md)，控制台不开放安装入口。下文描述保留的进程插件底层协议、CLI 与兼容接口。
+> 本文描述本机进程插件的安装与调用。
 
 本地进程插件提供外部工具，支持在线安装、能力发现、固定版本绑定、逐调用独立进程、健康检查、进度、取消与禁用。声明式提示词包使用 `/api/v1/plugins`；进程插件按以下包协议安装，不使用外部 MCP loader。
 
@@ -50,11 +50,11 @@ Python 示例使用 `/usr/bin/python3`，不需要第三方包。其他语言可
 ./target/debug/ant3 fleets create --file crates/ant3-cli/examples/process-fleet.json --key external-inspector-1
 ./target/debug/ant3 fleets show fleet_REPLACE
 # 等待实例就绪，input.txt 写入想统计的原文
-./target/debug/ant3 runs submit agent_REPLACE --file input.txt --key external-input-1
+./target/debug/ant3 board publish --file crates/ant3-cli/examples/board-task.json --key board-task-1
 ./target/debug/ant3 runs show run_REPLACE
 ```
 
-Web 的“插件与能力”可完成安装、检查契约、健康检查、启用/禁用；“Presets”可选择进程包版本；Run 的请求快照、工具回执和运行事件可检查实际调用。`demo-inspector` 固定调用内置 `text.inspect`，不能用它证明模型会选择外部工具。
+Web 的“插件与能力”可完成安装、检查契约、健康检查、启用/禁用；“Presets”可选择进程包版本；Run 的请求快照、工具回执和运行事件可检查实际调用。
 
 ## RPC 与生命周期
 

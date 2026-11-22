@@ -12,7 +12,7 @@ cargo run --locked -p ant3-cli -- up
 
 打开 [http://127.0.0.1:7333](http://127.0.0.1:7333)，将 `.ant3/token` 的内容粘贴到登录框。平台 token 用于本地认证，与模型 API Key 分开。Web 使用 HttpOnly / SameSite=Strict 会话 cookie；API 支持 Bearer token。
 
-SQLite、token、插件缓存、实例文件和 daemon 独占锁保存在数据目录，默认 `.ant3/`。使用 `--data-dir` 和 `--port` 可调整目录和端口；同一数据目录只能运行一个 daemon。默认监听 loopback。首次启动不创建 Preset、实例、任务或演示数据；未配置模型也可查看空白控制台，但不能执行模型任务。
+SQLite、token、插件缓存、实例文件和 daemon 独占锁保存在数据目录，默认 `.ant3/`。使用 `--data-dir` 和 `--port` 可调整目录和端口；同一数据目录只能运行一个 daemon。默认监听 loopback。首次启动提供 default-ant @ 1.0.0 预设，实例和任务按需创建；未配置模型也可查看空白控制台，但不能执行模型任务。
 
 Ctrl-C 停止派发新工作，并等待已开始运行协作取消、收尾。重启保留已提交状态和已知回执，排队工作可以继续处理；中断且结果未知的运行不会自动重放或续跑。备份时应包含数据库和工作区文件，不能只复制 SQLite。
 
@@ -91,7 +91,7 @@ cargo run --locked -p ant3-cli -- up \
 ./target/debug/ant3 fleets show FLEET_ID
 ./target/debug/ant3 operations show OPERATION_ID
 ./target/debug/ant3 fleets scale FLEET_ID --count 3 --expected-revision 1 --key pool-scale-1
-./target/debug/ant3 runs submit AGENT_ID --file input.txt --key run-submit-1
+./target/debug/ant3 board publish --file crates/ant3-cli/examples/board-task.json --key board-task-1
 ./target/debug/ant3 runs show RUN_ID
 ```
 

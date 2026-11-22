@@ -41,6 +41,7 @@ pub fn valid_name(s: &str) -> bool {
 pub enum Protocol {
     // Legacy persisted snapshots and offline test fixtures; unavailable in the service.
     Demo,
+    CodexCli,
     OpenaiCompatible,
     OpenaiResponses,
     Anthropic,

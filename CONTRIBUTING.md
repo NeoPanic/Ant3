@@ -14,7 +14,7 @@ The Cargo package and import are `ant3`. The user-facing brand is Ant³. See [br
 
 The root manifest defines the workspace; the independent `ant3` package lives in `crates/ant3-core`. Domain contracts, model providers, plugin hosting, worker execution, HTTP hosting, HTTP clients, and the CLI each have their own crate. The platform retains application services and business transactions; ant3-storage owns SQLite mechanics and sessions. The server owns the MCP server adapter. See the [workspace boundaries](docs/workspace.zh-CN.md) before adding a cross-crate dependency. The console lives in `web/src/app` and `web/src/features`; it uses native JavaScript and is embedded by the HTTP adapter at compile time. Run the quickstart from the repository root as shown above; start the platform with `cargo run --locked -p ant3-cli -- up`.
 
-Compiled-in official plugins belong in [`plugins/`](plugins/README.md), one directory per plugin. Keep teaching examples in `crates/ant3-plugins/examples` and protocol/SDK/host implementation in their respective crates.
+Keep teaching examples in `crates/ant3-plugins/examples` and protocol/SDK/host implementation in their respective crates.
 
 Offline regression models live in `crates/ant3-worker/tests/support` and are enabled by test dev-dependencies through `test-support`. They are excluded from normal CLI builds. Do not enable this feature in service or release builds. Startup must not populate business data or load a developer-specific configuration directory implicitly.
 

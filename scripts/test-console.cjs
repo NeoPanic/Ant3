@@ -79,7 +79,7 @@ test('Preset 独立定义默认选择可用协议，继承切换恢复必填状�
     data={presets:[{name:'parent',version:'1',definition:{purpose:'test',plugin_snapshots:[]}}]};
     const summary={};document.querySelector=()=>summary;
     const field=()=>({required:true,error:'old',setCustomValidity(v){this.error=v}});
-    const form={elements:{extends:{value:''},purpose:field(),objective:field(),instructions:field(),protocol:{...field(),value:'',options:[{value:''},{value:'demo'}]}}};
+    const form={elements:{codex_cli:{checked:false},binding_mode:{closest:()=>({})},extends:{value:''},purpose:field(),objective:field(),instructions:field(),protocol:{...field(),value:'',options:[{value:''},{value:'demo'}]}}};
     updatePresetParent(form);
   `,context);
   assert.equal(vm.runInContext('form.elements.protocol.value',context),'demo');

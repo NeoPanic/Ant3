@@ -36,7 +36,6 @@ assert not closure('ant3-domain') & {'ant3', 'reqwest', 'tokio'}
 assert not closure('ant3-platform') & {'ant3-client', 'ant3-worker', 'ant3-server', 'ant3-cli'}
 assert not closure('ant3-server') & {'ant3-cli'}
 assert not closure('ant3-storage') & {'ant3-platform', 'ant3-server', 'ant3-client', 'ant3-worker', 'ant3-plugins'}
-assert not closure('ant3-builtin-plugins') & {'ant3-platform', 'ant3-server', 'ant3-storage', 'rusqlite'}
 assert any(t['name'] == 'ant3' and 'bin' in t['kind']
            for t in packages['ant3-cli']['targets'])
 print('Workspace dependency boundaries PASS')

@@ -541,6 +541,10 @@ fn local_perception_hides_faint_trails_unless_explicitly_requested() {
     assert_eq!(view["below_threshold"], 1);
     let keys: Vec<&str> = view["traces"].as_array().unwrap().iter().map(|t| t["key"].as_str().unwrap()).collect();
     assert_eq!(keys, vec!["strong.path"]);
+    let board = s.read_board(id(&r)).unwrap();
+    let signals = board["signals"].as_array().unwrap();
+    assert_eq!(signals.len(), 1);
+    assert_eq!(signals[0]["key"], "strong.path");
     // Explicit full perception sees both.
     let all = s.read_board_traces(id(&r), Some(0.0)).unwrap();
     assert_eq!(all["traces"].as_array().unwrap().len(), 2);

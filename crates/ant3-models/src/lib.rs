@@ -21,7 +21,7 @@ impl Provider {
             Protocol::OpenaiCompatible => ("OPENAI_COMPATIBLE", "https://api.openai.com/v1"),
             Protocol::OpenaiResponses => ("OPENAI_RESPONSES", "https://api.openai.com/v1"),
             Protocol::Anthropic => ("ANTHROPIC", "https://api.anthropic.com/v1"),
-            Protocol::Demo => return Err(fault(400, "demo_has_no_provider")),
+            Protocol::CodexCli | Protocol::Demo => return Err(fault(400, "demo_has_no_provider")),
         };
         let model = std::env::var(format!("ANT3_{prefix}_MODEL"))
             .map_err(|_| fault(400, "model_not_configured"))?;
@@ -152,7 +152,7 @@ impl Provider {
                 }
                 body
             }
-            Protocol::Demo => json!({}),
+            Protocol::CodexCli | Protocol::Demo => json!({}),
         }
     }
     pub fn decode(protocol: &Protocol, body: Value) -> Result<ModelReply> {
@@ -277,7 +277,7 @@ impl Provider {
                         .saturating_add(u["cache_creation_input_tokens"].as_u64().unwrap_or(0));
                 }
             }
-            Protocol::Demo => return Err(malformed()),
+            Protocol::CodexCli | Protocol::Demo => return Err(malformed()),
         }
         Ok(reply)
     }
@@ -337,7 +337,7 @@ impl Model for Provider {
             Protocol::OpenaiCompatible => "chat/completions",
             Protocol::OpenaiResponses => "responses",
             Protocol::Anthropic => "messages",
-            Protocol::Demo => return Err(Error::new("invalid_provider")),
+            Protocol::CodexCli | Protocol::Demo => return Err(Error::new("invalid_provider")),
         };
         let names: Vec<_> = input
             .tools
@@ -406,6 +406,16 @@ pub struct Models {
     pub anthropic: Option<std::sync::Arc<Provider>>,
 }
 impl Models {
+    pub fn set_provider(&mut self, provider: Provider) -> PResult<()> {
+        let slot = match provider.protocol {
+            Protocol::OpenaiCompatible => &mut self.compatible,
+            Protocol::OpenaiResponses => &mut self.responses,
+            Protocol::Anthropic => &mut self.anthropic,
+            _ => return Err(fault(400, "invalid_provider_protocol")),
+        };
+        *slot = Some(std::sync::Arc::new(provider));
+        Ok(())
+    }
     pub fn from_env() -> Self {
         Self {
             compatible: Provider::from_env(Protocol::OpenaiCompatible)
@@ -465,7 +475,7 @@ impl Models {
             Protocol::OpenaiCompatible => self.compatible.clone(),
             Protocol::OpenaiResponses => self.responses.clone(),
             Protocol::Anthropic => self.anthropic.clone(),
-            Protocol::Demo => None,
+            Protocol::CodexCli | Protocol::Demo => None,
         }
         .ok_or_else(|| fault(400, "model_not_configured"))
     }

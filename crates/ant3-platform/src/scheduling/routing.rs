@@ -57,7 +57,7 @@ impl Router {
             }
             let protocol: Protocol = serde_json::from_value(json!(protocol))
                 .map_err(|_| fault(400, "invalid_router_protocol"))?;
-            if protocol == Protocol::Demo {
+            if matches!(protocol, Protocol::Demo | Protocol::CodexCli) {
                 return Err(fault(400, "invalid_router_protocol"));
             }
             let model = std::env::var("ANT3_ROUTER_MODEL")
@@ -103,14 +103,14 @@ impl Router {
                 if self.model.is_some() || !cfg!(feature = "test-support") {
                     continue;
                 }
-            } else if self.model.is_none() || models.get(&preset.protocol).is_err() {
+            } else if self.model.is_none() || models.get(if preset.protocol == Protocol::CodexCli { &Protocol::OpenaiResponses } else { &preset.protocol }).is_err() {
                 continue;
             }
             let bindings = crate::presets::bindings(&snapshot);
             // Only board-compatible organization packages can run in a board session.
             if bindings
                 .iter()
-                .any(|p| p["kind"] == "organization" || (!processes && p["kind"] == "process"))
+                .any(|p| !processes && p["kind"] == "process")
             {
                 continue;
             }
@@ -121,7 +121,6 @@ impl Router {
                 .map(|t| json!({"name":t["name"],"description":t["description"]}))
                 .collect();
             capabilities.extend([
-                json!({"name":"text.inspect","description":"Count characters, lines and bytes in supplied text."}),
                 json!({"name":"platform.board.read","description":"Read shared task descriptions and peer contributions."}),
                 json!({"name":"platform.board.claim","description":"Atomically claim compatible shared work."}),
                 json!({"name":"platform.board.split","description":"Publish independent subtasks to the shared board; the control plane starts peers and reoffers the parent for integration after children finish."}),
@@ -132,6 +131,16 @@ impl Router {
                 json!({"name":"platform.board.notes","description":"Read the root blackboard: active findings and adjudicated history."}),
                 json!({"name":"platform.board.note","description":"Publish a CAS finding with evidence support; conflicts adjudicated by trace strength."}),
             ]);
+            if store.workspace_root().is_ok() {
+                for (name, description) in [("read","Read workspace files"),("write","Write workspace files"),("edit","Edit workspace files"),("bash","Execute local shell commands and installed CLI clients")] {
+                    capabilities.push(json!({"name":name,"description":description}));
+                }
+            }
+            for package in crate::organization::system_packages().iter().chain(bindings.iter().filter(|p|p["kind"]=="builtin")) {
+                for tool in package["tools"].as_array().into_iter().flatten() {
+                    capabilities.push(json!({"name":tool["name"],"description":tool["description"]}));
+                }
+            }
             result.push(
                 json!({"preset_name":preset.name,"preset_version":preset.version,
                 "purpose":preset.purpose,"objective":preset.objective,"instructions":preset.instructions,"protocol":preset.protocol,

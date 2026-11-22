@@ -12,12 +12,12 @@ use std::{
 };
 
 #[derive(Clone)]
-pub struct Store(ant3_storage::Database);
+pub struct Store(ant3_storage::Database, std::sync::Arc<std::sync::Mutex<(u64, ant3_models::Models)>>);
 impl Store {
     pub fn open(path: &Path) -> PResult<Self> {
         let database = ant3_storage::Database::open(path)?;
         let version = database.previous_version();
-        let store = Self(database);
+        let store = Self(database, Default::default());
         store.transaction(|tx| {
             // The fixed research template was removed; retire its tables on legacy databases.
             if version < 20 {
@@ -88,10 +88,56 @@ impl Store {
             tx.execute_batch("PRAGMA user_version=28;")?;
             Ok(())
         })?;
+        store.transaction(|tx| {
+            let mut query = tx.prepare("SELECT protocol,model,base_url,api_key FROM model_providers")?;
+            let mut rows = query.query([])?;
+            let mut cache = store.1.lock().unwrap();
+            while let Some(row) = rows.next()? {
+                let protocol = serde_json::from_value(json!(row.get::<_,String>(0)?))?;
+                cache.1.set_provider(ant3_models::Provider::new(protocol,row.get(1)?,row.get(2)?,row.get(3)?)?)?;
+                cache.0 += 1;
+            }
+            Ok(())
+        })?;
         Ok(store)
     }
     pub fn set_workspace_root(&self, root: &Path) -> PResult<()> {
         self.0.set_workspace_root(root)
+    }
+    pub fn save_model_provider(&self, protocol:Protocol, model:String, base:String, key:Option<String>) -> PResult<()> {
+        if !matches!(protocol,Protocol::OpenaiResponses | Protocol::OpenaiCompatible | Protocol::Anthropic) {
+            return Err(fault(400,"invalid_provider_protocol"));
+        }
+        let mut cache = self.1.lock().unwrap();
+        let provider = self.transaction(|tx| {
+            let key = match key {
+                Some(key) => key,
+                None => tx.query_row("SELECT api_key FROM model_providers WHERE protocol=? AND base_url=?", params![json!(protocol).as_str(),base], |row| row.get(0)).optional()?.unwrap_or_default(),
+            };
+            let provider = ant3_models::Provider::new(protocol.clone(),model.clone(),base.clone(),key.clone())?;
+            tx.execute("INSERT INTO model_providers(protocol,model,base_url,api_key) VALUES(?,?,?,?) ON CONFLICT(protocol) DO UPDATE SET model=excluded.model,base_url=excluded.base_url,api_key=excluded.api_key",
+                params![json!(protocol).as_str(),model,base,key])?;
+            Ok(provider)
+        })?;
+        cache.1.set_provider(provider)?;
+        cache.0 += 1;
+        Ok(())
+    }
+    pub fn saved_providers(&self) -> PResult<Vec<Value>> {
+        self.transaction(|tx| {
+            let mut query = tx.prepare("SELECT protocol,model,base_url,api_key != '' FROM model_providers ORDER BY protocol")?;
+            let rows = query.query_map([], |r| Ok(json!({"protocol":r.get::<_,String>(0)?,"model":r.get::<_,String>(1)?,"base_url":r.get::<_,String>(2)?,"has_key":r.get::<_,bool>(3)?})))?;
+            Ok(rows.collect::<Result<Vec<_>,_>>()?)
+        })
+    }
+    pub fn configured_models(&self, defaults: &ant3_models::Models) -> (u64, ant3_models::Models) {
+        let cache = self.1.lock().unwrap();
+        let overrides = &cache.1;
+        (cache.0, ant3_models::Models {
+            compatible: overrides.compatible.clone().or_else(||defaults.compatible.clone()),
+            responses: overrides.responses.clone().or_else(||defaults.responses.clone()),
+            anthropic: overrides.anthropic.clone().or_else(||defaults.anthropic.clone()),
+        })
     }
     pub fn workspace_root(&self) -> PResult<PathBuf> {
         self.0.workspace_root()
@@ -242,6 +288,8 @@ impl Store {
             Ok(json!({"id":agent,"state":next}))
         })
     }
+    /// Low-level fixture for storage, provider and recovery tests.
+    #[cfg(feature = "test-support")]
     pub fn enqueue(&self, agent: &str, input: &RunInput, key: &str) -> PResult<Value> {
         if input.text.trim().is_empty()
             || input.text.len() > 64000

@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "plugins",
     "crates/ant3-core",
     "crates/ant3-domain",
     "crates/ant3-platform",

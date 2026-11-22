@@ -105,11 +105,6 @@ pub enum Command {
     InstancesSession {
         id: String,
     },
-    RunsCreate {
-        id: String,
-        text: String,
-        key: String,
-    },
     RunsShow {
         id: String,
     },
@@ -370,12 +365,6 @@ impl PlatformClient {
                 object("agent-instances", &id, "/session")?,
                 None,
                 None,
-            ),
-            RunsCreate { id, text, key } => (
-                Method::POST,
-                object("agent-instances", &id, "/runs")?,
-                Some(json!({"text":text})),
-                Some(key),
             ),
             RunsShow { id } => (Method::GET, object("runs", &id, "")?, None, None),
             RunsCancel { id } => (

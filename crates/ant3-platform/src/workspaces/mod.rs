@@ -96,15 +96,7 @@ fn read_file(path: &Path) -> PResult<String> {
     Ok(content)
 }
 fn scope(tx: &Transaction<'_>, run: &str) -> PResult<String> {
-    let row:Option<(String,String)>=tx.query_row("SELECT i.id,i.snapshot FROM runs r JOIN instances i ON i.id=r.instance_id WHERE r.id=? AND r.state='running' AND r.cancel_requested=0 AND i.state='busy'",[run],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
-    let (instance, snapshot) = row.ok_or_else(|| fault(403, "workspace_run_not_authorized"))?;
-    if !crate::presets::bindings(&serde_json::from_str(&snapshot)?)
-        .iter()
-        .any(|p| p == &package())
-    {
-        return Err(fault(403, "workspace_capability_required"));
-    }
-    Ok(instance)
+    tx.query_row("SELECT i.id FROM runs r JOIN instances i ON i.id=r.instance_id WHERE r.id=? AND r.state='running' AND r.cancel_requested=0 AND i.state='busy'", [run], |r| r.get(0)).optional()?.ok_or_else(||fault(403,"workspace_run_not_authorized"))
 }
 fn prior(tx: &Transaction<'_>, run: &str, key: &str, fingerprint: &str) -> PResult<Option<Value>> {
     if key.is_empty() || key.len() > 160 {

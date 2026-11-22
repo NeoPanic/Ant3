@@ -67,6 +67,15 @@ pub async fn up(options: Options) -> crate::ServerResult<()> {
     if let Some(root) = codex_config_dir {
         models.load_codex_responses(&root, &model)?;
     }
+    if !store.list("presets")?.iter().any(|p| p["name"]=="default-ant" && p["version"]=="1.0.0") {
+        let protocol = if models.responses.is_some() { "openai-responses" }
+            else if models.compatible.is_some() { "openai-compatible" }
+            else if models.anthropic.is_some() { "anthropic" } else { "openai-responses" };
+        store.publish_definition(serde_json::json!({"name":"default-ant","version":"1.0.0","protocol":protocol,
+            "purpose":"默认蚂蚁：认领并完成共享任务板中的工作。",
+            "objective":"按验收条件完成任务，记录可核查的结果。",
+            "instructions":"先读任务板并认领工作。使用本机工具完成任务，按需通过消息与工作区共享证据。"}))?;
+    }
     // Reject incomplete classifier configuration before accepting work.
     ant3_platform::routing::Router::from_env(&models)?;
     let plugins = if allow_process_plugins {

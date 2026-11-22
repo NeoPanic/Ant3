@@ -10,7 +10,6 @@ description = "Local Ant³ control plane and inspection console"
 test-support = []
 
 [dependencies]
-ant3-builtin-plugins = { path = "../../plugins" }
 ant3-storage = { path = "../ant3-storage" }
 ant3-domain = { path = "../ant3-domain" }
 ant3-models = { path = "../ant3-models" }

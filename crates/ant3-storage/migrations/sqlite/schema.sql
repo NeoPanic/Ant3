@@ -37,3 +37,10 @@ CREATE TABLE IF NOT EXISTS settings(
   value TEXT NOT NULL,
   updated_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS model_providers (
+    protocol TEXT PRIMARY KEY,
+    model TEXT NOT NULL,
+    base_url TEXT NOT NULL,
+    api_key TEXT NOT NULL
+);

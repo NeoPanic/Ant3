@@ -1,13 +1,14 @@
 use super::status::capabilities;
 use super::*;
 pub(super) async fn snapshot(State(app): State<App>) -> PResult<Json<Value>> {
-    let mut value = json!({"messages":app.store.recent_messages()?,"builtin_plugins":ant3_platform::organization::packages(),"builtin_plugin_status":ant3_builtin_plugins::status(),"process_plugins":app.store.process_plugins()?,"process_plugin_execution":app.plugins.is_enabled(),"capacity":app.store.capacity()?,"fleets":app.store.fleets()?,"presets":app.store.list("presets")?,"plugins":app.store.list("plugins")?,"instances":app.store.list("instances")?,"runs":app.store.list("runs")?,"capabilities":capabilities(),"models":app.models.describe(),"limits":{"instances":ant3_platform::limits::INSTANCES,"workers":ant3_platform::limits::WORKERS,"runs_displayed":100,"collection_limit":200,"board_tasks_per_root":ant3_platform::limits::BOARD_TASKS_PER_ROOT,"board_split_depth":ant3_platform::limits::BOARD_SPLIT_DEPTH,"board_split_children":ant3_platform::limits::BOARD_SPLIT_CHILDREN},"settings":app.store.settings()?,"version":env!("CARGO_PKG_VERSION")});
+    let mut value = json!({"messages":app.store.recent_messages()?,"builtin_plugins":ant3_platform::organization::packages(),"builtin_plugin_status":{},"process_plugins":app.store.process_plugins()?,"process_plugin_execution":app.plugins.is_enabled(),"capacity":app.store.capacity()?,"fleets":app.store.fleets()?,"presets":app.store.list("presets")?,"plugins":app.store.list("plugins")?,"instances":app.store.list("instances")?,"runs":app.store.list("runs")?,"capabilities":capabilities(),"models":app.store.configured_models(&app.models).1.describe(),"limits":{"instances":ant3_platform::limits::INSTANCES,"workers":ant3_platform::limits::WORKERS,"runs_displayed":100,"collection_limit":200,"board_tasks_per_root":ant3_platform::limits::BOARD_TASKS_PER_ROOT,"board_split_depth":ant3_platform::limits::BOARD_SPLIT_DEPTH,"board_split_children":ant3_platform::limits::BOARD_SPLIT_CHILDREN},"settings":app.store.settings()?,"version":env!("CARGO_PKG_VERSION")});
+    value["saved_providers"] = json!(app.store.saved_providers()?);
     value["board"] = board_value(&app)?;
     Ok(Json(value))
 }
 pub(super) fn board_value(app: &App) -> PResult<Value> {
     let mut board = app.store.board_snapshot()?;
-    board["router"] = match ant3_platform::routing::Router::from_env(&app.models) {
+    board["router"] = match ant3_platform::routing::Router::from_env(&app.store.configured_models(&app.models).1) {
         Ok(router) => router.describe(),
         Err(error) => json!({"mode":"unavailable","error":error.1}),
     };
@@ -88,9 +89,10 @@ pub(super) async fn publish(
     State(app): State<App>,
     Json(preset): Json<Value>,
 ) -> PResult<Json<Value>> {
+    let (_, models) = app.store.configured_models(&app.models);
     Ok(Json(app.store.publish_checked(preset, |protocol| {
-        if *protocol != Protocol::Demo || !ant3_worker::test_model_enabled() {
-            app.models.get(protocol)?;
+        if *protocol != Protocol::CodexCli && (*protocol != Protocol::Demo || !ant3_worker::test_model_enabled()) {
+            models.get(protocol)?;
         }
         Ok(())
     })?))
@@ -183,17 +185,6 @@ pub(super) async fn transition(
 ) -> PResult<Json<Value>> {
     Ok(Json(app.store.transition(&agent, &input.action)?))
 }
-pub(super) async fn enqueue(
-    State(app): State<App>,
-    Path(agent): Path<String>,
-    headers: HeaderMap,
-    Json(input): Json<RunInput>,
-) -> PResult<(StatusCode, Json<Value>)> {
-    Ok((
-        StatusCode::ACCEPTED,
-        Json(app.store.enqueue(&agent, &input, key(&headers)?)?),
-    ))
-}
 pub(super) async fn session(
     State(app): State<App>,
     Path(agent): Path<String>,
@@ -225,6 +216,18 @@ pub(super) async fn preset_delete(
     Ok(Json(app.store.delete_preset(&name, &version)?))
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct ProviderForm {
+    protocol: Protocol,
+    model: String,
+    base_url: String,
+    api_key: Option<String>,
+}
+pub(super) async fn save_provider(State(app): State<App>, Json(input):Json<ProviderForm>) -> PResult<Json<Value>> {
+    app.store.save_model_provider(input.protocol,input.model.trim().to_owned(),input.base_url.trim().to_owned(),input.api_key)?;
+    Ok(Json(json!({"saved":true})))
+}
 pub(super) async fn settings(State(app): State<App>) -> PResult<Json<Value>> {
     Ok(Json(app.store.settings()?))
 }

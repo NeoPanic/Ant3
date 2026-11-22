@@ -93,10 +93,8 @@ impl Store {
             let mut sender_id=None;let mut source_run=None;let mut cause=input.causation_id.clone();let mut correlation=input.correlation_id.clone();let mut depth=0i64;let mut sender_roots:Vec<String>=Vec::new();
             if let Sender::AgentRun(run)=sender {
                 if input.correlation_id.is_some()||input.causation_id.is_some() {return Err(fault(400,"agent_message_context_is_host_owned"));}
-                let (agent,fleet,snapshot,state):(String,String,String,String)=tx.query_row("SELECT i.id,i.fleet_id,i.snapshot,r.state FROM runs r JOIN instances i ON i.id=r.instance_id WHERE r.id=?",[run],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?))).optional()?.ok_or_else(||fault(404,"run_not_found"))?;
+                let (agent,fleet,state):(String,String,String)=tx.query_row("SELECT i.id,i.fleet_id,r.state FROM runs r JOIN instances i ON i.id=r.instance_id WHERE r.id=?",[run],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?))).optional()?.ok_or_else(||fault(404,"run_not_found"))?;
                 if state!="running" {return Err(fault(409,"message_source_run_not_running"));}
-                let snapshot:Value=serde_json::from_str(&snapshot)?;
-                if !crate::presets::bindings(&snapshot).iter().any(|b|*b==package()) {return Err(fault(403,"messaging_capability_not_bound"));}
                 let source_state:String=tx.query_row("SELECT state FROM instances WHERE id=?",[&agent],|r|r.get(0))?;
                 let cancelled:bool=tx.query_row("SELECT cancel_requested FROM runs WHERE id=?",[run],|r|r.get(0))?;
                 if source_state!="busy"||cancelled {return Err(fault(409,"message_source_stopping"));}

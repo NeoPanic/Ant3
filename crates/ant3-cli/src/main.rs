@@ -18,7 +18,7 @@ enum Command {
     Fleets(cli::FleetArgs),
     /// Inspect instances, manage lifecycle, and read durable sessions.
     Instances(cli::InstanceArgs),
-    /// Submit UTF-8 input, inspect execution evidence, or cancel a Run.
+    /// Inspect execution evidence or cancel a Run.
     Runs(cli::RunArgs),
     /// List or publish immutable mother-agent Presets from JSON.
     Presets(cli::PresetArgs),

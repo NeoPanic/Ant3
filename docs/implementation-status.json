@@ -181,17 +181,9 @@
     "name": "内置工具与提示词包",
     "phase": "P1",
     "status": "implemented",
-    "detail": "内置 text.inspect、web.fetch、web.search；搜索需配置 Brave API 密钥。插件页仅展示内置能力，Preset 绑定固定版本与摘要。",
-    "source": [
-      "plugins/src/lib.rs",
-      "plugins/text/mod.rs",
-      "plugins/web-fetch/mod.rs",
-      "plugins/web-search/mod.rs",
-      "crates/ant3-server/tests/builtin_plugins.rs"
-    ],
-    "target": [
-      "plugins/"
-    ],
+    "detail": "消息与工作区是系统能力。默认蚂蚁预设为 default-ant。Codex CLI 作为可选内置插件按 Preset 绑定。本机 Worker 默认提供 read、write、edit、bash；bash 使用 daemon 账户及其环境运行本机 CLI。",
+    "source": ["crates/ant3-platform/src/control/organization.rs"],
+    "target": ["crates/ant3-platform/"],
     "verification": "existing-tests",
     "scope": "current",
     "path": "foundation"

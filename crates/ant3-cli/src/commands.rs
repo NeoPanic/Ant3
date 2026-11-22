@@ -118,7 +118,6 @@ resource!(InstanceArgs, InstanceCommand {
 });
 resource!(RunArgs, RunAction {
     Show { id: String },
-    Submit { id: String, #[arg(long)] file: PathBuf, #[arg(long)] key: String },
     Cancel { id: String },
 });
 resource!(PresetArgs, PresetAction {
@@ -203,11 +202,6 @@ pub async fn instances(args: InstanceArgs) -> ClientResult<()> {
 pub async fn runs(args: RunArgs) -> ClientResult<()> {
     let command = match args.action {
         RunAction::Show { id } => Command::RunsShow { id },
-        RunAction::Submit { id, file, key } => Command::RunsCreate {
-            id,
-            text: String::from_utf8(read_file(file)?)?,
-            key,
-        },
         RunAction::Cancel { id } => Command::RunsCancel { id },
     };
     print(args.connection.client()?.execute(command).await?)

@@ -93,7 +93,7 @@ impl Model for DemoModel {
         if input
             .tools
             .iter()
-            .any(|s| s.name == "platform.workspace.write")
+            .any(|s| s.name == "write")
         {
             return demo_team(&input);
         }
@@ -221,29 +221,8 @@ impl Model for DemoModel {
                 reasoning: None,
             });
         }
-        let (text, calls) = if let Some(Turn::Tools(observations)) = input.turns.last() {
-            let evidence = observations
-                .first()
-                .ok_or_else(|| Error::new("missing_tool_result"))?;
-            (
-                format!(
-                    "[确定性演示 / Demo]\n已通过 text.inspect 检查输入。\n\n字符数：{}\n行数：{}\nUTF-8 字节数：{}\n\n这是一次真实 Ant 工具循环；演示模型不执行语义推理；任务依赖调度与贡献传递由平台负责。",
-                    evidence.output.content["characters"],
-                    evidence.output.content["lines"],
-                    evidence.output.content["bytes"]
-                ),
-                vec![],
-            )
-        } else {
-            (
-                String::new(),
-                vec![Call {
-                    id: "inspect-1".into(),
-                    name: "text.inspect".into(),
-                    arguments: json!({"text":input.turns.iter().rev().find_map(|turn|if let Turn::User(text)=turn{Some(text.as_str())}else{None}).unwrap_or(&input.text)}),
-                }],
-            )
-        };
+        let text = format!("[确定性演示] 已接收输入：{}", input.text);
+        let calls = vec![];
         Ok(ModelReply {
             text,
             calls,
@@ -485,22 +464,13 @@ fn demo_board(input: &ModelInput) -> Result<ModelReply> {
             Some((
                 "platform.board.split",
                 json!({"command_key":"demo-split","tasks":[
-                    {"title":"输入结构检查","instructions":format!("统计以下输入的字符、行和字节：{}",task["instructions"].as_str().unwrap_or_default()),"acceptance":"给出 text.inspect 的实际回执"},
-                    {"title":"验收文本检查","instructions":format!("统计以下验收描述的字符、行和字节：{}",task["acceptance"].as_str().unwrap_or_default()),"acceptance":"给出 text.inspect 的实际回执"}
+                    {"title":"输入结构检查","instructions":format!("检查输入要求：{}",task["instructions"].as_str().unwrap_or_default()),"acceptance":"复述需要检查的内容"},
+                    {"title":"验收文本检查","instructions":format!("检查验收描述：{}",task["acceptance"].as_str().unwrap_or_default()),"acceptance":"复述需要检查的内容"}
                 ]}),
             ))
-        } else if let Some(inspect) = observations.iter().find(|o| o.call.name == "text.inspect") {
-            text = format!(
-                "[确定性演示] 工具统计：{}；已读取 {} 个子任务贡献。演示验证任务板闭环，不代表完成语义研究。",
-                inspect.output.content,
-                children.len()
-            );
-            None
         } else {
-            Some((
-                "text.inspect",
-                json!({"text":if children.is_empty(){task["instructions"].as_str().unwrap_or_default().to_owned()}else{serde_json::to_string(&children).unwrap_or_default()}}),
-            ))
+            text = format!("[确定性演示] {}。已读取 {} 个子任务贡献。", task["instructions"], children.len());
+            None
         }
     } else if let Some(board) = read {
         let scope = &board["scope"];

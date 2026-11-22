@@ -143,6 +143,34 @@ type RunScopeRow = (
 );
 fn scope(tx: &Transaction<'_>, run: &str, active: bool) -> PResult<Option<Value>> {
     let row:Option<RunScopeRow>=tx.query_row("SELECT a.root_id,a.task_id,a.instance_id,a.claimed_task_id,i.preset_name,i.preset_version,r.state,r.cancel_requested FROM board_agents a JOIN runs r ON r.id=a.run_id JOIN instances i ON i.id=a.instance_id WHERE a.run_id=?",[run],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?,r.get(5)?,r.get(6)?,r.get(7)?))).optional()?;
+    // Inbox runs inherit the board of the originating message chain. An
+    // operator message can address a peer with exactly one active root.
+    // Do not treat a handoff as an invitation or a second task claim.
+    let handoff = row.is_none();
+    let row = if handoff {
+        tx.query_row(
+            "WITH RECURSIVE chain(id, source_run_id, causation_id) AS (
+                SELECT m.id,m.source_run_id,m.causation_id FROM message_inbox b
+                JOIN messages m ON m.id=b.message_id WHERE b.run_id=?1
+                UNION SELECT m.id,m.source_run_id,m.causation_id FROM messages m
+                JOIN chain c ON m.id=c.causation_id
+            ), origin AS (
+                SELECT DISTINCT a.root_id FROM board_agents a JOIN chain c ON c.source_run_id=a.run_id
+            ), roots AS (
+                SELECT root_id FROM origin
+                UNION SELECT peers.root_id FROM (
+                    SELECT instance_id,root_id FROM board_agents UNION SELECT instance_id,root_id FROM board_peer_roots
+                ) peers JOIN message_inbox b ON peers.instance_id=b.recipient_id
+                JOIN board_tasks t ON t.id=peers.root_id
+                WHERE b.run_id=?1 AND NOT EXISTS(SELECT 1 FROM origin) AND t.state IN ('pending','running')
+            )
+            SELECT t.id,t.id,i.id,NULL,i.preset_name,i.preset_version,r.state,r.cancel_requested
+            FROM roots JOIN board_tasks t ON t.id=roots.root_id JOIN message_inbox b ON b.run_id=?1
+            JOIN runs r ON r.id=b.run_id JOIN instances i ON i.id=r.instance_id
+            WHERE (SELECT count(*) FROM roots)=1 AND t.state IN ('pending','running')",
+            [run], |r| Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?,r.get(5)?,r.get(6)?,r.get(7)?))
+        ).optional()?
+    } else { row };
     let Some((root, target, agent, claimed, name, version, state, cancelled)) = row else {
         return Ok(None);
     };
@@ -159,7 +187,7 @@ fn scope(tx: &Transaction<'_>, run: &str, active: bool) -> PResult<Option<Value>
         }
     }
     Ok(Some(
-        json!({"root_id":root,"task_id":target,"target_task_id":target,"instance_id":agent,"claimed_task_id":claimed,"preset_name":name,"preset_version":version,"run_id":run}),
+        json!({"handoff":handoff,"root_id":root,"task_id":target,"target_task_id":target,"instance_id":agent,"claimed_task_id":claimed,"preset_name":name,"preset_version":version,"run_id":run}),
     ))
 }
 pub(crate) fn active_scope(tx: &Transaction<'_>, run: &str) -> PResult<Value> {
@@ -421,7 +449,14 @@ impl Store {
             let tasks=ids.iter().skip(offset).take(limit).map(|id|task(tx,id).map(preview)).collect::<PResult<Vec<_>>>()?;
             let next=offset.saturating_add(tasks.len());
             let target=preview(task(tx,s["target_task_id"].as_str().unwrap())?);
-            Ok(json!({"scope":s,"target_task":target,"tasks":tasks,"total":ids.len(),"view":if neighborhood {"neighborhood"}else{"all"},"next_offset":if next<ids.len(){Some(next)}else{None},"max_tasks":crate::limits::BOARD_TASKS_PER_ROOT,"max_split_children":crate::limits::BOARD_SPLIT_CHILDREN,"max_depth":crate::limits::BOARD_SPLIT_DEPTH}))
+            let threshold = crate::settings::Settings::load(tx)?.traces.perception_threshold;
+            let field = crate::traces::traces_in(tx, root)?;
+            let signals: Vec<_> = field["traces"].as_array().unwrap().iter()
+                .take_while(|trail| trail["strength"].as_f64().unwrap_or_default() >= threshold)
+                .take(4)
+                .map(|trail| json!({"key":trail["key"],"kind":trail["kind"],"strength":trail["strength"]}))
+                .collect();
+            Ok(json!({"signals":signals,"scope":s,"target_task":target,"tasks":tasks,"total":ids.len(),"view":if neighborhood {"neighborhood"}else{"all"},"next_offset":if next<ids.len(){Some(next)}else{None},"max_tasks":crate::limits::BOARD_TASKS_PER_ROOT,"max_split_children":crate::limits::BOARD_SPLIT_CHILDREN,"max_depth":crate::limits::BOARD_SPLIT_DEPTH}))
         })
     }
     pub fn read_board_result(
@@ -489,6 +524,7 @@ impl Store {
     pub fn claim_board_task(&self, run: &str, task_id: &str) -> PResult<Value> {
         self.board_transaction(|tx| {
             let s=active_scope(tx,run)?;
+            if s["handoff"] == true {return Err(fault(403,"handoff_cannot_claim_task"));}
             if let Some(claimed)=s["claimed_task_id"].as_str() {
                 if claimed==task_id {return task(tx,task_id);}
                 return Err(fault(409,"board_run_already_claimed"));

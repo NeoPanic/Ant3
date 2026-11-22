@@ -6,7 +6,6 @@ rust-version = "1.99"
 license = "MIT"
 
 [dependencies]
-ant3-builtin-plugins = { path = "../../plugins" }
 ant3-client = { path = "../ant3-client" }
 ant3-platform = { path = "../ant3-platform" }
 ant3-domain = { path = "../ant3-domain" }

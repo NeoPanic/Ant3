@@ -33,7 +33,7 @@ struct Draft {
 
 /// Read legacy single bindings and current ordered multi-bindings uniformly.
 pub fn bindings(snapshot: &Value) -> Vec<Value> {
-    snapshot
+    let mut plugins: Vec<Value> = snapshot
         .get("plugin_snapshots")
         .and_then(Value::as_array)
         .cloned()
@@ -44,6 +44,13 @@ pub fn bindings(snapshot: &Value) -> Vec<Value> {
                 .into_iter()
                 .collect()
         })
+        .into_iter()
+        .filter(|p| !(p["kind"] == "organization" && matches!(p["id"].as_str(), Some("text" | "web.fetch" | "web.search"))))
+        .collect();
+    if (snapshot["codex_cli"] == true || snapshot["protocol"] == "codex-cli") && !plugins.iter().any(|p| p["id"] == "external.codex") {
+        plugins.push(crate::organization::codex_package());
+    }
+    plugins
 }
 fn core(snapshot: &Value) -> PResult<Preset> {
     let mut value = snapshot.clone();
@@ -318,13 +325,15 @@ impl Store {
             let references:Vec<PluginRef>=if let Some(plugins)=draft.plugins {plugins} else if replacing {draft.plugin.into_iter().collect()} else {
                 bindings(&snapshot).into_iter().map(|p|serde_json::from_value(json!({"id":p["id"],"version":p["version"]}))).collect::<Result<_,_>>()?
             };
+            if snapshot["protocol"]=="codex-cli" { return Err(fault(400,"select_model_protocol_for_codex_extension")); }
+            snapshot.as_object_mut().unwrap().remove("codex_cli");
             if references.len()>16 {return Err(fault(400,"too_many_plugin_bindings"));}
-            let mut ids=BTreeSet::new();let mut locks=Vec::new();let mut tool_names=BTreeSet::from(["text.inspect".to_owned()]);let mut instruction_bytes=0;
+            let mut ids=BTreeSet::new();let mut locks=Vec::new();let mut tool_names=BTreeSet::new();let mut instruction_bytes=0;
             for reference in &references {
                 if !ids.insert(&reference.id) {return Err(fault(400,"duplicate_plugin_binding"));}
                 let lock=lock_plugin(tx,reference)?;
                 instruction_bytes+=lock["instructions"].as_str().or_else(||lock["manifest"]["instructions"].as_str()).unwrap_or_default().len();
-                if lock["kind"]=="organization" {for tool in lock["tools"].as_array().unwrap(){if !(lock["id"] == "text" && tool["name"] == "text.inspect") && !tool_names.insert(tool["name"].as_str().unwrap().to_owned()){return Err(fault(400,"plugin_tool_name_collision"));}}}
+                if lock["kind"]=="organization" || lock["kind"]=="builtin" {for tool in lock["tools"].as_array().unwrap(){if !tool_names.insert(tool["name"].as_str().unwrap().to_owned()){return Err(fault(400,"plugin_tool_name_collision"));}}}
                 if lock["kind"]=="process" {
                     let manifest:&Value=&lock["manifest"];
                     if let Some(tools)=manifest["tools"].as_array() {for tool in tools {

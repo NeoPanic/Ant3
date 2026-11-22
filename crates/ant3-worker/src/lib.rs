@@ -10,6 +10,8 @@ pub type Cancellations = Arc<Mutex<HashMap<String, CancellationToken>>>;
 #[cfg(feature = "test-support")]
 #[path = "../tests/support/model.rs"]
 mod fixture;
+mod codex;
+mod local;
 mod recovery;
 mod runner;
 mod scheduler;

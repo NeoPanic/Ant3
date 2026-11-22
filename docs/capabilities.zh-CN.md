@@ -30,7 +30,7 @@
 | 持久队列与取消 | 已实现 | 原生测试 + Web 联调 | 持久 Run 队列提供 8 个本地并发槽、单实例串行、幂等提交与协作取消。 |
 | SQLite 与恢复 | 部分实现 | 原生测试 | SQLite 事务、检查点、事件和 daemon 独占锁；恢复时保留已知回执，未知结果进入中断。没有完整备份运维、外部对账或事件分页。 |
 | 三类模型协议 | 部分实现 | 原生测试 | 提供 Chat Completions、Responses、Anthropic 三类非流式工具循环；Responses 经过真实服务验证。没有流式输出或分片中断契约。 |
-| 内置工具与提示词包 | 已实现 | 原生测试 | 内置 text.inspect、web.fetch、web.search；搜索需配置 Brave API 密钥。插件页仅展示内置能力，Preset 绑定固定版本与摘要。 |
+| 内置工具与提示词包 | 已实现 | 原生测试 | 消息与工作区是系统能力。默认蚂蚁预设为 default-ant。Codex CLI 作为可选内置插件按 Preset 绑定。本机 Worker 默认提供 read、write、edit、bash；bash 使用 daemon 账户及其环境运行本机 CLI。 |
 
 ## 支撑能力
 
@@ -68,7 +68,7 @@
 | 持久队列与取消 | `crates/ant3-platform/src/storage/sqlite.rs`<br>`crates/ant3-worker/src/runner.rs` | `crates/ant3-platform/src/scheduling/` |
 | SQLite 与恢复 | `crates/ant3-platform/src/storage/sqlite.rs`<br>`crates/ant3-storage/migrations/sqlite/schema.sql`<br>`crates/ant3-storage/src/lib.rs`<br>`crates/ant3-storage/tests/database.rs` | `crates/ant3-storage/src/` |
 | 三类模型协议 | `crates/ant3-models/src/lib.rs` | `crates/ant3-models/src/` |
-| 内置工具与提示词包 | `plugins/src/lib.rs`<br>`plugins/text/mod.rs`<br>`plugins/web-fetch/mod.rs`<br>`plugins/web-search/mod.rs`<br>`crates/ant3-server/tests/builtin_plugins.rs` | `plugins/` |
+| 内置工具与提示词包 | `crates/ant3-platform/src/control/organization.rs` | `crates/ant3-platform/` |
 | 可执行插件契约与 SDK | `crates/ant3-plugin-protocol/src/lib.rs`<br>`crates/ant3-plugin-sdk/src/lib.rs`<br>`crates/ant3-plugin-sdk/tests/contract.rs`<br>`crates/ant3-plugins/examples/text-inspector/manifest.json`<br>`crates/ant3-plugins/examples/http-reader/manifest.json`<br>`crates/ant3-plugins/examples/http-reader/test_worker.py`<br>`crates/ant3-plugins/examples/workspace-preset/preset.json` | `crates/ant3-plugin-protocol/src/`<br>`crates/ant3-plugin-sdk/src/` |
 | 外部插件与热加载 | `crates/ant3-plugins/src/lib.rs`<br>`crates/ant3-plugins/src/package.rs`<br>`crates/ant3-plugins/src/process.rs`<br>`web/src/features/plugins/plugins.js`<br>`crates/ant3-server/tests/process_plugins.rs` | `crates/ant3-plugins/src/loaders/`<br>`crates/ant3-plugins/src/reload/` |
 | 对等 Agent 共享任务板 | `crates/ant3-platform/src/scheduling/board/mod.rs`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-storage/migrations/sqlite/board.sql`<br>`crates/ant3-platform/src/scheduling/routing.rs`<br>`crates/ant3-platform/src/scheduling/decision.rs`<br>`web/src/features/board/board.js`<br>`crates/ant3-server/tests/board.rs`<br>`crates/ant3-server/tests/routing.rs`<br>`crates/ant3-server/tests/decision.rs`<br>`crates/ant3-platform/src/scheduling/audit.rs`<br>`crates/ant3-server/tests/audit.rs` | `crates/ant3-platform/src/collaboration/`<br>`crates/ant3-platform/src/scheduling/` |
@@ -274,7 +274,9 @@ crates/
 │   └── Cargo.toml
 └── ant3-worker/
     ├── src/
+    │   ├── codex.rs
     │   ├── lib.rs
+    │   ├── local.rs
     │   ├── recovery.rs
     │   ├── runner.rs
     │   └── scheduler.rs
@@ -282,18 +284,6 @@ crates/
     │   └── support/
     │       └── model.rs
     └── Cargo.toml
-plugins/
-├── src/
-│   ├── lib.rs
-│   └── network.rs
-├── text/
-│   └── mod.rs
-├── web-fetch/
-│   └── mod.rs
-├── web-search/
-│   └── mod.rs
-├── Cargo.toml
-└── README.md
 web/
 ├── src/
 │   ├── app/

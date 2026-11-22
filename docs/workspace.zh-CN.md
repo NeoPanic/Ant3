@@ -1,6 +1,6 @@
 # Workspace 边界
 
-仓库根清单定义 13 个包（12 个 crates/ 下的 crate，加上 plugins/ 内置插件集合）。包名 `ant3` 对应独立执行内核；同名命令行二进制由 `ant3-cli` 提供。
+仓库根清单定义 12 个包。包名 `ant3` 对应独立执行内核；同名命令行二进制由 `ant3-cli` 提供。
 
 | Crate | 职责 | 项目内直接依赖 |
 | --- | --- | --- |
@@ -11,7 +11,6 @@
 | `ant3-models` | 三类模型协议、配置加载与 Provider | core、domain |
 | `ant3-plugins` | 插件安装、摘要验证、进程管理、执行与取消 | core、domain、plugin-protocol |
 | `ant3-storage` | SQLite 连接、schema、事务、SessionStore | core |
-| `ant3-builtin-plugins`（根目录 `plugins`） | 内置文本、网页读取、网页搜索工具 | core |
 | `ant3-platform` | 控制面、协作、任务调度、业务事务与插件存储适配 | core、domain、storage、models、plugins、plugin-protocol、builtin-plugins |
 | `ant3-worker` | Run 执行、恢复、队列消费与工具装配 | core、platform、models、plugins、builtin-plugins |
 | `ant3-server` | HTTP、认证、Web 嵌入与本地服务装配 | core、domain、platform、models、plugins、worker、client、builtin-plugins |

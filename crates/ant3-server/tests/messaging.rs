@@ -253,15 +253,7 @@ fn agent_sender_capability_scope_context_quota_and_retries_are_host_owned() {
     )
     .unwrap();
     let r = s.claim().unwrap().unwrap();
-    assert_eq!(
-        code(s.send_message(
-            Sender::AgentRun(r["id"].as_str().unwrap()),
-            &outside[0],
-            &input("x"),
-            "unbound"
-        )),
-        "messaging_capability_not_bound"
-    );
+    assert!(s.send_message(Sender::AgentRun(r["id"].as_str().unwrap()), &outside[0], &input("x"), "default-capability").is_ok());
 }
 #[test]
 fn payload_backpressure_hop_and_correlation_limits() {
