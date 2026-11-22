@@ -128,11 +128,10 @@ fn sweep_with_settings(tx: &Transaction<'_>, on: bool, settings: &Settings) -> P
     if !on {
         return Ok(());
     }
-    let standing = maintain_pool(tx, &settings.self_select)?;
-    burn_idle(tx, standing, &settings.self_select)?;
+    maintain_pool(tx, &settings.self_select)?;
     // Open tasks: pending, unassigned, funded, cooled — same physics as routing.
     let mut stmt = tx.prepare(
-        "SELECT id,root_id FROM board_tasks WHERE state='pending' AND route_state='unassigned' ORDER BY created_at,rowid LIMIT 32",
+        "SELECT id,root_id FROM board_tasks WHERE state='pending' AND route_state='unassigned' AND root_id IN (SELECT root_id FROM board_energy WHERE budget+refunded-spent-reserved>0) ORDER BY created_at,rowid LIMIT 32",
     )?;
     let open = stmt
         .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?
@@ -161,7 +160,7 @@ fn sweep_with_settings(tx: &Transaction<'_>, on: bool, settings: &Settings) -> P
         z as f64 / u64::MAX as f64
     };
     for (task_id, root) in &open {
-        if crate::energy::available(tx, root)? < settings.energy.reserve {
+        if crate::energy::available(tx, root)? <= 0 {
             continue;
         }
         if !crate::board::cooled(tx, task_id)? {
@@ -239,49 +238,6 @@ fn claim_open(tx: &Transaction<'_>, c: Claim<'_>) -> PResult<()> {
     crate::energy::reserve(tx, root, &run)?;
     event(tx, "swarm.self_selected", task_id, json!({"instance_id":agent,"preset_name":preset,"run_id":run,"stimulus":stimulus,"threshold":threshold}))?;
     event(tx, "run.queued", &run, json!({"instance_id":agent,"board_task_id":task_id,"self_selected":true}))?;
-    Ok(())
-}
-
-/// Idle wandering burns colony energy; a starved colony retires its pool.
-fn burn_idle(tx: &Transaction<'_>, standing: usize, cfg: &SelfSelectSettings) -> PResult<()> {
-    if standing == 0 {
-        return Ok(());
-    }
-    let last: Option<i64> = tx.query_row(
-        "SELECT max(created_at) FROM energy_ledger WHERE root_id='colony' AND kind='idle_burn'",
-        [],
-        |r| r.get::<_, Option<i64>>(0),
-    )?;
-    let at = now();
-    let elapsed = at - last.unwrap_or(at);
-    if elapsed < 60_000 {
-        return Ok(());
-    }
-    let minutes = elapsed / 60_000;
-    let cost = (standing as i64) * cfg.idle_burn_per_min * minutes;
-    let spent: i64 = tx.query_row(
-        "SELECT coalesce(sum(amount),0) FROM energy_ledger WHERE root_id='colony' AND kind='idle_burn'",
-        [],
-        |r| r.get(0),
-    )?;
-    if spent + cost > cfg.colony_budget {
-        // Colony starved: retire all wandering stock.
-        let mut stmt = tx.prepare(
-            "SELECT i.id FROM instances i WHERE i.state='ready' AND EXISTS(SELECT 1 FROM wander_stock w JOIN fleet_slots s ON s.instance_id=i.id WHERE w.fleet_id=s.fleet_id)",
-        )?;
-        let agents = stmt.query_map([], |r| r.get::<_, String>(0))?.collect::<Result<Vec<_>, _>>()?;
-        drop(stmt);
-        for agent in agents {
-            crate::lifecycle::drain(tx, &agent, false)?;
-        }
-        event(tx, "swarm.colony_starved", "colony", json!({"budget":cfg.colony_budget,"spent":spent}))?;
-        return Ok(());
-    }
-    tx.execute(
-        "INSERT INTO energy_ledger(root_id,run_id,kind,amount,balance,created_at) VALUES('colony',NULL,'idle_burn',?,?,?)",
-        params![cost, cfg.colony_budget - spent - cost, at],
-    )?;
-    event(tx, "board.energy_posted", "colony", json!({"kind":"idle_burn","amount":cost,"standing":standing,"available":cfg.colony_budget - spent - cost}))?;
     Ok(())
 }
 

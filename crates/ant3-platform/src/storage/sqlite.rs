@@ -90,7 +90,11 @@ impl Store {
             if version < 29 {
                 crate::division::repair_provider_failures(tx)?;
             }
-            tx.execute_batch("PRAGMA user_version=29;")?;
+            if version < 30 {
+                tx.execute_batch("UPDATE settings SET value=json_set(value,'$.reserve',0,'$.tokens_per_energy',1,'$.default_budget',CASE json_extract(value,'$.default_budget') WHEN 100000 THEN 100000000 ELSE json_extract(value,'$.default_budget') END) WHERE key='energy';
+                    UPDATE settings SET value=json_set(value,'$.idle_burn_per_min',0,'$.pool_max',CASE json_extract(value,'$.pool_max') WHEN 8 THEN 64 ELSE json_extract(value,'$.pool_max') END) WHERE key='self_select';")?;
+            }
+            tx.execute_batch("PRAGMA user_version=30;")?;
             Ok(())
         })?;
         store.transaction(|tx| {

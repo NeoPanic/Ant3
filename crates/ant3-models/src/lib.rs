@@ -7,7 +7,7 @@ use ant3::{
 use ant3_domain::{PResult, Protocol, fault};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::time::Duration;
+
 
 pub struct Provider {
     pub protocol: Protocol,
@@ -43,9 +43,6 @@ impl Provider {
             return Err(fault(400, "invalid_model_configuration"));
         }
         let client = reqwest::Client::builder()
-            .connect_timeout(Duration::from_secs(10))
-            .read_timeout(Duration::from_secs(60))
-            .timeout(Duration::from_secs(600))
             .redirect(reqwest::redirect::Policy::none())
             .build()
             .map_err(|_| fault(500, "http_client_error"))?;
@@ -383,9 +380,6 @@ impl Provider {
             .client
             .post(format!("{}/{path}", self.base))
             .json(&body);
-        if !streaming {
-            request = request.timeout(Duration::from_secs(60));
-        }
         if self.protocol == Protocol::Anthropic {
             request = request.header("anthropic-version", "2023-06-01");
             if !self.key.is_empty() {
@@ -418,9 +412,6 @@ impl Provider {
         let mut bytes = vec![];
         while let Some(chunk) = tokio::select! {_=cancel.cancelled()=>return Err(Error::new("cancelled")),chunk=response.chunk()=>chunk.map_err(network_error)?}
         {
-            if bytes.len() + chunk.len() > 4 * 1024 * 1024 {
-                return Err(Error::new("provider_response_too_large"));
-            }
             bytes.extend_from_slice(&chunk);
         }
         if !status.is_success() {

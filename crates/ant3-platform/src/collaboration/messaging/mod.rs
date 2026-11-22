@@ -113,20 +113,20 @@ impl Store {
                     return Err(fault(403,"message_recipient_out_of_scope"));
                 }
                 let count:i64=tx.query_row("SELECT count(*) FROM messages WHERE source_run_id=?",[run],|r|r.get(0))?;
-                if count>=8 {return Err(fault(409,"message_run_quota_exceeded"));}
+                if count>=256 {return Err(fault(409,"message_run_quota_exceeded"));}
                 sender_id=Some(agent);source_run=Some(run.to_owned());
             } else if let Some(parent)=&cause {
                 let (root,hops):(String,i64)=tx.query_row("SELECT correlation_id,depth FROM messages WHERE id=?",[parent],|r|Ok((r.get(0)?,r.get(1)?))).optional()?.ok_or_else(||fault(404,"causation_message_not_found"))?;
                 if correlation.as_ref().is_some_and(|c|c!=&root) {return Err(fault(400,"message_causal_context_conflict"));}
                 correlation=Some(root);depth=hops+1;
             }
-            if depth>8 {return Err(fault(409,"message_hop_limit"));}
+            if depth>64 {return Err(fault(409,"message_hop_limit"));}
             let pending:i64=tx.query_row("SELECT count(*) FROM messages m JOIN message_outbox o ON o.message_id=m.id LEFT JOIN message_inbox i ON i.message_id=m.id WHERE o.state='pending' OR i.state IN ('pending','queued','running') OR (i.state='unknown' AND i.resolved_at IS NULL)",[],|r|r.get(0))?;
             let recipient_pending:i64=tx.query_row("SELECT count(*) FROM messages m JOIN message_outbox o ON o.message_id=m.id LEFT JOIN message_inbox i ON i.message_id=m.id WHERE m.recipient_id=? AND (o.state='pending' OR i.state IN ('pending','queued','running') OR (i.state='unknown' AND i.resolved_at IS NULL))",[recipient],|r|r.get(0))?;
-            if pending>=512||recipient_pending>=64 {return Err(fault(409,"message_backlog_full"));}
+            if pending>=8192||recipient_pending>=256 {return Err(fault(409,"message_backlog_full"));}
             let message=id("message");let correlation=correlation.unwrap_or_else(||message.clone());
             let count:i64=tx.query_row("SELECT count(*) FROM messages WHERE correlation_id=?",[&correlation],|r|r.get(0))?;
-            if count>=128 {return Err(fault(409,"message_correlation_quota_exceeded"));}
+            if count>=2048 {return Err(fault(409,"message_correlation_quota_exceeded"));}
             tx.execute("INSERT INTO messages(id,sender_kind,sender_instance_id,source_run_id,recipient_id,text,correlation_id,causation_id,depth,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",params![message,if sender_id.is_some(){"agent"}else{"operator"},sender_id,source_run,recipient,input.text,correlation,cause,depth,now()])?;
             tx.execute("INSERT INTO message_outbox(message_id,state) VALUES(?,'pending')",[&message])?;
             event(tx,"message.accepted",&message,json!({"sender_instance_id":sender_id,"source_run_id":source_run,"recipient_id":recipient,"correlation_id":correlation,"causation_id":cause,"depth":depth}))?;

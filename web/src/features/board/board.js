@@ -104,6 +104,7 @@ function boardDetail(task,tasks){
   const reuse=Number(task.reuse_count)||0;
   return `<a class="back-link" href="/board">← 任务板</a>`+head(esc(task.title), !boardTerminal.has(task.state)?button('取消任务','board-cancel',false,`data-id="${esc(task.id)}"`):'')+
     `<div class="goal-summary"><div><span>进度</span>${badge(boardBadgeClass(task),boardStatus(task,route))}</div><div><span>由谁负责</span><strong>${esc(boardPreset(task)?task.preset_name:'群体安排中')}</strong></div><div><span>子任务</span><strong>${children.filter(t=>t.state==='completed').length} / ${children.length}</strong></div>${boardEnergySummary(task)}</div>`+
+    (!task.parent_id && task.energy && !boardTerminal.has(task.state)?`<div class="inspector-actions">${task.energy.available<=0?'预算耗尽，等待补充能量。':''}${button('补充能量','energy-top-up',false,`data-id="${esc(task.id)}"`)}</div>`:'')+
     (reuse?`<p class="hint">这份工作的成果已被同伴参考 ${reuse} 次。</p>`:'')+
     (routingError?`<div class="callout" role="status">${esc(boardRoutingMessage(route.error))}${route.retry_at?`。下次尝试 ${esc(time(route.retry_at))}`:''}${route.attempts?`，已尝试 ${esc(route.attempts)} 次`:''}。</div>`:'')+
     (task.error?`<div class="callout" role="status">${task.error==='energy_exhausted'?'预算耗尽，工作已停止。可取消后以更高预算重新发布。':task.error==='board_run_failed'?'这次执行没有完成，工作已重新开放给群体。':task.error==='interrupted_outcome_unknown'?'执行结果无法确认，请核对后再决定。':task.error==='board_agent_did_not_claim'?'成员没有接下这项工作，已重新开放。':esc('这次工作未能完成，已记录以便排查。')}</div>`:'')+
@@ -135,11 +136,15 @@ function boardAuditPanel(task){
   return panel('质检结论',`<div class="panel-body">${note}${rows||'<p class="hint">成果完成后自动开始质检。</p>'}</div>`);
 }
 function boardPublishForm(){
-  openModal('发布任务',`<form data-form="board-publish"><label>任务名称<input name="title" required maxlength="200" placeholder="例如：分析这个项目的性能瓶颈"></label><label>任务内容<textarea name="instructions" required maxlength="8000" rows="5" placeholder="描述目标、已有资料和约束。"></textarea></label><label>验收标准<textarea name="acceptance" required maxlength="8000" rows="3" placeholder="完成时应交付什么，如何判断结果可用？"></textarea></label><label>能量预算（可选）<input name="energy_budget" type="number" min="2000" max="10000000" step="1000" placeholder="默认 100000；验收通过会部分回充，耗尽即停止"></label><p class="form-section-title">独立验证（可选）</p><label>验证器 Preset<select name="verify_preset"><option value="">不启用（仅人类评审）</option>${(data?.presets||[]).map(p=>`<option value="${esc(p.name)}@${esc(p.version)}">${esc(p.name)} @ ${esc(p.version)}</option>`).join('')}</select></label><label>自动返工上限<select name="verify_reworks"><option value="0">0（退回即交人类）</option><option value="1" selected>1</option><option value="2">2</option></select></label><p class="hint">全新实例按验收标准审计冻结结果；通过自动归档，退回有界返工，人类保留最终评审权。</p>${formEnd('投递到任务板')}</form>`,'共享任务板');
+  openModal('发布任务',`<form data-form="board-publish"><label>任务名称<input name="title" required maxlength="200" placeholder="例如：分析这个项目的性能瓶颈"></label><label>任务内容<textarea name="instructions" required maxlength="8000" rows="5" placeholder="描述目标、已有资料和约束。"></textarea></label><label>验收标准<textarea name="acceptance" required maxlength="8000" rows="3" placeholder="完成时应交付什么，如何判断结果可用？"></textarea></label><label>能量预算（可选）<input name="energy_budget" type="number" min="1" max="1000000000000" step="1" placeholder="默认 1 亿，耗尽可补充"></label><p class="form-section-title">独立验证（可选）</p><label>验证器 Preset<select name="verify_preset"><option value="">不启用（仅人类评审）</option>${(data?.presets||[]).map(p=>`<option value="${esc(p.name)}@${esc(p.version)}">${esc(p.name)} @ ${esc(p.version)}</option>`).join('')}</select></label><label>自动返工上限<select name="verify_reworks"><option value="0">0（退回即交人类）</option><option value="1" selected>1</option><option value="2">2</option></select></label><p class="hint">全新实例按验收标准审计冻结结果；通过自动归档，退回有界返工，人类保留最终评审权。</p>${formEnd('投递到任务板')}</form>`,'共享任务板');
 }
 async function boardAction(action,element){
   if(action==='board-publish'){boardPublishForm();return true;}
   if(action==='board-refresh'){await refresh(true);return true;}
+  if(action==='energy-top-up'){
+    openModal('补充任务能量',`<form data-form="energy-top-up" data-id="${esc(element.dataset.id)}"><label>增加能量<input name="amount" type="number" min="1" max="1000000000000" step="1" required></label>${formEnd('补充能量')}</form>`);
+    return true;
+  }
   if(action==='board-review'){
     openModal('评审任务成果',`<form data-form="board-review" data-id="${esc(element.dataset.id)}" data-run="${esc(element.dataset.run)}"><label>评审决定<select name="decision"><option value="changes_requested">退回修改</option><option value="accepted">通过</option></select></label><label>评审意见<textarea name="feedback" maxlength="8000" rows="5" placeholder="退回时请说明需要修改什么；通过时可留空。"></textarea></label><p>退回修改将重新开工，可能产生模型调用费用。</p>${formEnd('提交评审')}</form>`,'人类评审');return true;
   }

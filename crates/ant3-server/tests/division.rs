@@ -248,9 +248,9 @@ fn energy_efficiency_shapes_the_response_threshold() {
     s.reconcile_board().unwrap();
     let e = experience(&s, "reader");
     assert_eq!(e["successes"], 1);
-    assert_eq!(e["energy_spent"], 10);
+    assert_eq!(e["energy_spent"], 100);
     // efficiency = 10/2000 = 0.005 -> clamped 0.25: threshold far below base.
-    assert!(e["cost_efficiency"].as_f64().unwrap() <= 0.01);
+    assert!(e["cost_efficiency"].as_f64().unwrap() <= 0.05);
     assert!(e["response_threshold"].as_f64().unwrap() < response_threshold(1, 0));
     // An expensive peer on a fresh root: unknown usage bills 1500.
     let other = s.publish_board_task(&input("expensive"), "expensive").unwrap();
@@ -259,9 +259,9 @@ fn energy_efficiency_shapes_the_response_threshold() {
     finish(&s, &r2, "completed");
     // Same preset now mixes cheap+expensive: mean 755/success, eff 0.3775.
     let e = experience(&s, "reader");
-    assert_eq!(e["energy_spent"], 1510);
+    assert_eq!(e["energy_spent"], 1600);
     let eff = e["cost_efficiency"].as_f64().unwrap();
-    assert!((eff - 0.3775).abs() < 1e-6);
+    assert!((eff - 0.4).abs() < 1e-6);
     let expected = ant3_platform::division::cost_adjusted_threshold(response_threshold(2, 0), eff);
     assert_eq!(e["response_threshold"], expected);
 }

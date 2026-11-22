@@ -30,8 +30,8 @@ pub fn stimulus(strength: f64, crowd: usize) -> f64 {
 /// at a bounded chain length, handing the task back to human review instead
 /// of looping between worker and reviewer forever.
 pub const REWORK_CHAIN_LIMIT: usize = 4;
-pub const REWORK_COOLDOWN_BASE_MS: i64 = 15_000;
-pub const REWORK_COOLDOWN_MAX_MS: i64 = 120_000;
+pub const REWORK_COOLDOWN_BASE_MS: i64 = 60_000;
+pub const REWORK_COOLDOWN_MAX_MS: i64 = 900_000;
 
 /// Cooldown before a reworked task is offered again: base * 2^(chain-1),
 /// capped. Chain counts consecutive changes_requested rounds.
@@ -56,9 +56,9 @@ pub fn cost_adjusted_threshold(threshold: f64, efficiency: f64) -> f64 {
 /// themselves; the control plane keeps only physics (capacity, energy,
 /// atomicity). The wandering pool reproduces toward successful presets and
 /// starves out wasteful ones — colony composition emerges from experience.
-pub const SELF_SELECT_POOL_MAX: usize = 8;
+pub const SELF_SELECT_POOL_MAX: usize = 64;
 /// Idle energy burn per standing instance per minute (wander cost).
-pub const IDLE_BURN_PER_MIN: i64 = 20;
+pub const IDLE_BURN_PER_MIN: i64 = 0;
 /// A preset with this many consecutive failures and no recent success is
 /// retired from the wandering pool.
 pub const POOR_PRESET_FAILURES: u32 = 3;

@@ -218,7 +218,7 @@ fn agent_sender_capability_scope_context_quota_and_retries_are_host_owned() {
         code(s.send_message(Sender::AgentRun(r), &outside[0], &input("x"), "outside")),
         "message_recipient_out_of_scope"
     );
-    for i in 0..8 {
+    for i in 0..256 {
         s.send_message(Sender::AgentRun(r), &a[1], &input("x"), &i.to_string())
             .unwrap();
     }
@@ -264,7 +264,7 @@ fn payload_backpressure_hop_and_correlation_limits() {
         "invalid_message"
     );
     let mut previous = send(&s, &a[0], "root", "root");
-    for n in 1..=8 {
+    for n in 1..=64 {
         let mut v = input("chain");
         v.causation_id = Some(previous.clone());
         let receipt = s
@@ -279,7 +279,7 @@ fn payload_backpressure_hop_and_correlation_limits() {
         code(s.send_message(Sender::Operator, &a[0], &v, "deep")),
         "message_hop_limit"
     );
-    for n in 9..64 {
+    for n in 65..256 {
         send(&s, &a[0], "fill", &n.to_string());
     }
     assert_eq!(
@@ -287,7 +287,7 @@ fn payload_backpressure_hop_and_correlation_limits() {
         "message_backlog_full"
     );
     // Free each admission immediately to exercise the separate correlation lifetime cap.
-    for n in 0..128 {
+    for n in 0..2048 {
         let mut v = input("bounded chain");
         v.correlation_id = Some("fixed-root".into());
         let receipt = s

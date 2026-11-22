@@ -1,7 +1,6 @@
 use super::*;
 use std::collections::BTreeMap;
 
-const MAX_BYTES: usize = 4 * 1024 * 1024;
 
 #[derive(Default)]
 struct Frames {
@@ -215,13 +214,8 @@ pub(super) async fn receive(
 ) -> Result<ModelReply> {
     let mut frames = Frames::default();
     let mut decoder = Decoder::new(protocol);
-    let mut total = 0;
     while let Some(chunk) = tokio::select! { _=cancel.cancelled()=>return Err(Error::new("cancelled")), chunk=response.chunk()=>chunk.map_err(network_error)? }
     {
-        total += chunk.len();
-        if total > MAX_BYTES {
-            return Err(Error::new("provider_response_too_large"));
-        }
         for frame in frames.push(&chunk)? {
             decoder.event(&frame, live)?;
         }

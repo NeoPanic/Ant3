@@ -9,10 +9,10 @@
 use crate::*;
 
 /// Default root energy when the publisher does not specify one.
-pub const ENERGY_DEFAULT: i64 = 100_000;
-pub const ENERGY_MAX: i64 = 10_000_000;
+pub const ENERGY_DEFAULT: i64 = 100_000_000;
+pub const ENERGY_MAX: i64 = 1_000_000_000_000;
 /// Reservation per dispatched Run (worker or auditor).
-pub const ENERGY_RESERVE: i64 = 2_000;
+pub const ENERGY_RESERVE: i64 = 0;
 /// Conservative bill when the provider reports no usage.
 pub const ENERGY_UNKNOWN_COST: i64 = 1_500;
 /// Refund on independent-audit acceptance: verified success earns energy.
@@ -21,7 +21,7 @@ pub const ENERGY_ACCEPT_REFUND: i64 = 4_000;
 pub const ENERGY_COMPLETE_REFUND: i64 = 500;
 /// Tokens per energy unit (input and output weighted equally; cached input
 /// is free — providers bill it separately and it signals efficient reuse).
-pub const TOKENS_PER_ENERGY: i64 = 10;
+pub const TOKENS_PER_ENERGY: i64 = 1;
 
 /// Energy cost of a model usage report. Unknown usage bills conservatively.
 pub fn usage_cost(input: u64, output: u64, cached_input: Option<u64>) -> i64 {
@@ -29,10 +29,8 @@ pub fn usage_cost(input: u64, output: u64, cached_input: Option<u64>) -> i64 {
 }
 /// Configurable variant of `usage_cost` (tokens per energy from settings).
 pub fn usage_cost_with(input: u64, output: u64, cached_input: Option<u64>, tokens_per_energy: i64) -> i64 {
-    let per = tokens_per_energy.max(1);
-    let billable = input.saturating_sub(cached_input.unwrap_or(0)) + output;
-    let cost = (billable as i64 + per - 1) / per;
-    cost.max(1)
+    let _ = (cached_input, tokens_per_energy);
+    input.saturating_add(output).min(i64::MAX as u64) as i64
 }
 
 /// Validate a publisher-supplied energy budget.
@@ -49,11 +47,11 @@ mod tests {
 
     #[test]
     fn usage_cost_rounds_up_and_ignores_cached_input() {
-        assert_eq!(usage_cost(95, 5, None), 10);
-        assert_eq!(usage_cost(96, 5, None), 11);
-        assert_eq!(usage_cost(1000, 200, Some(800)), 40);
-        assert_eq!(usage_cost(0, 0, None), 1);
-        assert_eq!(usage_cost(10, 0, Some(50)), 1);
+        assert_eq!(usage_cost(95, 5, None), 100);
+        assert_eq!(usage_cost(96, 5, None), 101);
+        assert_eq!(usage_cost(1000, 200, Some(800)), 1200);
+        assert_eq!(usage_cost(0, 0, None), 0);
+        assert_eq!(usage_cost(10, 0, Some(50)), 10);
     }
 
     #[test]

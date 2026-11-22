@@ -6,7 +6,7 @@ use tokio::{
     process::Command,
 };
 
-const OUTPUT_LIMIT: usize = 16 * 1024;
+const OUTPUT_LIMIT: usize = 128 * 1024;
 
 pub(super) struct LocalTool {
     pub name: &'static str,
@@ -44,7 +44,7 @@ impl Tool for LocalTool {
     fn spec(&self) -> ToolSpec {
         let (description, fields): (_, &[&str]) = match self.name {
             "bash" => (
-                "Run a noninteractive Bash command in the instance workspace, including installed CLI clients. Inspect exit_code, stdout and stderr.",
+                "Run a noninteractive Bash command in the instance workspace, including installed CLI clients. Use rg or grep, sed and tail to select relevant output. Inspect exit_code, stdout and stderr.",
                 &["command"],
             ),
             "read" => (

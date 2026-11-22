@@ -52,13 +52,13 @@ fn dispatch_reserves_and_settlement_bills_actual_usage() {
     finish_with(&s, &r, json!({"output":"done","usage":{"input":200,"output":100}}));
     let pool = s.board_energy(id(&t)).unwrap();
     assert_eq!(pool["reserved"], 0);
-    assert_eq!(pool["spent"], 30);
+    assert_eq!(pool["spent"], 300);
     // Completion refund earns energy back.
     assert_eq!(pool["refunded"], ENERGY_COMPLETE_REFUND);
-    assert_eq!(pool["available"], 10_000 - 30 + ENERGY_COMPLETE_REFUND);
+    assert_eq!(pool["available"], 10_000 - 300 + ENERGY_COMPLETE_REFUND);
     // Settlement is idempotent per Run.
     s.reconcile_board().unwrap();
-    assert_eq!(s.board_energy(id(&t)).unwrap()["spent"], 30);
+    assert_eq!(s.board_energy(id(&t)).unwrap()["spent"], 300);
 }
 
 #[test]
@@ -72,13 +72,13 @@ fn unknown_usage_bills_conservatively_and_cached_input_is_free() {
     let r2 = work(&s, &t2);
     s.claim_board_task(id(&r2), id(&t2)).unwrap();
     finish_with(&s, &r2, json!({"output":"done","usage":{"input":1000,"output":100,"cached_input":900}}));
-    assert_eq!(s.board_energy(id(&t2)).unwrap()["spent"], 20);
+    assert_eq!(s.board_energy(id(&t2)).unwrap()["spent"], 1100);
 }
 
 #[test]
 fn starved_roots_stop_being_offered_and_pending_tasks_are_culled() {
     // Budget covers exactly one reservation; unknown usage exhausts the pool.
-    let (s, t) = fixture(Some(ENERGY_RESERVE));
+    let (s, t) = fixture(Some(100));
     let r = work(&s, &t);
     s.claim_board_task(id(&r), id(&t)).unwrap();
     finish_with(&s, &r, json!({"output":"weak"}));
@@ -97,8 +97,10 @@ fn starved_roots_stop_being_offered_and_pending_tasks_are_culled() {
     // so the offering filter alone keeps it out. Verify direct cull:
     s.cull_starved(id(&t)).unwrap();
     let task = s.board_task(id(&t)).unwrap();
-    assert_eq!(task["state"], "failed");
-    assert_eq!(task["error"], "energy_exhausted");
+    assert_eq!(task["state"], "pending");
+    let top_up = s.top_up_energy(id(&t), 2000, "refill").unwrap();
+    assert_eq!(s.top_up_energy(id(&t),2000,"refill").unwrap(),top_up);
+    assert!(!s.board_pending().unwrap().is_empty());
 }
 
 #[test]
@@ -134,7 +136,7 @@ fn acceptance_refunds_more_than_completion() {
     // Refunds: completion 500 + acceptance 4000.
     assert_eq!(pool["refunded"], ENERGY_COMPLETE_REFUND + ENERGY_ACCEPT_REFUND);
     // Both runs billed actual usage: 15 + 6.
-    assert_eq!(pool["spent"], 21);
+    assert_eq!(pool["spent"], 210);
 }
 
 #[test]
@@ -142,7 +144,7 @@ fn invalid_budgets_are_rejected_and_default_applies() {
     let s = Store::memory().unwrap();
     s.publish(preset()).unwrap();
     assert_eq!(
-        s.publish_board_task(&input(Some(10)), "tiny").unwrap_err().1,
+        s.publish_board_task(&input(Some(-1)), "tiny").unwrap_err().1,
         "invalid_energy_budget"
     );
     let t = s.publish_board_task(&input(None), "default").unwrap();

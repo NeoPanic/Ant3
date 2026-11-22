@@ -20,7 +20,7 @@ fn spec(kind: u8) -> ToolSpec {
         2 => (
             "platform.board.split",
             "Split your claimed task into independent subtasks described only by title, instructions and acceptance. The control plane chooses Presets and starts peers; you do not assign identities. Children activate after this Run succeeds. After submitting, finish this Run instead of waiting. Once all children complete, the parent task returns to the board for integration by an ordinary peer. A task can be split once per human review cycle; do not split a child-integration continuation again. Use a stable command_key for retries.",
-            json!({"type":"object","additionalProperties":false,"properties":{"tasks":{"type":"array","minItems":1,"maxItems":8,"items":task},"command_key":{"type":"string","minLength":1,"maxLength":160}},"required":["tasks","command_key"]}),
+            json!({"type":"object","additionalProperties":false,"properties":{"tasks":{"type":"array","minItems":1,"maxItems":64,"items":task},"command_key":{"type":"string","minLength":1,"maxLength":160}},"required":["tasks","command_key"]}),
         ),
         4 => (
             "platform.board.progress",

@@ -292,7 +292,7 @@ impl Store {
             let fingerprint=serde_json::to_string(input)?;
             if let Some(value)=replay(tx,"publish",key,&fingerprint)? {return Ok(value);}
             let active:usize=tx.query_row("SELECT count(*) FROM board_tasks t WHERE parent_id IS NULL AND (state IN ('pending','running','waiting') OR (state='completed' AND NOT EXISTS(SELECT 1 FROM board_reviews v WHERE v.task_id=t.id AND v.run_id=t.run_id AND v.decision='accepted')))",[],|r|r.get(0))?;
-            if active>=crate::limits::BOARD_TASKS_PER_ROOT {return Err(fault(409,"board_root_limit"));}
+            if active>=crate::limits::BOARD_ACTIVE_ROOTS {return Err(fault(409,"board_root_limit"));}
             let id=id("task");insert_task(tx,&id,&id,None,input,0,None)?;
             receipt(tx,"publish",key,&fingerprint,task(tx,&id)?)
         })
@@ -318,7 +318,7 @@ impl Store {
     pub fn board_pending(&self) -> PResult<Vec<Value>> {
         self.board_transaction(|tx| {
             let settings=Settings::load(tx)?;
-            let mut stmt=tx.prepare("SELECT id,root_id,created_at FROM board_tasks WHERE state='pending' AND route_state='unassigned' ORDER BY created_at,rowid LIMIT 64")?;
+            let mut stmt=tx.prepare("SELECT id,root_id,created_at FROM board_tasks WHERE state='pending' AND route_state='unassigned' AND root_id IN (SELECT root_id FROM board_energy WHERE budget+refunded-spent-reserved>0) ORDER BY created_at,rowid LIMIT 64")?;
             let candidates=stmt.query_map([],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,i64>(2)?)))?.collect::<Result<Vec<_>,_>>()?;
             drop(stmt);
             // Crowding avoidance: a root's active workers dilute the stimulus
@@ -343,7 +343,7 @@ impl Store {
             let mut funded=Vec::new();
             for entry in entries {
                 let root:String=tx.query_row("SELECT root_id FROM board_tasks WHERE id=?",[&entry.0],|r|r.get(0))?;
-                if crate::energy::available(tx,&root)?>=settings.energy.reserve && cooled(tx,&entry.0)? { funded.push(entry); }
+                if crate::energy::available(tx,&root)?>0 && cooled(tx,&entry.0)? { funded.push(entry); }
             }
             let entries=funded;
             let explore=settings.traces.exploration;
@@ -456,7 +456,7 @@ impl Store {
                 .take(4)
                 .map(|trail| json!({"key":trail["key"],"kind":trail["kind"],"strength":trail["strength"]}))
                 .collect();
-            Ok(json!({"signals":signals,"scope":s,"target_task":target,"tasks":tasks,"total":ids.len(),"view":if neighborhood {"neighborhood"}else{"all"},"next_offset":if next<ids.len(){Some(next)}else{None},"max_tasks":crate::limits::BOARD_TASKS_PER_ROOT,"max_split_children":crate::limits::BOARD_SPLIT_CHILDREN,"max_depth":crate::limits::BOARD_SPLIT_DEPTH}))
+            Ok(json!({"signals":signals,"scope":s,"target_task":target,"tasks":tasks,"total":ids.len(),"view":if neighborhood {"neighborhood"}else{"all"},"next_offset":if next<ids.len(){Some(next)}else{None},"max_tasks":Value::Null,"max_split_children":crate::limits::BOARD_SPLIT_CHILDREN,"max_depth":crate::limits::BOARD_SPLIT_DEPTH}))
         })
     }
     pub fn read_board_result(
@@ -563,8 +563,6 @@ impl Store {
             if depth>=crate::limits::BOARD_SPLIT_DEPTH {return Err(fault(409,"board_depth_limit"));}
             let existing:bool=tx.query_row("SELECT (SELECT count(*) FROM board_tasks WHERE parent_id=?) > coalesce((SELECT split_count FROM board_reviews WHERE task_id=? AND decision='changes_requested' ORDER BY created_at DESC,rowid DESC LIMIT 1),0)",params![parent,parent],|r|r.get(0))?;
             if existing {return Err(fault(409,"board_task_already_split"));}
-            let count:usize=tx.query_row("SELECT count(*) FROM board_tasks WHERE root_id=?",[s["root_id"].as_str().unwrap()],|r|r.get(0))?;
-            if count+input.tasks.len()>crate::limits::BOARD_TASKS_PER_ROOT {return Err(fault(409,"board_task_limit"));}
             let mut children=vec![];
             for input in &input.tasks {
                 let child=id("task");
@@ -639,10 +637,10 @@ impl Store {
                             // Interrupted (outcome-unknown) Runs never auto-retry:
                             // the external effect is unproven and needs recovery.
                             let attempts:usize=tx.query_row("SELECT coalesce((SELECT attempts FROM board_task_retries WHERE task_id=?),0)",[claimed],|r|r.get(0))?;
-                            if failed_state=="failed" && attempts<crate::limits::BOARD_TASK_RETRIES {
+                            if failed_state=="failed" {
                                 tx.execute("INSERT INTO board_task_retries(task_id,attempts) VALUES(?,1) ON CONFLICT(task_id) DO UPDATE SET attempts=attempts+1",[claimed])?;
                                 tx.execute("UPDATE board_tasks SET state='pending',route_state='unassigned',instance_id=NULL,run_id=NULL,result=NULL,error=NULL,finished_at=NULL WHERE id=?",[claimed])?;
-                                event(tx,"board.task_requeued",claimed,json!({"attempt":attempts+1,"max_retries":crate::limits::BOARD_TASK_RETRIES,"previous_run_id":run,"reason":error}))?;
+                                event(tx,"board.task_requeued",claimed,json!({"attempt":attempts+1,"previous_run_id":run,"reason":error}))?;
                             } else {
                                 settle(tx,claimed,if failed_state=="interrupted"{"failed"}else{failed_state},Some(error))?;
                             }
@@ -659,10 +657,10 @@ impl Store {
                         // The invited peer never claimed: requeue under the same
                         // bounded retry budget before settling the task failed.
                         let attempts:usize=tx.query_row("SELECT coalesce((SELECT attempts FROM board_task_retries WHERE task_id=?),0)",[&target],|r|r.get(0))?;
-                        if attempts<crate::limits::BOARD_TASK_RETRIES {
+                        if state=="completed" || state=="failed" {
                             tx.execute("INSERT INTO board_task_retries(task_id,attempts) VALUES(?,1) ON CONFLICT(task_id) DO UPDATE SET attempts=attempts+1",[&target])?;
                             tx.execute("UPDATE board_tasks SET route_state='unassigned' WHERE id=?",[&target])?;
-                            event(tx,"board.task_requeued",&target,json!({"attempt":attempts+1,"max_retries":crate::limits::BOARD_TASK_RETRIES,"previous_run_id":run,"reason":"board_agent_did_not_claim"}))?;
+                            event(tx,"board.task_requeued",&target,json!({"attempt":attempts+1,"previous_run_id":run,"reason":"board_agent_did_not_claim"}))?;
                         } else {
                             settle(tx,&target,"failed",Some("board_agent_did_not_claim"))?;
                         }

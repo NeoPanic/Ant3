@@ -33,7 +33,6 @@ function researcherSwarmSection(){
       <label class="capability-choice"><input type="checkbox" name="self_select_enabled" ${s.enabled?'checked':''}><span><strong>允许空闲成员自己挑活</strong><small>关闭时由控制面统一安排；开启后空闲实例进入游走池，按响应阈值自行抢单。</small></span></label>
       <div class="grid-three">
         <label>待命池上限<input name="pool_max" type="number" min="1" max="64" step="1" value="${esc(num(s.pool_max,8))}" required></label>
-        <label>每分钟待命消耗<input name="idle_burn_per_min" type="number" min="0" max="100000" step="1" value="${esc(num(s.idle_burn_per_min,20))}" required></label>
         <label>群体能量池<input name="colony_budget" type="number" min="0" max="1073741824" step="1" value="${esc(num(s.colony_budget,200000))}" required></label>
         <label>连续失败淘汰阈值<input name="poor_failures" type="number" min="1" max="100" step="1" value="${esc(num(s.poor_failures,3))}" required></label>
       </div>
@@ -48,12 +47,10 @@ function researcherSwarmSection(){
     </fieldset>
     <fieldset><legend>能量结算</legend>
       <div class="grid-three">
-        <label>默认任务预算<input name="default_budget" type="number" min="2000" max="10000000" step="1000" value="${esc(num(e.default_budget,100000))}" required></label>
-        <label>每次运行预留<input name="reserve" type="number" min="0" max="1000000" step="100" value="${esc(num(e.reserve,2000))}" required></label>
+        <label>默认任务预算<input name="default_budget" type="number" min="1" max="1000000000000" step="1" value="${esc(num(e.default_budget,100000000))}" required></label>
         <label>结果未知成本<input name="unknown_cost" type="number" min="0" max="1000000" step="100" value="${esc(num(e.unknown_cost,1500))}" required></label>
         <label>完成回充<input name="complete_refund" type="number" min="0" max="1000000" step="100" value="${esc(num(e.complete_refund,500))}" required></label>
         <label>验收回充<input name="accept_refund" type="number" min="0" max="1000000" step="100" value="${esc(num(e.accept_refund,4000))}" required></label>
-        <label>每能量 Token 数<input name="tokens_per_energy" type="number" min="1" max="10000" step="1" value="${esc(num(e.tokens_per_energy,10))}" required></label>
       </div>
     </fieldset>
     <div id="form-error" class="error" role="alert"></div>

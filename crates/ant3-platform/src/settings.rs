@@ -149,19 +149,19 @@ impl Settings {
         }
         let s = &self.self_select;
         if !(1..=64).contains(&s.pool_max)
-            || !(0..=100_000).contains(&s.idle_burn_per_min)
+            || s.idle_burn_per_min != 0
             || !(0..=MAX_COLONY_BUDGET).contains(&s.colony_budget)
             || !(1..=100).contains(&s.poor_failures)
         {
             return Err(fault(400, "invalid_settings"));
         }
         let e = &self.energy;
-        if !(2_000..=10_000_000).contains(&e.default_budget)
-            || !(0..=1_000_000).contains(&e.reserve)
+        if !(1..=ant3_domain::energy::ENERGY_MAX).contains(&e.default_budget)
+            || e.reserve != 0
             || !(0..=1_000_000).contains(&e.unknown_cost)
             || !(0..=1_000_000).contains(&e.complete_refund)
             || !(0..=1_000_000).contains(&e.accept_refund)
-            || !(1..=10_000).contains(&e.tokens_per_energy)
+            || e.tokens_per_energy != 1
         {
             return Err(fault(400, "invalid_settings"));
         }

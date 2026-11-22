@@ -9,12 +9,12 @@ use crate::*;
 pub const TRACE_HALF_LIFE_MS: i64 = 30 * 60 * 1000;
 /// Saturation cap: positive feedback cannot grow without bound.
 pub const TRACE_MAX_STRENGTH: f64 = 100.0;
-pub const TRACES_PER_ROOT: usize = 64;
+pub const TRACES_PER_ROOT: usize = 4096;
 /// Local perception: agent trace reads default to trails at or above this
 /// decayed strength. Weaker trails exist but stay below the agent's notice
 /// threshold unless it explicitly asks for everything.
 pub const PERCEPTION_THRESHOLD: f64 = 1.0;
-pub const TRACE_DEPOSITS_PER_RUN: usize = 8;
+pub const TRACE_DEPOSITS_PER_RUN: usize = 256;
 /// Fixed deposit weights. Agents cannot choose amounts; only the platform
 /// decides how much a verified event is worth.
 pub const TRACE_AGENT_AMOUNT: f64 = 2.0;

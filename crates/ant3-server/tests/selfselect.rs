@@ -47,7 +47,7 @@ fn idle_peers_self_select_open_work_without_a_classifier() {
     assert_eq!(s.board_task(id(&t)).unwrap()["state"], "completed");
     // Energy was reserved and billed on the root, not by any classifier.
     let pool = s.board_energy(id(&t)).unwrap();
-    assert_eq!(pool["spent"], 15);
+    assert_eq!(pool["spent"], 150);
     // The swarm event trail records the self-selection.
     let events = s.events(0).unwrap();
     assert!(events.iter().any(|e| e["kind"] == "swarm.self_selected" && e["subject"] == id(&t)));

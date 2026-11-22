@@ -1,7 +1,7 @@
 use super::status::capabilities;
 use super::*;
 pub(super) async fn snapshot(State(app): State<App>) -> PResult<Json<Value>> {
-    let mut value = json!({"messages":app.store.recent_messages()?,"builtin_plugins":ant3_platform::organization::packages(),"builtin_plugin_status":{},"process_plugins":app.store.process_plugins()?,"process_plugin_execution":app.plugins.is_enabled(),"capacity":app.store.capacity()?,"fleets":app.store.fleets()?,"presets":app.store.list("presets")?,"plugins":app.store.list("plugins")?,"instances":app.store.list("instances")?,"runs":app.store.list("runs")?,"capabilities":capabilities(),"models":app.store.configured_models(&app.models).1.describe(),"limits":{"instances":ant3_platform::limits::INSTANCES,"workers":ant3_platform::limits::WORKERS,"runs_displayed":100,"collection_limit":200,"board_tasks_per_root":ant3_platform::limits::BOARD_TASKS_PER_ROOT,"board_split_depth":ant3_platform::limits::BOARD_SPLIT_DEPTH,"board_split_children":ant3_platform::limits::BOARD_SPLIT_CHILDREN},"settings":app.store.settings()?,"version":env!("CARGO_PKG_VERSION")});
+    let mut value = json!({"messages":app.store.recent_messages()?,"builtin_plugins":ant3_platform::organization::packages(),"builtin_plugin_status":{},"process_plugins":app.store.process_plugins()?,"process_plugin_execution":app.plugins.is_enabled(),"capacity":app.store.capacity()?,"fleets":app.store.fleets()?,"presets":app.store.list("presets")?,"plugins":app.store.list("plugins")?,"instances":app.store.list("instances")?,"runs":app.store.list("runs")?,"capabilities":capabilities(),"models":app.store.configured_models(&app.models).1.describe(),"limits":{"instances":ant3_platform::limits::INSTANCES,"workers":ant3_platform::limits::WORKERS,"runs_displayed":100,"collection_limit":200,"board_tasks_per_root":null,"board_split_depth":ant3_platform::limits::BOARD_SPLIT_DEPTH,"board_split_children":ant3_platform::limits::BOARD_SPLIT_CHILDREN},"settings":app.store.settings()?,"version":env!("CARGO_PKG_VERSION")});
     value["saved_providers"] = json!(app.store.saved_providers()?);
     value["board"] = board_value(&app)?;
     Ok(Json(value))
@@ -72,6 +72,10 @@ pub(super) async fn board_notes(
     Path(id): Path<String>,
 ) -> PResult<Json<Value>> {
     Ok(Json(app.store.board_notes(&id)?))
+}
+pub(super) async fn board_top_up(State(app):State<App>,Path(id):Path<String>,headers:HeaderMap,Json(input):Json<Value>)->PResult<Json<Value>> {
+    let amount=input["amount"].as_i64().ok_or_else(||fault(400,"invalid_top_up"))?;
+    Ok(Json(app.store.top_up_energy(&id,amount,key(&headers)?)?))
 }
 pub(super) async fn board_energy(
     State(app): State<App>,

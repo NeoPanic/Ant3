@@ -3,7 +3,7 @@
 //! Successes lower a preset's response threshold, definite failures raise it;
 //! outcome-unknown and cancelled Runs are not experience. The selector reads
 //! these statistics as evidence — the threshold model never grants authority.
-use crate::{domain::*, settings::Settings, store::Store};
+use crate::{domain::*, store::Store};
 use rusqlite::{OptionalExtension, Transaction, params};
 use serde_json::{Value, json};
 
@@ -94,7 +94,7 @@ fn efficiency(successes: u32, energy_spent: i64, reserve: i64) -> f64 {
 pub(crate) fn evidence(tx: &Transaction<'_>, name: &str, version: &str) -> PResult<Value> {
     let (successes, failures, energy_spent) = stats(tx, name, version)?;
     let base = response_threshold(successes, failures);
-    let eff = efficiency(successes, energy_spent, Settings::load(tx)?.energy.reserve);
+    let eff = efficiency(successes, energy_spent, 2_000);
     Ok(json!({
         "successes": successes,
         "failures": failures,
@@ -112,7 +112,7 @@ impl Store {
             let mut stmt = tx.prepare(
                 "SELECT preset_name,preset_version,successes,failures,energy_spent FROM preset_experience ORDER BY preset_name,preset_version",
             )?;
-            let reserve = Settings::load(tx)?.energy.reserve;
+            let reserve = 2_000;
             let rows = stmt
                 .query_map([], |r| {
                     Ok((

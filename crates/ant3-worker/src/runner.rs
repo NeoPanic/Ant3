@@ -69,11 +69,18 @@ impl Model for StreamingModel {
         live: &LiveOutput,
         cancel: CancellationToken,
     ) -> Result<ModelReply> {
-        if live.is_internal() {
-            return self.provider.complete(input, live, cancel).await;
+        let root = self.store.run_energy_root(&self.run).map_err(|e|Error::new(e.1))?;
+        if let Some(root)=&root {
+            while self.store.energy_available(root).map_err(|e|Error::new(e.1))? <= 0 {
+                tokio::select! {_=cancel.cancelled()=>return Err(Error::new("cancelled")), _=tokio::time::sleep(Duration::from_secs(1))=>{}}
+            }
         }
+
         let generation = uuid::Uuid::new_v4().to_string();
-        let future = self.provider.complete_streamed(input, live, cancel);
+        let future = async {
+            if live.is_internal() {self.provider.complete(input,live,cancel).await}
+            else {self.provider.complete_streamed(input,live,cancel).await}
+        };
         tokio::pin!(future);
         let mut timer = tokio::time::interval(Duration::from_millis(150));
         let mut offset = 0;
@@ -95,6 +102,10 @@ impl Model for StreamingModel {
             }
             if let Some(result) = outcome {
                 self.store.record("execution.text_end",&self.run,json!({"generation":generation,"text":result.as_ref().map(|r|r.text.as_str()).unwrap_or(&text),"error":result.as_ref().err()})).map_err(|_|Error::new("observer_storage_error"))?;
+                if let (Some(root), Ok(reply)) = (&root, &result) {
+                    let cost = reply.usage.as_ref().map(|u| ant3_platform::energy::usage_cost(u.input,u.output,u.cached_input)).unwrap_or(self.store.settings_config().map_err(|e|Error::new(e.1))?.energy.unknown_cost);
+                    self.store.charge_turn(root,&self.run,cost).map_err(|e|Error::new(e.1))?;
+                }
                 return result;
             }
         }
@@ -281,9 +292,9 @@ pub(super) async fn execute(
     let harness = Ant::new(
         registry,
         Limits {
-            rounds: 12,
-            tool_calls: 24,
-            timeout: Duration::from_secs(600),
+            rounds: u32::MAX,
+            tool_calls: u32::MAX,
+            timeout: Duration::MAX,
         },
     );
     let report = harness

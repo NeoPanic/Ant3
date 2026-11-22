@@ -10,9 +10,9 @@ fn settings_defaults_merge_partial_updates_and_reload() {
     let defaults = store.settings().unwrap();
     assert_eq!(defaults["traces"]["half_life_minutes"], 30);
     assert_eq!(defaults["traces"]["max_strength"], 100.0);
-    assert_eq!(defaults["self_select"]["pool_max"], 8);
+    assert_eq!(defaults["self_select"]["pool_max"], 64);
     assert_eq!(defaults["self_select"]["colony_budget"], 200_000);
-    assert_eq!(defaults["energy"]["default_budget"], 100_000);
+    assert_eq!(defaults["energy"]["default_budget"], 100_000_000);
 
     let updated = store
         .update_settings(json!({"traces":{"perception_threshold":2.5},"self_select":{"pool_max":12}}))
@@ -42,7 +42,7 @@ fn invalid_settings_are_rejected_without_changing_stored_values() {
         );
     }
     let unchanged = store.settings().unwrap();
-    assert_eq!(unchanged["self_select"]["pool_max"], 8);
+    assert_eq!(unchanged["self_select"]["pool_max"], 64);
     assert_eq!(unchanged["traces"]["half_life_minutes"], 30);
 }
 

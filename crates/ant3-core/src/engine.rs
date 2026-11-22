@@ -226,7 +226,7 @@ impl Ant {
         };
         let mut sequence = 0;
         let start = Instant::now();
-        let mut count = 0;
+        let mut count = 0u64;
         let mut seen = BTreeSet::new();
         let mut repair_tool_json = false;
         let mut tool_json_repair_attempted = false;
@@ -282,7 +282,8 @@ impl Ant {
                     tools.push(spec.clone());
                 }
             }
-            for round in 0..self.limits.rounds {
+            let round_limit = u64::from(self.limits.rounds);
+            for round in (0u64..).take_while(|r| round_limit == u64::from(u32::MAX) || *r < round_limit) {
                 if cancel.is_cancelled() { return Err(Error::new("cancelled")); }
                 self.remaining(start)?;
                 let projected = session.projected_input(&instructions, &tools)?;
@@ -389,7 +390,7 @@ impl Ant {
                 let outcome = tokio::select! { biased; _=cancel.cancelled()=>return Err(Error::new("cancelled")), r=tokio::time::timeout(remaining,model.complete(input,&live,cancel.clone()))=>r.map_err(|_| Error::new("timeout"))? };
                 generation += model_started.elapsed();
                 let reply = match outcome {
-                    Err(error) if error.code == "malformed_tool_json" && !tool_json_repair_attempted && round + 1 < self.limits.rounds => {
+                    Err(error) if error.code == "malformed_tool_json" && !tool_json_repair_attempted && round + 1 < round_limit => {
                         // No reply has been admitted or dispatched yet. Retry only
                         // generation, under the same run deadline and round budget.
                         self.trace(&ctx, "model_response_rejected", json!({"error":error,"retry":true})).await;
@@ -410,7 +411,7 @@ impl Ant {
                 self.trace(&ctx,"model_reply",serde_json::to_value(&reply).map_err(|_|Error::new("protocol"))?).await;
                 if reply.calls.is_empty() && reply.text.trim().is_empty() {
                     live_unreported = false;
-                    let retry = !empty_response_repair_attempted && round + 1 < self.limits.rounds;
+                    let retry = !empty_response_repair_attempted && round + 1 < round_limit;
                     self.trace(&ctx, "model_response_rejected", json!({"error":{"code":"empty_response"},"retry":retry})).await;
                     if !retry { return Err(Error::new("empty_response")); }
                     repair_empty_response = true;
@@ -447,7 +448,7 @@ impl Ant {
                     if pending.is_empty() {
                         // ponytail: fixed batches of four avoid unbounded fan-out;
                         // a sliding window can replace this if stragglers matter.
-                        let capacity = self.limits.tool_calls.saturating_sub(count).min(4) as usize;
+                        let capacity = if self.limits.tool_calls == u32::MAX { 4 } else {u64::from(self.limits.tool_calls).saturating_sub(count).min(4) as usize};
                         let batch: Vec<_> = calls.iter().take(capacity)
                             .take_while(|call| self.parallel_allowed(call, &admitted_tools, task))
                             .cloned()
@@ -498,7 +499,7 @@ impl Ant {
                         }
                         if call.id != original_call.id { denied = Some(Error::new("policy_call_id_changed")); }
                         count += 1;
-                        if count > self.limits.tool_calls { return Err(Error::new("tool_limit")); }
+                        if self.limits.tool_calls != u32::MAX && count > u64::from(self.limits.tool_calls) { return Err(Error::new("tool_limit")); }
                         if cancel.is_cancelled() { return Err(Error::new("cancelled")); }
                         self.remaining(start)?;
                         self.emit(&ctx,&mut sequence,"tool_started",json!({"id":call.id,"name":call.name,"arguments":call.arguments,"mutates":admitted_tools.iter().find(|t|t.name==call.name).map(|t|t.mutates)})).await?;

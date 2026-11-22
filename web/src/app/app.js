@@ -515,12 +515,16 @@ document.addEventListener('submit',async event=>{
       toast('模型提供商已保存，新任务将使用此配置。');
       return;
     }
+    if(form.dataset.form==='energy-top-up'){
+      await api(`/api/v1/board/tasks/${encodeURIComponent(form.dataset.id)}/energy`,{amount:Number(values.amount)},'POST',form.dataset.commandKey);
+      $('#modal').close(); await refresh(true); toast('能量已补充'); return;
+    }
     if(form.dataset.form==='settings') {
       const n=name=>Number(form.elements[name].value);
       result=await api('/api/v1/settings',{
         traces:{half_life_minutes:n('half_life_minutes'),max_strength:n('max_strength'),perception_threshold:n('perception_threshold'),exploration:form.elements.exploration.checked},
-        self_select:{enabled:form.elements.self_select_enabled.checked,pool_max:n('pool_max'),idle_burn_per_min:n('idle_burn_per_min'),colony_budget:n('colony_budget'),poor_failures:n('poor_failures')},
-        energy:{default_budget:n('default_budget'),reserve:n('reserve'),unknown_cost:n('unknown_cost'),complete_refund:n('complete_refund'),accept_refund:n('accept_refund'),tokens_per_energy:n('tokens_per_energy')},
+        self_select:{enabled:form.elements.self_select_enabled.checked,pool_max:n('pool_max'),idle_burn_per_min:0,colony_budget:n('colony_budget'),poor_failures:n('poor_failures')},
+        energy:{default_budget:n('default_budget'),reserve:0,unknown_cost:n('unknown_cost'),complete_refund:n('complete_refund'),accept_refund:n('accept_refund'),tokens_per_energy:1},
       });
       data.settings=result;
       await refresh(true);
