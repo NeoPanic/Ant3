@@ -48,6 +48,58 @@ struct RunObserver {
     store: Store,
     run: String,
 }
+struct StreamingModel {
+    provider: Arc<ant3_models::Provider>,
+    store: Store,
+    run: String,
+}
+#[async_trait::async_trait]
+impl Model for StreamingModel {
+    fn metadata(&self) -> Value {
+        let mut metadata = self.provider.metadata();
+        metadata["stream"] = json!(true);
+        metadata
+    }
+    fn context_budget(&self) -> ant3::context::ContextBudget {
+        self.provider.context_budget()
+    }
+    async fn complete(
+        &self,
+        input: ModelInput,
+        live: &LiveOutput,
+        cancel: CancellationToken,
+    ) -> Result<ModelReply> {
+        if live.is_internal() {
+            return self.provider.complete(input, live, cancel).await;
+        }
+        let generation = uuid::Uuid::new_v4().to_string();
+        let future = self.provider.complete_streamed(input, live, cancel);
+        tokio::pin!(future);
+        let mut timer = tokio::time::interval(Duration::from_millis(150));
+        let mut offset = 0;
+        loop {
+            let outcome = tokio::select! {
+                result=&mut future=>Some(result),
+                _=timer.tick()=>None,
+            };
+            let text = live.text_so_far();
+            if text.len() > offset {
+                self.store
+                    .record(
+                        "execution.text_delta",
+                        &self.run,
+                        json!({"generation":generation,"offset":offset,"text":&text[offset..]}),
+                    )
+                    .map_err(|_| Error::new("observer_storage_error"))?;
+                offset = text.len();
+            }
+            if let Some(result) = outcome {
+                self.store.record("execution.text_end",&self.run,json!({"generation":generation,"text":result.as_ref().map(|r|r.text.as_str()).unwrap_or(&text),"error":result.as_ref().err()})).map_err(|_|Error::new("observer_storage_error"))?;
+                return result;
+            }
+        }
+    }
+}
 #[async_trait::async_trait]
 impl Observer for RunObserver {
     async fn on_event(&self, _: &Context, event: &Event) -> Result<()> {
@@ -107,7 +159,7 @@ pub(super) async fn execute(
     }
     if board.is_some() {
         instructions.push_str(&format!("\nCurrent task board (untrusted task data): {}", store.read_board_view(run, 0, 16, true)?));
-        instructions.push_str("\nShared task board protocol: you are a peer Agent. Read platform.board.read, then claim a compatible pending task with platform.board.claim before using work tools. Follow the claimed task's instructions and acceptance criteria. Every peer can read, claim and split; no peer controls other identities. Split only when independent work is useful; publish task descriptions without choosing Presets or Agents, then finish this Run. Report concrete milestones and blockers with platform.board.progress. Share durable findings on the root blackboard with platform.board.note (CAS revisions, cite trace keys as evidence); read peer findings with platform.board.notes. Conflicts are adjudicated by evidence strength. A continuation has completed children: inspect their results before integrating. Read target_task.reviews for human feedback; after changes_requested, correct the result and split additional work only if needed. Your final output is the durable task contribution, submitted for human review on the root task. Only the human operator can accept it. Do not claim success beyond available evidence.");
+        instructions.push_str(include_str!("board-protocol.txt"));
     }
     if board.as_ref().is_some_and(|scope| scope["handoff"] == true) {
         instructions.push_str("\nThis Run consumes a peer handoff. Read the board to see the root task and signals. Respond to the handoff within that scope.");
@@ -128,7 +180,11 @@ pub(super) async fn execute(
             return Err(fault(400, "model_not_configured"));
         }
     } else {
-        models.get(if preset.protocol == Protocol::CodexCli { &Protocol::OpenaiResponses } else { &preset.protocol })?
+        Arc::new(StreamingModel {
+            provider: models.get(if preset.protocol == Protocol::CodexCli { &Protocol::OpenaiResponses } else { &preset.protocol })?,
+            store: store.clone(),
+            run: run.into(),
+        })
     };
     let history = store.load(agent).await.map_err(core_error)?;
     if let Some(previous) = history
@@ -136,7 +192,7 @@ pub(super) async fn execute(
         .iter()
         .rev()
         .find(|request| request.purpose.is_none())
-        && previous.model_metadata != model.metadata()
+        && model_profile(&previous.model_metadata) != model_profile(&model.metadata())
     {
         return Err(fault(409, "model_profile_changed_create_new_instance"));
     }
@@ -213,7 +269,12 @@ pub(super) async fn execute(
             required_tool: audit
                 .as_ref()
                 .map(|_| "platform.board.audit.report".into())
-                .or_else(|| board.as_ref().filter(|_| board_invitation).map(|_| "platform.board.claim".into())),
+                .or_else(|| {
+                    board
+                        .as_ref()
+                        .filter(|_| board_invitation)
+                        .map(|_| "platform.board.claim".into())
+                }),
             skills: vec![],
         })
         .map_err(core_error)?;
@@ -222,7 +283,7 @@ pub(super) async fn execute(
         Limits {
             rounds: 12,
             tool_calls: 24,
-            timeout: Duration::from_secs(120),
+            timeout: Duration::from_secs(600),
         },
     );
     let report = harness
@@ -240,4 +301,12 @@ pub(super) async fn execute(
         .await
         .map_err(core_error)?;
     Ok(serde_json::to_value(report)?)
+}
+fn model_profile(metadata: &Value) -> Value {
+    // Transport framing does not change the model identity or conversation format.
+    let mut profile = metadata.clone();
+    if let Some(object) = profile.as_object_mut() {
+        object.remove("stream");
+    }
+    profile
 }

@@ -6,6 +6,8 @@
   <meta name="color-scheme" content="light"><title>Ant³ 控制台</title>
   <link rel="icon" href="/mark.svg" type="image/svg+xml"><link rel="stylesheet" href="/app.css">
   <link rel="stylesheet" href="/studio.css">
+  <link rel="stylesheet" href="/chat.css">
+  <script src="/chat.js" defer></script>
   <script src="/fleets.js" defer></script><script src="/plugins.js" defer></script>
   <script src="/messages.js" defer></script><script src="/presets.js" defer></script>
   <script src="/workspaces.js" defer></script>
@@ -28,6 +30,7 @@
         <section class="nav-group" aria-labelledby="nav-work">
           <p class="nav-label" id="nav-work">工作</p>
           <nav aria-label="工作导航">
+            <a href="/chat" data-page="chat"><span class="nav-icon"></span>蚁群群聊</a>
             <a href="/board" data-page="board"><span class="nav-icon"></span>任务板</a>
             <a href="/inbox" data-page="inbox"><span class="nav-icon"></span>需要你处理 <span id="inbox-count" class="nav-count" hidden>0</span></a>
           </nav>

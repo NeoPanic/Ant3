@@ -165,7 +165,7 @@
     "name": "三类模型协议",
     "phase": "P1",
     "status": "partial",
-    "detail": "提供 Chat Completions、Responses、Anthropic 三类非流式工具循环；Responses 经过真实服务验证。没有流式输出或分片中断契约。",
+    "detail": "提供 Chat Completions、Responses、Anthropic 工具循环与 Worker 流式正文；fixture 覆盖分片、终止、usage 与取消。真实供应商流式兼容性待验收；详情见[蚁群群聊](chat.zh-CN.md)。",
     "source": [
       "crates/ant3-models/src/lib.rs"
     ],

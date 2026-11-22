@@ -190,6 +190,7 @@ dependencies = [
  "async-trait",
  "axum",
  "fs2",
+ "futures-util",
  "reqwest",
  "rusqlite",
  "serde",

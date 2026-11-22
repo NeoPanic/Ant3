@@ -58,6 +58,7 @@ impl IntoResponse for ApiError {
 }
 
 mod auth;
+mod chat;
 mod handlers;
 mod routes;
 mod status;

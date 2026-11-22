@@ -48,6 +48,7 @@ let toastTimer;
 
 // Inline icons keep the local console independent of network fonts.
 const iconPaths = {
+  chat:'<path d="M21 11a8 8 0 0 1-8 8H7l-5 3V11a9 9 0 0 1 19 0Z"/><path d="M7 10h10M7 14h6"/>',
   board:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/>',
   studio:'<circle cx="6" cy="7" r="3"/><circle cx="18" cy="7" r="3"/><circle cx="12" cy="18" r="3"/><path d="m6 10 4 6m8-6-4 6M9 7h6"/>',
   overview:'<path d="m12 3 9 5v8l-9 5-9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8M7.5 5.5l9 5"/>',
@@ -103,12 +104,13 @@ async function api(path, body, method = 'POST', key = null) {
     Object.assign(messages,{invalid_preset_definition:'Preset 定义包含未知字段或字段类型不正确。',parent_preset_not_found:'父级 Preset 版本不存在，请刷新目录后重新选择。',invalid_preset_parent:'父级引用无效；Preset 不能继承自身。',preset_inheritance_depth_or_cycle:'继承链超过 16 层或包含循环，请选择更上层的 Preset。',duplicate_plugin_binding:'同一插件 ID 只能绑定一个版本，请取消重复选择。',ambiguous_plugin_bindings:'不能同时提交 plugin 和 plugins。',too_many_plugin_bindings:'每个 Preset 最多绑定 16 个插件。',preset_capability_limit:'能力锁超过 64 个工具或插件指令超过 64,000 UTF-8 字节，请减少绑定。',invalid_parameters_schema:'参数 schema 不受支持或超出结构上限。',parameters_schema_must_be_closed_object:'参数 schema 根须为 object，且 additionalProperties=false。',unknown_default_parameter:'默认值中存在未声明的参数。',invalid_default_parameter:'默认值的类型或范围不符合参数 schema。',invalid_parameter_names:'参数最多 32 个；名称限英文字母、数字、点、下划线和连字符。',unknown_template_parameter:'模板引用了未声明的参数，请添加同名参数或修改模板。',template_parameter_must_be_required_or_defaulted:'模板引用的参数必须设为必填或提供默认值。',invalid_parameter_template:'模板须使用配对的 {{参数名}}，不支持表达式。',parameters_schema_required:'填写默认值前须声明参数 schema。',parameters_not_declared:'该 Preset 未声明参数，不能传入参数值。',invalid_instance_parameters:'参数缺失、类型不正确或超出 schema 范围，请检查必填、类型和枚举值。',parameters_too_large:'合并默认值后的参数不能超过 16 KiB 序列化内容。',preset_snapshot_too_large:'完整 Preset 与能力快照超过 1 MiB，请减少绑定或 schema 内容。',preset_field_required:'独立定义必须填写用途、目标和系统指令。',preset_protocol_required:'请选择模型协议，或选择可继承的父级 Preset。',preset_field_cannot_be_null:'除旧版 plugin 外，Preset 字段不能为 null；省略字段表示继承。',preset_in_use:'这个 Preset 版本仍在服役：请先终止使用它的实例与 Agent 池，等任务结束后再删除。',preset_not_found:'Preset 版本不存在或已被删除，请刷新页面。',invalid_settings:'机制参数超出允许范围，请检查每个字段的上下限。'});
     Object.assign(messages,{invalid_message:'消息不能为空，最多 8,000 个 UTF-8 字节；请检查关联 ID。',message_recipient_terminal:'接收实例已停止接收消息，请选择其他身份。',message_backlog_full:'消息积压已达上限；请等待消费或丢弃待处理消息。',message_action_state_conflict:'状态已变化，无法执行此处置；请刷新消息详情。',invalid_message_action:'请填写处置说明，最多 2,000 个 UTF-8 字节。',message_recipient_out_of_scope:'接收实例不在同一个根任务范围内，无法接收该消息。',message_causal_context_conflict:'关联 ID 与前置消息不一致。',message_hop_limit:'消息因果链已达 8 层，请检查是否存在回复循环。',message_correlation_quota_exceeded:'该关联链已达 128 条消息上限。',causation_message_not_found:'前置消息不存在，请核对完整 ID。',message_not_found:'消息不存在，请刷新列表。'});
     Object.assign(messages,{invalid_board_review:'退回修改必须填写评审意见，最多 8,000 个 UTF-8 字节。',board_review_result_changed:'成果已变化，请刷新任务后评审最新结果。',board_result_already_reviewed:'本轮结果已经评审，请刷新任务。',board_review_root_required:'请在根任务汇总结果后进行评审。',invalid_board_task:'请填写任务名称、内容和验收标准；名称最多 200、内容和验收标准各 8,000 个 UTF-8 字节。',board_root_limit:'活动任务已达上限，请等待已有任务完成或取消后再发布。',board_task_not_found:'任务不存在，请返回任务板刷新。',board_root_not_active:'这项任务已结束，无法继续操作。'});
-    throw new Error(messages[code] || `操作未完成（${code}），请检查配置后重试。`);
+    const error=new Error(messages[code] || `操作未完成（${code}），请检查配置后重试。`);
+    error.status=response.status;throw error;
   }
   return value;
 }
 // 固定路径路由（/board、/colony…）；旧 hash 链接一次性重定向到对应路径。
-const routePages=['studio','colony','deliveries','board','inbox','presets','plugins','providers','researcher'];
+const routePages=['studio','colony','deliveries','chat','board','inbox','presets','plugins','providers','researcher'];
 const legacyRoutes={overview:'studio',agents:'researcher',fleets:'researcher',messages:'researcher',runs:'researcher',events:'researcher',capabilities:'researcher',workspaces:'deliveries'};
 function routeParts(){
   return (location.pathname||'/').split('/').filter(Boolean).map(part=>{try{return decodeURIComponent(part);}catch{return part;}});
@@ -166,12 +168,13 @@ function progressPage() {
 let providerProtocol;
 function render() {
   if (!data || composing) return;
-  const p=page(), names={studio:'工作现场',colony:'蚁群',deliveries:'成果库',board:'任务板',inbox:'需要你处理',presets:'Presets',plugins:'插件与能力',providers:'模型提供商',researcher:'研究者视图'};
+  const p=page(), names={studio:'工作现场',colony:'蚁群',deliveries:'成果库',chat:'蚁群群聊',board:'任务板',inbox:'需要你处理',presets:'Presets',plugins:'插件与能力',providers:'模型提供商',researcher:'研究者视图'};
   const inboxCount=typeof inboxItems==='function'&&data?inboxItems().length:0;
   const inboxBadge=$('#inbox-count');
   if(inboxBadge){inboxBadge.textContent=inboxCount;inboxBadge.hidden=!inboxCount;}
   document.querySelectorAll('nav a').forEach(a=>{a.classList.toggle('active',a.dataset.page===p);if(a.dataset.page===p)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
   document.title=`${names[p]} Ant³`;
+  if(p==='chat'){chatRender();renderedPage=p;renderedMarkup='';return;}
   let html='';
   if(p==='board') html=`<div class="board-page">${boardPage()}</div>`;
   if(p==='studio') html=studioPage();
@@ -351,6 +354,7 @@ function runOutput(r) {
   return `<div class="output-section"><h3>执行结果</h3>${result}</div><div class="output-section"><h3>用户输入</h3><div class="output">${esc(r.task_input??r.input)}</div></div>`;
 }
 async function handleAction(action, element) {
+  if(await chatAction(action,element))return;
   if(action==='navigation-toggle') {
     const open=element.getAttribute('aria-expanded')!=='true';
     element.setAttribute('aria-expanded',String(open));$('#shell').classList.toggle('navigation-open',open);
@@ -548,6 +552,7 @@ $('.skip-link').addEventListener('click',event=>{event.preventDefault();$('#cont
 function closeNavigation(){ $('#shell').classList.remove('navigation-open');$('#navigation-toggle').setAttribute('aria-expanded','false'); }
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&$('#shell').classList.contains('navigation-open')){closeNavigation();$('#navigation-toggle').focus();}});
 function routeChanged(){
+  chatLeave();
   inspectionRequest++;
   if($('#modal').open&&!$('#modal form[aria-busy="true"]'))$('#modal').close();
   closeNavigation();render();

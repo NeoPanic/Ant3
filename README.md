@@ -163,7 +163,7 @@ The [offline example](crates/ant3-core/examples/quickstart.rs) runs a model → 
 
 ## Status & boundaries
 
-Ant³ is a **pre-1.0 local platform for trusted environments**. Local defaults: 256 instances, 8 execution slots, 64 tasks per board root — configured limits, not measured capacity claims. Not yet provided: streaming model output, remote MCP plugin loading, distributed scheduling, hosted deployment, strong multi-tenant isolation, cross-root team cost hard caps, and OS-level execution isolation. The single forward-looking list lives in the [roadmap](docs/roadmap.zh-CN.md); precise per-capability boundaries in the [capability index](docs/capabilities.zh-CN.md).
+Ant³ is a **pre-1.0 local platform for trusted environments**. Local defaults: 256 instances, 8 execution slots, 64 tasks per board root, which are configured limits, not measured capacity claims. The [swarm conversation](docs/chat.zh-CN.md) streams execution activity and model text; live provider compatibility still needs acceptance testing. Not yet provided: remote MCP plugin loading, distributed scheduling, hosted deployment, strong multi-tenant isolation, cross-root team cost hard caps, and OS-level execution isolation. The single forward-looking list lives in the [roadmap](docs/roadmap.zh-CN.md); precise per-capability boundaries in the [capability index](docs/capabilities.zh-CN.md).
 
 The display name is **Ant³**, the repository is **Ant3**, and technical identifiers use `ant3` (CLI, Cargo packages, protocols, `.ant3/` data directory). **³** expresses the collaboration loop: **claim → contribute → continue**. [Brand assets](docs/brand/README.md).
 
