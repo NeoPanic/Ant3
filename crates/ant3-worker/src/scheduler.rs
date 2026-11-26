@@ -17,6 +17,17 @@ pub async fn worker_loop_with_plugins(
     shutdown: CancellationToken,
     plugins: ant3_plugins::ProcessHost,
 ) {
+    worker_loop_with_acp(store, models, cancellations, shutdown, plugins, AcpExecutors::default()).await;
+}
+
+pub async fn worker_loop_with_acp(
+    store: Store,
+    models: Models,
+    cancellations: Cancellations,
+    shutdown: CancellationToken,
+    plugins: ant3_plugins::ProcessHost,
+    acp: AcpExecutors,
+) {
     let router = match ant3_platform::routing::Router::from_env(&models) {
         Ok(router) => router,
         Err(error) => {
@@ -24,7 +35,7 @@ pub async fn worker_loop_with_plugins(
             return;
         }
     };
-    worker_loop_with_router(store, models, cancellations, shutdown, plugins, router).await;
+    run_workers(store, models, cancellations, shutdown, plugins, router, acp).await;
 }
 
 pub async fn worker_loop_with_router(
@@ -35,13 +46,26 @@ pub async fn worker_loop_with_router(
     plugins: ant3_plugins::ProcessHost,
     router: ant3_platform::routing::Router,
 ) {
+    run_workers(store, models, cancellations, shutdown, plugins, router, AcpExecutors::default()).await;
+}
+
+async fn run_workers(
+    store: Store,
+    models: Models,
+    cancellations: Cancellations,
+    shutdown: CancellationToken,
+    plugins: ant3_plugins::ProcessHost,
+    router: ant3_platform::routing::Router,
+    acp: AcpExecutors,
+) {
     let mut tasks = tokio::task::JoinSet::new();
     let route_store = store.clone();
     let route_models = models.clone();
     let route_stop = shutdown.clone();
     let processes = plugins.is_enabled();
+    let shared_tool = acp.capability();
     let routing = tokio::spawn(async move {
-        let mut router = router;
+        let mut router = router.with_shared_tool(shared_tool.clone());
         let mut revision = 0;
         loop {
             if route_stop.is_cancelled() {
@@ -50,7 +74,7 @@ pub async fn worker_loop_with_router(
             let (current, active_models) = route_store.configured_models(&route_models);
             if current != revision {
                 match ant3_platform::routing::Router::from_env(&active_models) {
-                    Ok(updated) => {router = updated; revision = current;}
+                    Ok(updated) => {router = updated.with_shared_tool(shared_tool.clone()); revision = current;}
                     Err(error) => eprintln!("Router configuration: {error}"),
                 }
             }
@@ -98,11 +122,12 @@ pub async fn worker_loop_with_router(
                     let cancellations = cancellations.clone();
                     let (_, models) = store.configured_models(&models);
                     let plugins = plugins.clone();
+                    let acp = acp.clone();
                     tasks.spawn(async move {
                         if store.cancel_requested(&run).unwrap_or(true) {
                             cancel.cancel();
                         }
-                        let outcome = execute(&store, &models, &work, cancel, &plugins).await;
+                        let outcome = execute(&store, &models, &work, cancel, &plugins, &acp).await;
                         let report = match outcome {
                             Ok(report) => report,
                             Err(error) => json!({"error":{"code":error.1}}),

@@ -10,6 +10,7 @@ pub type Cancellations = Arc<Mutex<HashMap<String, CancellationToken>>>;
 #[cfg(feature = "test-support")]
 #[path = "../tests/support/model.rs"]
 mod fixture;
+mod acp;
 mod codex;
 mod local;
 mod recovery;
@@ -18,7 +19,8 @@ mod scheduler;
 #[cfg(feature = "test-support")]
 use fixture::DemoModel;
 pub use recovery::recover;
-pub use scheduler::{worker_loop, worker_loop_with_plugins, worker_loop_with_router};
+pub use acp::AcpExecutors;
+pub use scheduler::{worker_loop, worker_loop_with_acp, worker_loop_with_plugins, worker_loop_with_router};
 
 /// Whether the offline regression model is compiled in (development tests only).
 pub const fn test_model_enabled() -> bool {

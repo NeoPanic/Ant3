@@ -30,7 +30,7 @@ async fn capture(mut stream: impl AsyncRead + Unpin) -> std::io::Result<Value> {
 }
 
 // The harness may drop the tool future on timeout, including while its pipes drain.
-struct ProcessGroup(i32);
+pub(super) struct ProcessGroup(pub(super) i32);
 impl Drop for ProcessGroup {
     fn drop(&mut self) {
         unsafe {

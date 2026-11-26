@@ -53,6 +53,9 @@ enum Command {
         /// Allow explicitly installed local process plugins to execute as this OS user.
         #[arg(long)]
         allow_process_plugins: bool,
+        /// Load local ACP executor registrations for Ant runs from a JSON file.
+        #[arg(long, value_name = "FILE")]
+        acp_executors: Option<PathBuf>,
     },
     /// Check the running daemon's public health endpoint.
     Doctor {
@@ -120,6 +123,7 @@ async fn main() -> ant3_client::ClientResult<()> {
             codex_config_dir,
             model,
             allow_process_plugins,
+            acp_executors,
         } => {
             ant3_server::up(ant3_server::Options {
                 port,
@@ -127,6 +131,7 @@ async fn main() -> ant3_client::ClientResult<()> {
                 codex_config_dir,
                 model,
                 allow_process_plugins,
+                acp_executors,
             })
             .await?;
         }

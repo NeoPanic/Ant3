@@ -189,6 +189,18 @@
     "path": "foundation"
   },
   {
+    "id": "acp-executors",
+    "name": "ACP 外部执行器",
+    "phase": "P1",
+    "status": "implemented",
+    "detail": "daemon 统一加载执行器清单，普通任务板 Run 可通过系统工具 external.acp 在实例工作区委派、继续会话、记录进度和取消。会话在所属 Run 结束时回收。支持 ACP v1 stdio，见[注册与调用](acp-executors.zh-CN.md)。",
+    "source": ["crates/ant3-worker/src/acp/mod.rs", "crates/ant3-worker/src/acp/transport.rs"],
+    "target": ["crates/ant3-worker/src/acp/"],
+    "verification": "existing-tests",
+    "scope": "current",
+    "path": "foundation"
+  },
+  {
     "id": "plugin-protocol",
     "name": "可执行插件契约与 SDK",
     "phase": "P2",

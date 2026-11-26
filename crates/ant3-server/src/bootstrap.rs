@@ -12,6 +12,7 @@ pub struct Options {
     pub codex_config_dir: Option<PathBuf>,
     pub model: String,
     pub allow_process_plugins: bool,
+    pub acp_executors: Option<PathBuf>,
 }
 pub async fn up(options: Options) -> crate::ServerResult<()> {
     let Options {
@@ -20,7 +21,9 @@ pub async fn up(options: Options) -> crate::ServerResult<()> {
         codex_config_dir,
         model,
         allow_process_plugins,
+        acp_executors,
     } = options;
+    let acp = acp_executors.as_deref().map(runtime::AcpExecutors::load).transpose()?.unwrap_or_default();
     std::fs::create_dir_all(&data_dir)?;
     #[cfg(unix)]
     {
@@ -98,12 +101,13 @@ pub async fn up(options: Options) -> crate::ServerResult<()> {
         data_dir.display(),
         token_path.display()
     );
-    let worker = tokio::spawn(runtime::worker_loop_with_plugins(
+    let worker = tokio::spawn(runtime::worker_loop_with_acp(
         store.clone(),
         models.clone(),
         cancellations.clone(),
         shutdown.clone(),
         plugins.clone(),
+        acp,
     ));
     let app = router(App {
         store,

@@ -19,6 +19,7 @@ struct ClaimedTool {
     inner: Arc<dyn Tool>,
     store: Store,
     run: String,
+    allow_handoff: bool,
 }
 #[async_trait::async_trait]
 impl Tool for ClaimedTool {
@@ -38,7 +39,10 @@ impl Tool for ClaimedTool {
             .store
             .read_board(&self.run)
             .map_err(|e| Error::new(e.1))?;
-        if board["scope"]["claimed_task_id"].as_str().is_none() {
+        let scope = &board["scope"];
+        if scope["claimed_task_id"].as_str().is_none()
+            && !(self.allow_handoff && scope["handoff"] == true)
+        {
             return Err(Error::new("board_claim_required"));
         }
         self.inner.execute(context, args, cancel).await
@@ -129,6 +133,7 @@ pub(super) async fn execute(
     work: &Value,
     cancel: CancellationToken,
     plugins: &ant3_plugins::ProcessHost,
+    acp: &AcpExecutors,
 ) -> PResult<Value> {
     let agent = work["instance_id"]
         .as_str()
@@ -217,18 +222,24 @@ pub(super) async fn execute(
             registry.tool(tool).map_err(core_error)?;
         }
     } else {
-        let work_tool = |inner: Arc<dyn Tool>| -> Arc<dyn Tool> {
+        let scope_tool = |inner: Arc<dyn Tool>, allow_handoff| -> Arc<dyn Tool> {
             if board.is_some() {
                 Arc::new(ClaimedTool {
                     inner,
                     store: store.clone(),
                     run: run.into(),
+                    allow_handoff,
                 })
             } else {
                 inner
             }
         };
+        let work_tool = |inner| scope_tool(inner, false);
         if let Ok(root) = store.workspace_root() {
+            if let Some(tool) = acp.tool(store.clone(), root.join(agent)) {
+                tools.push(tool.spec().name);
+                registry.tool(scope_tool(tool, true)).map_err(core_error)?;
+            }
             for name in ["read", "write", "edit", "bash"] {
                 let tool = work_tool(Arc::new(super::local::LocalTool {name, workspace:root.join(agent)}));
                 tools.push(tool.spec().name);

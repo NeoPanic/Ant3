@@ -17,6 +17,7 @@ mod fixtures;
 #[derive(Clone)]
 pub struct Router {
     model: Option<Arc<dyn Model>>,
+    shared_tool: Option<ToolSpec>,
 }
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -50,6 +51,7 @@ impl Router {
                     .parse()
                     .map_err(|_| fault(400, "invalid_router_confidence"))?;
                 return Ok(Self {
+                    shared_tool: None,
                     model: Some(Arc::new(crate::decision::DecisionProvider::new(
                         base, model, key, confidence,
                     )?)),
@@ -66,10 +68,12 @@ impl Router {
                 .map_err(|_| fault(400, "router_base_url_required"))?;
             let key = std::env::var("ANT3_ROUTER_API_KEY").unwrap_or_default();
             return Ok(Self {
+                shared_tool: None,
                 model: Some(Arc::new(Provider::new(protocol, model, base, key)?)),
             });
         }
         Ok(Self {
+            shared_tool: None,
             model: models
                 .responses
                 .clone()
@@ -83,11 +87,16 @@ impl Router {
             "model":self.model.as_ref().map(|m|m.metadata()),"parallel_decisions":4})
     }
     pub fn with_model(model: Arc<dyn Model>) -> Self {
-        Self { model: Some(model) }
+        Self { model: Some(model), shared_tool: None }
     }
     #[cfg(feature = "test-support")]
     pub fn for_tests() -> Self {
-        Self { model: None }
+        Self { model: None, shared_tool: None }
+    }
+
+    pub fn with_shared_tool(mut self, tool: Option<ToolSpec>) -> Self {
+        self.shared_tool = tool;
+        self
     }
 
     pub fn catalog(&self, store: &Store, models: &Models, processes: bool) -> PResult<Vec<Value>> {
@@ -132,6 +141,9 @@ impl Router {
                 json!({"name":"platform.board.note","description":"Publish a CAS finding with evidence support; conflicts adjudicated by trace strength."}),
             ]);
             if store.workspace_root().is_ok() {
+                if let Some(tool) = &self.shared_tool {
+                    capabilities.push(json!({"name":tool.name,"description":tool.description}));
+                }
                 for (name, description) in [("read","Read workspace files"),("write","Write workspace files"),("edit","Edit workspace files"),("bash","Execute local shell commands and installed CLI clients")] {
                     capabilities.push(json!({"name":name,"description":description}));
                 }

@@ -31,6 +31,7 @@
 | SQLite 与恢复 | 部分实现 | 原生测试 | SQLite 事务、检查点、事件和 daemon 独占锁；恢复时保留已知回执，未知结果进入中断。没有完整备份运维、外部对账或事件分页。 |
 | 三类模型协议 | 部分实现 | 原生测试 | 提供 Chat Completions、Responses、Anthropic 工具循环与 Worker 流式正文；fixture 覆盖分片、终止、usage 与取消。真实供应商流式兼容性待验收；详情见[蚁群群聊](chat.zh-CN.md)。 |
 | 内置工具与提示词包 | 已实现 | 原生测试 | 消息与工作区是系统能力。默认蚂蚁预设为 default-ant。Codex CLI 作为可选内置插件按 Preset 绑定。本机 Worker 默认提供 read、write、edit、bash；bash 使用 daemon 账户及其环境运行本机 CLI。 |
+| ACP 外部执行器 | 已实现 | 原生测试 | daemon 统一加载执行器清单，普通任务板 Run 可通过系统工具 external.acp 在实例工作区委派、继续会话、记录进度和取消。会话在所属 Run 结束时回收。支持 ACP v1 stdio，见[注册与调用](acp-executors.zh-CN.md)。 |
 
 ## 支撑能力
 
@@ -69,6 +70,7 @@
 | SQLite 与恢复 | `crates/ant3-platform/src/storage/sqlite.rs`<br>`crates/ant3-storage/migrations/sqlite/schema.sql`<br>`crates/ant3-storage/src/lib.rs`<br>`crates/ant3-storage/tests/database.rs` | `crates/ant3-storage/src/` |
 | 三类模型协议 | `crates/ant3-models/src/lib.rs` | `crates/ant3-models/src/` |
 | 内置工具与提示词包 | `crates/ant3-platform/src/control/organization.rs` | `crates/ant3-platform/` |
+| ACP 外部执行器 | `crates/ant3-worker/src/acp/mod.rs`<br>`crates/ant3-worker/src/acp/transport.rs` | `crates/ant3-worker/src/acp/` |
 | 可执行插件契约与 SDK | `crates/ant3-plugin-protocol/src/lib.rs`<br>`crates/ant3-plugin-sdk/src/lib.rs`<br>`crates/ant3-plugin-sdk/tests/contract.rs`<br>`crates/ant3-plugins/examples/text-inspector/manifest.json`<br>`crates/ant3-plugins/examples/http-reader/manifest.json`<br>`crates/ant3-plugins/examples/http-reader/test_worker.py`<br>`crates/ant3-plugins/examples/workspace-preset/preset.json` | `crates/ant3-plugin-protocol/src/`<br>`crates/ant3-plugin-sdk/src/` |
 | 外部插件与热加载 | `crates/ant3-plugins/src/lib.rs`<br>`crates/ant3-plugins/src/package.rs`<br>`crates/ant3-plugins/src/process.rs`<br>`web/src/features/plugins/plugins.js`<br>`crates/ant3-server/tests/process_plugins.rs` | `crates/ant3-plugins/src/loaders/`<br>`crates/ant3-plugins/src/reload/` |
 | 对等 Agent 共享任务板 | `crates/ant3-platform/src/scheduling/board/mod.rs`<br>`crates/ant3-platform/src/scheduling/board/tools.rs`<br>`crates/ant3-storage/migrations/sqlite/board.sql`<br>`crates/ant3-platform/src/scheduling/routing.rs`<br>`crates/ant3-platform/src/scheduling/decision.rs`<br>`web/src/features/board/board.js`<br>`crates/ant3-server/tests/board.rs`<br>`crates/ant3-server/tests/routing.rs`<br>`crates/ant3-server/tests/decision.rs`<br>`crates/ant3-platform/src/scheduling/audit.rs`<br>`crates/ant3-server/tests/audit.rs` | `crates/ant3-platform/src/collaboration/`<br>`crates/ant3-platform/src/scheduling/` |
@@ -278,6 +280,9 @@ crates/
 │   └── Cargo.toml
 └── ant3-worker/
     ├── src/
+    │   ├── acp/
+    │   │   ├── mod.rs
+    │   │   └── transport.rs
     │   ├── board-protocol.txt
     │   ├── codex.rs
     │   ├── lib.rs
@@ -286,7 +291,10 @@ crates/
     │   ├── runner.rs
     │   └── scheduler.rs
     ├── tests/
+    │   ├── fixtures/
+    │   │   └── acp.py
     │   └── support/
+    │       ├── acp.rs
     │       └── model.rs
     └── Cargo.toml
 web/
